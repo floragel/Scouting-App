@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 # Configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'scouting.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'data', 'scouting.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'dev_secret_key_scouting_app' # Change in production
 from datetime import timedelta
@@ -118,15 +118,44 @@ def user_me():
         if 'email' in data:
             user.email = data['email']
             
-        # Optional: handle password change if provided
-        if 'password' in data and data['password']:
-            from werkzeug.security import generate_password_hash
-            user.password_hash = generate_password_hash(data['password'])
+        # Handle password change
+        if 'new_password' in data and data['new_password']:
+            current_pass = data.get('current_password')
+            if not current_pass or not check_password_hash(user.password_hash, current_pass):
+                return jsonify({'error': 'Current password is incorrect'}), 400
+            user.password_hash = generate_password_hash(data['new_password'])
             
         db.session.commit()
         return jsonify({'message': 'Profile updated successfully', 'user': user.to_dict()}), 200
 
     return jsonify(user.to_dict()), 200
+
+@app.route('/api/user/upload-profile-picture', methods=['POST'])
+def upload_profile_picture():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    user = User.query.get(session['user_id'])
+    
+    if 'profile_picture' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+        
+    file = request.files['profile_picture']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    if file:
+        filename = secure_filename(file.filename)
+        # Append user ID to ensure uniqueness
+        filename = f"{user.id}_{filename}"
+        upload_path = os.path.join(basedir, 'static', 'uploads', 'profiles')
+        os.makedirs(upload_path, exist_ok=True)
+        file.save(os.path.join(upload_path, filename))
+        
+        user.profile_picture = f"/static/uploads/profiles/{filename}"
+        db.session.commit()
+        
+        return jsonify({'message': 'Profile picture uploaded successfully', 'url': user.profile_picture}), 200
+
 
 # --- Team & Admin Routes ---
 @app.route('/api/team/join', methods=['POST'])
@@ -518,7 +547,7 @@ def login_page():
         if user and not user.team_id:
             return redirect(url_for('onboarding_page'))
         return redirect(url_for('home'))
-    return send_from_directory(os.path.join(basedir, '../user_login_&_registration_flow'), 'code.html')
+    return send_from_directory(os.path.join(basedir, '../frontend/user_login_&_registration_flow'), 'code.html')
 
 @app.route('/register')
 def register_page():
@@ -527,29 +556,155 @@ def register_page():
         if user and not user.team_id:
             return redirect(url_for('onboarding_page'))
         return redirect(url_for('home'))
-    return send_from_directory(os.path.join(basedir, '../user_login_&_registration_flow'), 'code.html')
+    return send_from_directory(os.path.join(basedir, '../frontend/user_login_&_registration_flow'), 'code.html')
 
 @app.route('/onboarding')
 def onboarding_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
-    return send_from_directory(os.path.join(basedir, '../team_onboarding_&_access'), 'code.html')
+    return send_from_directory(os.path.join(basedir, '../frontend/team_onboarding_&_access'), 'code.html')
 
 @app.route('/profile')
 def profile_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
-    return send_from_directory(os.path.join(basedir, '../user_profile_&_settings_hub'), 'code.html')
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/user_profile_&_settings_hub/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 @app.route('/admin-hub')
 def admin_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     user = User.query.get(session['user_id'])
-    # Only allow Admin/Head Scout to access the HTML page entirely
     if not user or user.role not in ['Admin', 'Head Scout']:
         return redirect(url_for('scout_dashboard'))
-    return send_from_directory(os.path.join(basedir, '../admin_scout_management_hub'), 'code.html')
+    
+    # 1. Fetch team members
+    team_members = []
+    if user.team_id:
+        # Assuming team ID is available on user; else filter by team_access_code
+        if hasattr(user, 'team_id') and user.team_id is not None:
+            team_members = User.query.filter_by(team_id=user.team_id).all()
+        else:
+            team_members = User.query.filter_by(team_access_code=user.team_access_code).all()
+            
+    # Fallback if no team context exists yet
+    if not team_members:
+        team_members = User.query.all()
+        
+    members_data = [m.to_dict() for m in team_members]
+    
+    # 2. Fetch Assignments
+    assignments = ScoutAssignment.query.all() # Or filter by team if needed
+    assignments_data = [a.to_dict() for a in assignments]
+    
+    # 3. Fetch Matches
+    event_matches = []
+    tba = TBAHandler()
+    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    if team_status and team_status.get('event_key'):
+        em = frc_api.get_event_matches(team_status['event_key'])
+        if em:
+            valid_matches = [m for m in em if m.get('time')]
+            valid_matches.sort(key=lambda x: x['time'])
+            # Don't filter out past matches for admins, they might need to assign/re-assign them
+            event_matches = valid_matches
+
+    # The template already has access to event_matches natively, 
+    # but the frontend JS needs a clean array without Jinja string corruption.
+    # We will fetch this data via a separated endpoint below.
+    import json
+    template_path = os.path.join(basedir, '../frontend/admin_scout_management_hub/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(), 
+            user=user,
+            team_members=members_data, 
+            users_json=json.dumps(members_data),
+            assignments=assignments_data, 
+            assignments_json=json.dumps(assignments_data),
+            event_matches=event_matches
+        )
+
+@app.route('/api/event/matches', methods=['GET'])
+def get_event_matches_api():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+        
+    tba = TBAHandler()
+    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    
+    if not team_status or not team_status.get('event_key'):
+        return jsonify([])
+        
+    em = frc_api.get_event_matches(team_status['event_key'])
+    if not em:
+        return jsonify([])
+        
+    valid_matches = [m for m in em if m.get('time')]
+    valid_matches.sort(key=lambda x: x['time'])
+    
+    show_all = request.args.get('show_all', 'false').lower() == 'true'
+    if not show_all:
+        import time
+        current_unix = int(time.time())
+        future_matches = [m for m in valid_matches if m['time'] > (current_unix - 600)]
+        # Return future matches + a flag indicating if we filtered any out
+        return jsonify({'matches': future_matches, 'total': len(valid_matches), 'filtered': True})
+    
+    return jsonify({'matches': valid_matches, 'total': len(valid_matches), 'filtered': False})
+@app.route('/api/admin/assignments', methods=['POST'])
+def create_assignment():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    admin_user = User.query.get(session['user_id'])
+    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+        return jsonify({'error': 'Forbidden'}), 403
+        
+    data = request.json
+    required_fields = ['user_id', 'match_key', 'team_key', 'alliance_color']
+    if not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
+        
+    try:
+        new_assignment = ScoutAssignment(
+            user_id=data['user_id'],
+            match_key=data['match_key'],
+            team_key=data['team_key'],
+            alliance_color=data['alliance_color'],
+            status='Pending'
+        )
+        db.session.add(new_assignment)
+        db.session.commit()
+        return jsonify({'message': 'Assignment created successfully', 'assignment': new_assignment.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/assignments/<int:assignment_id>', methods=['DELETE'])
+def delete_assignment(assignment_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    admin_user = User.query.get(session['user_id'])
+    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+        return jsonify({'error': 'Forbidden'}), 403
+        
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    try:
+        db.session.delete(assignment)
+        db.session.commit()
+        return jsonify({'message': 'Assignment deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/scout-dashboard')
 def scout_dashboard():
@@ -561,16 +716,51 @@ def scout_dashboard():
     
     # 1. Fetch Assignments if not admin
     assignments = []
+    matches_scouted = 0
     if not is_admin:
         assign_records = ScoutAssignment.query.filter_by(user_id=user.id, status='Pending').all()
         assignments = [a.to_dict() for a in assign_records]
+        matches_scouted = ScoutAssignment.query.filter_by(user_id=user.id, status='Completed').count()
         
     # 2. Fetch Team Status using TBA API
     tba = TBAHandler()
     team_status = tba.get_team_status(HOME_TEAM_NUMBER)
     
-    # 3. Read template and render with Jinja
-    template_path = os.path.join(basedir, '../desktop_scout_dashboard_hub/code.html')
+    # 3. Dynamic Performance Calculation
+    if is_admin:
+        # Admins scout nothing, but we could put general stats
+        user_performance = {'matches_scouted': '-', 'accuracy': 'Admin'}
+    else:
+        accuracy = 'High' if matches_scouted > 20 else 'Medium' if matches_scouted > 5 else 'Low'
+        user_performance = {'matches_scouted': matches_scouted, 'accuracy': accuracy}
+        
+    # 4. Event Schedule Calculation
+    event_matches = []
+    live_match = "TBD"
+    dashboard_note = f"Welcome to the FRC Scouting App. Have a great event, {user.name.split()[0]}!"
+    
+    if team_status and team_status.get('event_key'):
+        em = frc_api.get_event_matches(team_status['event_key'])
+        if em:
+            valid_matches = [m for m in em if m.get('time')]
+            valid_matches.sort(key=lambda x: x['time'])
+            
+            import time
+            current_unix = int(time.time())
+            # Show only matches that haven't happened yet (minus a 10 min grace period so we don't hide the live one instantly)
+            future_matches = [m for m in valid_matches if m['time'] > (current_unix - 600)]
+            event_matches = future_matches
+            
+            if future_matches:
+                live_m = future_matches[0]
+                live_match = f"{live_m['comp_level'].upper()} {live_m['match_number']}"
+            elif valid_matches:
+                live_m = valid_matches[-1]
+                live_match = f"{live_m['comp_level'].upper()} {live_m['match_number']} (Done)"
+
+    
+    # 5. Read template and render with Jinja
+    template_path = os.path.join(basedir, '../frontend/desktop_scout_dashboard_hub/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         template_content = f.read()
         
@@ -579,41 +769,77 @@ def scout_dashboard():
         is_admin=is_admin,
         assignments=assignments,
         team_status=team_status,
-        user=user
+        user=user,
+        user_performance=user_performance,
+        dashboard_note=dashboard_note,
+        event_matches=event_matches,
+        live_match=live_match
     )
 
 @app.route('/profile/edit')
 def profile_edit_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
-    return send_from_directory(os.path.join(basedir, '../profile_&_settings_edit'), 'code.html')
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/profile_&_settings_edit/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 @app.route('/')
 def home():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
-    # Default to the events dashboard
-    return send_from_directory(os.path.join(basedir, '..', 'frc_events_&_dashboard'), 'code.html')
+    
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/frc_events_&_dashboard/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 @app.route('/dashboard')
 def dashboard():
-    return send_from_directory(os.path.join(basedir, '..', 'frc_events_&_dashboard'), 'code.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+        
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/frc_events_&_dashboard/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 @app.route('/analytics')
 def analytics():
-    return send_from_directory(os.path.join(basedir, '..', 'head_scout_analytics_hub'), 'code.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/head_scout_analytics_hub/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 @app.route('/match-scout')
 def match_scout():
-    return send_from_directory(os.path.join(basedir, '..', 'match_scouting_entry'), 'code.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/match_scouting_entry/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 @app.route('/pit-scout')
 def pit_scout():
-    return send_from_directory(os.path.join(basedir, '..', 'pit_scouting_form'), 'code.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/pit_scouting_form/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 @app.route('/teams-dir')
 def teams_dir():
-    return send_from_directory(os.path.join(basedir, '..', 'teams_directory_&_profile'), 'code.html')
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/teams_directory_&_profile/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
 
 if __name__ == '__main__':
     with app.app_context():

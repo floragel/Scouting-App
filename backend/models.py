@@ -15,6 +15,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    profile_picture = db.Column(db.String(255), nullable=True)
     role = db.Column(db.String(50), default='pending') # e.g. Admin, Head Scout, Pit Scout, pending
     status = db.Column(db.String(50), default='pending') # e.g. active, pending
     team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=True)
@@ -27,9 +28,11 @@ class User(db.Model):
             'id': self.id,
             'email': self.email,
             'name': self.name,
+            'profile_picture': self.profile_picture,
             'role': self.role,
             'status': self.status,
             'team_id': self.team_id,
+            'team_number': self.team.team_number if self.team else None,
             'team_access_code': self.team.access_code if self.team else None
         }
 

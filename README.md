@@ -1,104 +1,148 @@
-# 🤖 FRC Scouting App (Team 6622 StanRobotix)
+# 🤖 FRC Scouting App
 
-A comprehensive, modern web application designed for FIRST Robotics Competition (FRC) teams to efficiently scout matches, manage pit data, and analyze team strengths using The Blue Alliance API integration.
-
-![Dashboard Preview](https://via.placeholder.com/1000x500.png?text=FRC+Scouting+App+Dashboard)
-
-## ✨ Features
-
-- **Role-Based Routing:** Different dashboards tailored for Admins, Head Scouts, and regular Scouts.
-- **Match & Pit Scouting Forms:** Beautiful, responsive inputs to track auto, teleop, climb status, and detailed robot characteristics (including image uploads).
-- **The Blue Alliance (TBA) Integration:** Live data synchronization to fetch team statuses, recent match results ("Next Match" / "Last Match"), and competition schedules automatically.
-- **Scout Assignment Management:** Admins can dynamically assign specific teams and matches to individual scouts directly from their dashboard.
-- **Automated Startup Scripts:** Quick launch capability for Mac/Linux (`start.sh` or double-click `.command` files).
+A full-stack web application for **FIRST Robotics Competition (FRC)** teams to manage scouting data, match assignments, and team analytics — built with Flask and vanilla HTML/JS.
 
 ---
 
-## 🚀 Getting Started
+## 📁 Project Structure
 
-Follow these steps to install and run the application locally on your machine.
+```
+Scouting App/
+├── frontend/                    # All HTML pages (Jinja-rendered)
+│   ├── admin_scout_management_hub/
+│   ├── desktop_scout_dashboard_hub/
+│   ├── frc_events_&_dashboard/
+│   ├── head_scout_analytics_hub/
+│   ├── match_scouting_entry/
+│   ├── pit_scouting_form/
+│   ├── profile_&_settings_edit/
+│   ├── team_onboarding_&_access/
+│   ├── teams_directory_&_profile/
+│   ├── user_login_&_registration_flow/
+│   └── user_profile_&_settings_hub/
+├── backend/                     # Flask API + server
+│   ├── app.py                   # Main application & routes
+│   ├── models.py                # SQLAlchemy database models
+│   ├── frc_api.py               # The Blue Alliance API integration
+│   ├── requirements.txt         # Python dependencies
+│   ├── promote_admin.py         # Utility: promote user to Admin
+│   ├── static/                  # Static assets
+│   └── uploads/                 # User-uploaded files
+├── data/                        # Database
+│   └── scouting.db              # SQLite database
+├── .env                         # Environment variables (TBA API key)
+├── start.sh                     # Launch script
+├── venv/                        # Python virtual environment
+└── README.md
+```
+
+---
+
+## 🚀 Getting Started with Antigravity
 
 ### Prerequisites
 
-You need Python 3 installed on your machine. 
-If you don't have it, download it from [python.org](https://www.python.org/downloads/).
+- **Python 3.10+**
+- **Antigravity** (AI coding assistant)
+- **SQLite Viewer** extension (recommended for inspecting `data/scouting.db`)
 
-### 1. Clone the repository
+### 1. Clone & Open
+
+Open the `Scouting App` folder in your editor with Antigravity enabled.
+
+### 2. Set Up Virtual Environment
+
 ```bash
-git clone https://github.com/floragel/Scouting-App.git
 cd "Scouting App"
-```
-
-### 2. Set up the Python Virtual Environment
-We use a virtual environment to manage dependencies locally.
-
-**Mac / Linux:**
-```bash
 python3 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
 ```
 
-*(Note: If the `requirements.txt` is missing, you can install the core packages manually: `pip install flask flask_sqlalchemy werkzeug python-dotenv requests`)*
+### 3. Install Dependencies
 
-### 3. Add your Blue Alliance API Key
-To fetch live match data, you need an API key from The Blue Alliance.
-1. Create a `TBA Account` at [The Blue Alliance](https://www.thebluealliance.com/).
-2. Go to your Account page and generate a `Read API Key`.
-3. Open the `.env` file at the root of the project.
-4. Replace the existing fake key with your real one:
-   ```env
-   TBA_API_KEY=your_real_key_here_...
-   ```
-
-### 4. Initialize the Database
-Before the first run, ensure the database is properly initialized. In your terminal (with the virtual environment activated), run:
 ```bash
-cd backend
-python3 -c "from app import db, app; app.app_context().push(); db.create_all()"
-cd ..
+pip install -r backend/requirements.txt
 ```
 
----
+### 4. Configure Environment Variables
 
-## 🏃‍♂️ Running the Server
+Create a `.env` file at the project root (or verify the existing one):
 
-### Option A: Using the fast startup script (Mac/Linux)
-Simply run the startup script from the root directory:
+```env
+FLASK_ENV=development
+FLASK_APP=backend/app.py
+TBA_API_KEY=your_tba_api_key_here
+```
+
+> Get your TBA API key from [thebluealliance.com/account](https://www.thebluealliance.com/account)
+
+### 5. Run the App
+
 ```bash
-./start.sh
+bash start.sh
 ```
-Or, if you are on macOS, you can double-click the `start_app.command` file directly in Finder to launch the terminal and open the app in your browser automatically!
 
-### Option B: Manual Startup
+Or manually:
+
 ```bash
 source venv/bin/activate
-cd backend
-python3 app.py
+python3 backend/app.py
 ```
-The server will start at **http://localhost:5002**. 
+
+The app runs on **http://localhost:5002**
 
 ---
 
-## 🛠️ Typical Workflow
+## 🗄️ Database
 
-1. **Register User:** Users create accounts via `/login` -> `/register`. Initially, they are placed in a 'Pending' status.
-2. **Admin Approval:** An Admin navigates to the Admin Panel to approve the user's account and set their role (`Scout`, `Pit Scout`, etc.).
-3. **Task Assignment:** Admins assign specific match keys (e.g., `2026qcmo_qm1`) and team numbers to Scouts.
-4. **Scout Dashboard:** The Scout logs in and is greeted by their personalized `Scout Assignments` and the live `TBA Team Status` widget showing the team's next or last match.
-5. **Data Entry & Analysis:** Scouts submit Match/Pit data, which is aggregated and queryable in the Head Scout Analytics Hub.
+The SQLite database is stored at `data/scouting.db`. You can inspect it using:
 
----
+- **SQLite Viewer** extension in VS Code / Cursor
+- Any SQLite browser (e.g., DB Browser for SQLite)
 
-## 🗂️ Project Structure
+### Promote a User to Admin
 
-- `/backend/`: Contains the Flask server (`app.py`), Database Models (`models.py`), and TBA Integration (`frc_api.py`).
-- `/backend/instance/`: Holds the local SQLite Database (`scouting.db`).
-- `/*_hub/` or `/*_flow/`: These HTML frontend directories (e.g., `desktop_scout_dashboard_hub`) contain the TailwindCSS UI logic served directly by Flask via Jinja2 formatting.
-- `start.sh` & `start_app.command`: Helper scripts for quick application launches.
+```bash
+source venv/bin/activate
+python3 backend/promote_admin.py
+```
 
 ---
 
-## 📜 License
-© Nayl Lahlou, Team 6622 StanRobotix.
-Developed for internal scouting usage.
+## 🔑 Key Features
+
+| Feature | Route | Description |
+|---|---|---|
+| **Login / Register** | `/login`, `/register` | Authentication with password hashing |
+| **Dashboard** | `/` | Scout's personal dashboard with assignments |
+| **Events & Schedule** | `/events-dashboard` | FRC events with TBA live data |
+| **Admin Hub** | `/admin-hub` | Team management, role assignment, match grid |
+| **Match Scouting** | `/match-scout` | In-match data collection form |
+| **Pit Scouting** | `/pit-scout` | Pre-match pit inspection form |
+| **Team Directory** | `/teams` | Browse all teams with stats |
+| **Analytics** | `/analytics` | Head scout performance analytics |
+| **Profile** | `/profile` | User profile & settings |
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend:** Python, Flask, SQLAlchemy
+- **Frontend:** HTML5, Vanilla JS, TailwindCSS (CDN)
+- **Database:** SQLite
+- **API:** The Blue Alliance (TBA) REST API
+- **Auth:** Session-based with Werkzeug password hashing
+
+---
+
+## 📝 Environment Variables
+
+| Variable | Description |
+|---|---|
+| `FLASK_ENV` | `development` or `production` |
+| `FLASK_APP` | `backend/app.py` |
+| `TBA_API_KEY` | Your Blue Alliance API key |
+
+---
+
+© Nayl Lahlou — Team 6622 StanRobotix
