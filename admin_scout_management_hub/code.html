@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Admin Scout Management Hub | FRC Scouting App</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101722",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #314868;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #0d6cf2;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+    <!-- Top Navigation Bar -->
+    <header
+        class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 py-3 bg-white dark:bg-[#161e2b] sticky top-0 z-50">
+        <div class="flex items-center gap-8">
+            <div class="flex items-center gap-3 text-primary">
+                <div class="size-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary">precision_manufacturing</span>
+                </div>
+                <h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">FRC Scouting App
+                    Hub</h2>
+            </div>
+            <nav class="hidden md:flex items-center gap-6">
+                <a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors"
+                    href="/">Dashboard</a>
+                <a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="/admin-hub">Scout
+                    Management</a>
+                <a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors"
+                    href="/">Pit Data</a>
+            </nav>
+        </div>
+        <div class="flex items-center gap-4">
+            <div
+                class="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-transparent focus-within:border-primary transition-all">
+                <span class="material-symbols-outlined text-slate-400 text-sm">search</span>
+                <input id="global-search"
+                    class="bg-transparent border-none focus:ring-0 text-sm w-48 placeholder:text-slate-500"
+                    placeholder="Search members..." type="text" />
+            </div>
+            <button id="invite-btn"
+                class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined text-sm">person_add</span>
+                <span id="invite-text">Invite Member</span>
+            </button>
+            <a href="/profile"
+                class="size-9 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-2 border-primary/20 hover:border-primary transition-colors block cursor-pointer">
+                <img class="w-full h-full object-cover" data-alt="Profile picture of Head Scout"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9iUxlk3utSOjVCWI5oMbZrf0EBLhH_dcLGeLf1f_tgR7D4wxGDhvI1143PmzfbOe5Q1yAmUoSjLh0qNckOErQNU39vY8rk92vNVReqk-c9N6r3Sawl46yacnyGfrsfYl6gjmE6MwanDcKrS8lXA5X4Rf7qRufuUlpNW1d6PTlp16glZKE1Lq7QkzTj5dfPL1r2WIEqMB7pj1u4MIQDFLZqA80Gq6h3ZLtpNr63PvKBHus9mQxEBRVPZdkXAJ-G6kndpSRgPMBPGbl" />
+            </a>
+        </div>
+    </header>
+    <main class="flex-1 flex flex-col max-w-[1440px] mx-auto w-full p-6 gap-8">
+        <!-- Header & Quick Stats Section -->
+        <div class="flex flex-col lg:flex-row gap-6">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="material-symbols-outlined text-primary">group_work</span>
+                    <h1 class="text-3xl font-black tracking-tight dark:text-white uppercase">Admin Scout Management</h1>
+                </div>
+                <p class="text-slate-600 dark:text-slate-400 max-w-2xl">
+                    Control team access, assign technical roles, and monitor scouting activity. Currently managing the
+                    2024 FRC Season roster.
+                </p>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div
+                    class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                    <p class="text-[10px] uppercase font-bold text-slate-500 mb-1">Last Data Sync</p>
+                    <div class="flex items-center gap-2 text-primary font-bold text-sm">
+                        <span class="material-symbols-outlined text-sm animate-pulse">sync</span>
+                        2 minutes ago
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div
+                class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+                <div class="flex justify-between items-start">
+                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Total Scouts</p>
+                    <span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">groups</span>
+                </div>
+                <p class="text-4xl font-bold dark:text-white">42</p>
+                <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">
+                    <span class="material-symbols-outlined text-xs">trending_up</span> +5% from last week
+                </p>
+            </div>
+            <div
+                class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+                <div class="flex justify-between items-start">
+                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Active Now</p>
+                    <span
+                        class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg">sensors</span>
+                </div>
+                <p class="text-4xl font-bold dark:text-white">38</p>
+                <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">
+                    <span class="material-symbols-outlined text-xs">check_circle</span> 90% Engagement
+                </p>
+            </div>
+            <div
+                class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+                <div class="flex justify-between items-start">
+                    <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Pending Requests</p>
+                    <span
+                        class="material-symbols-outlined text-amber-500 bg-amber-500/10 p-2 rounded-lg">person_search</span>
+                </div>
+                <p class="text-4xl font-bold dark:text-white">04</p>
+                <p class="text-xs font-bold text-amber-500 flex items-center gap-1 mt-2">
+                    <span class="material-symbols-outlined text-xs">priority_high</span> Action required
+                </p>
+            </div>
+        </div>
+        <!-- Pending Approvals Section -->
+        <section class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-500">notification_important</span>
+                    Pending Approvals
+                </h3>
+                <span
+                    class="px-2 py-1 bg-amber-500/10 text-amber-500 text-xs font-bold rounded-lg border border-amber-500/20">4
+                    Priority Items</span>
+            </div>
+            <div id="pending-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            </div>
+        </section>
+        <!-- Member Directory Table -->
+        <section
+            class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col">
+            <div
+                class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-bold dark:text-white">Member Directory</h3>
+                    <p class="text-sm text-slate-500">Manage and edit roles for all 42 registered scouts.</p>
+                </div>
+                <div class="flex gap-3">
+                    <div class="relative">
+                        <span
+                            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                        <input
+                            class="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-full md:w-64 focus:ring-primary focus:border-primary"
+                            placeholder="Filter by name or email..." type="text" />
+                    </div>
+                    <button
+                        class="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        <span class="material-symbols-outlined text-lg">filter_list</span>
+                        Filter
+                    </button>
+                </div>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50">
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Member
+                            </th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
+                                Assigned Role</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Status
+                            </th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Join
+                                Date</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Last
+                                Active</th>
+                            <th
+                                class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">
+                                Actions</th>
+                        </tr>
+                    <tbody id="directory-tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <!-- Table Row 1 -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                                        <img class="w-full h-full object-cover" data-alt="User avatar for Sarah Conner"
+                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu5-B5_ckHKCnHZDX_InvZdKo8dpdhHxcci3t4mMQwwtEMJ7dWo4I4FUtNS3SzzUqxSBDN1Wj5EEppPsbglXU89wT16g-FVwal__Nd3k8yKmt0WNRhDCDjpsmTDWOrS9ADy_2jAoIKKIZe5gVGJiCqLVp6IKO2roTX8PfvYmTgs3LhrFU79fokIgC8jC1KespjYUecw1qQsZqB6TRqdgFdvfivl-HYdY6aSOQPeaASO3kC8WiPVgRuyln6NZ9ZfnoRGAbCmHiS5suJ" />
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold dark:text-white">Sarah Conner</p>
+                                        <p class="text-xs text-slate-500">s.conner@frc-scouting.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <select
+                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
+                                    <option selected="">Head Scout</option>
+                                    <option>Strategy Lead</option>
+                                    <option>Pit Scout</option>
+                                    <option>Stand Scout</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="size-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">Jan 12, 2024</td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">2 mins ago</td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">more_vert</span>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Table Row 2 -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                                        <img class="w-full h-full object-cover" data-alt="User avatar for Mike Peterson"
+                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHDlZCEfqq2mWEV5DN0mSpSi5oK1cHRWBWO7hDU1jqVekFHH8leKfiBffbRxf3pCpLRO7LfbDaADkITtwd_UM7l7dCw__4nBXr-doT-mEDzobpXdoHomX7bqTt4ZITde-ukrBsSLLw2iip_2ee_X3p1fFYv1xUw4WxRtZUdgcUKjnjur9p-5Ck5bPnOoOMaIJMPjN5nwQpSKdYBanAhA9RnNDCBRirThFIs7PXtaetO-4bZXc-S4ZOP_2gjqb8N5p7MFyTbGmXJwEa" />
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold dark:text-white">Mike Peterson</p>
+                                        <p class="text-xs text-slate-500">m.peterson@frc-scouting.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <select
+                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
+                                    <option>Head Scout</option>
+                                    <option selected="">Strategy Lead</option>
+                                    <option>Pit Scout</option>
+                                    <option>Stand Scout</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="size-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">Feb 05, 2024</td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">1 hour ago</td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">more_vert</span>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Table Row 3 -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                                        <img class="w-full h-full object-cover" data-alt="User avatar for Emma Watson"
+                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfjXcgLi8vhkpFcBrjQFg6hoVyi21Z9N41fl-uogZhyvXGvcJjrhZTMIEgo5KwuKEfZXIIG1V_qtUNeVRXbEVaflaNn-1jEOooUeyfSs9aDGw4VcOKfABFXsRuefR75yFH1RGE2sMjcz2opoMiNjA0Q6UxuPiTWJFKgOtwWSM-05dx8UA0AGO9i69oUEvIgxUJV98ExKIeVUhpReFL1grQ9CsNjbutlCyvdKm9r8GqzlSjmL6ATOO_Q1G27iwwjTss38DSQovGvZg-" />
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold dark:text-white">Emma Watson</p>
+                                        <p class="text-xs text-slate-500">e.watson@frc-scouting.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <select
+                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
+                                    <option>Head Scout</option>
+                                    <option>Strategy Lead</option>
+                                    <option selected="">Pit Scout</option>
+                                    <option>Stand Scout</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="size-2 rounded-full bg-slate-400"></div>
+                                    <span class="text-xs font-medium dark:text-slate-500">Inactive</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">Jan 20, 2024</td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">3 days ago</td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">more_vert</span>
+                                </button>
+                            </td>
+                        </tr>
+                        <!-- Table Row 4 -->
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
+                                        <img class="w-full h-full object-cover" data-alt="User avatar for David Chen"
+                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1FTihDTpf5uCeDIkqCPsJgn8gJZjxcg7mpouFhwth7pIv8lp-mf0xA0Qy0VqsVrcuC2sQi9OochAqe385a8Vuesoj0zE-xGacdVq0gXb8ZDOVEPf37bkmBcL893EtO5SfAxo_SActIX_ADJWOYxv03GD2zayYQTmiN77Lxgf9CiKCvW3z-i1ryYWJP0TQPC1OYHXFAxm7gK16scXyLuJdg6FoPgaLTMHPRqxSkzHCD3Zr4s_ftQOh16KerMfgyMeHFEz0vRLwOgGL" />
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold dark:text-white">David Chen</p>
+                                        <p class="text-xs text-slate-500">d.chen@frc-scouting.com</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <select
+                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
+                                    <option>Head Scout</option>
+                                    <option>Strategy Lead</option>
+                                    <option>Pit Scout</option>
+                                    <option selected="">Stand Scout</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="size-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">Mar 01, 2024</td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400">12 mins ago</td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">more_vert</span>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p id="showing-text" class="text-xs text-slate-500">Showing 0 members</p>
+            <div class="flex gap-2">
+                <button
+                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold disabled:opacity-50"
+                    disabled="">Previous</button>
+                <button
+                    class="px-3 py-1 bg-primary text-white border border-primary rounded text-xs font-bold">1</button>
+                <button
+                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">2</button>
+                <button
+                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">3</button>
+                <button
+                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Next</button>
+            </div>
+            </div>
+        </section>
+    </main>
+    <footer class="mt-auto p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161e2b]">
+        <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-sm">precision_manufacturing</span>
+            © Nayl Lahlou, Team 6622 StanRobotix
+        </p>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+
+            const roleOptions = ['Admin', 'Head Scout', 'Strategy Lead', 'Pit Scout', 'Stand Scout'];
+            const pendingContainer = document.getElementById('pending-container');
+            const directoryTbody = document.getElementById('directory-tbody');
+            const showingText = document.getElementById('showing-text');
+
+            // Quick stat counters
+            const totalScoutsEl = document.querySelectorAll('.text-4xl')[0];
+            const activeScoutsEl = document.querySelectorAll('.text-4xl')[1];
+            const pendingCountEl = document.querySelectorAll('.text-4xl')[2];
+
+            const inviteBtn = document.getElementById('invite-btn');
+            const inviteText = document.getElementById('invite-text');
+            const searchInput = document.getElementById('global-search');
+
+            let allMembersData = [];
+            let teamAccessCode = 'N/A';
+
+            try {
+                const userRes = await fetch('/api/user/me');
+                if (userRes.ok) {
+                    const userData = await userRes.json();
+                    if (userData.team_access_code) {
+                        teamAccessCode = userData.team_access_code;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch user data", e);
+            }
+
+            const loadMembers = async () => {
+                try {
+                    const res = await fetch('/api/admin/members');
+                    if (res.status === 401 || res.status === 403) {
+                        // Not authorized
+                        document.body.innerHTML = '<div class="p-10 text-center text-red-500 font-bold">Unauthorized. Access denied.</div>';
+                        return;
+                    }
+                    if (!res.ok) throw new Error('Failed to load members');
+                    const members = await res.json();
+
+                    allMembersData = members;
+                    renderMembers(members);
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            const approveUser = async (userId, action, role = 'Stand Scout') => {
+                try {
+                    await fetch(`/api/admin/approve/${userId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action, role })
+                    });
+                    loadMembers();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            const changeRole = async (userId, role) => {
+                try {
+                    await fetch(`/api/admin/role/${userId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ role })
+                    });
+                    loadMembers();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            const renderMembers = (members) => {
+                pendingContainer.innerHTML = '';
+                directoryTbody.innerHTML = '';
+
+                const pending = members.filter(m => m.status === 'pending');
+                const active = members.filter(m => m.status === 'active');
+
+                totalScoutsEl.textContent = active.length;
+                activeScoutsEl.textContent = active.length;
+                pendingCountEl.textContent = pending.length;
+                showingText.textContent = `Showing all ${active.length} active members`;
+
+                // Render Pending
+                pending.forEach(user => {
+                    const card = document.createElement('div');
+                    card.className = "bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl p-5 hover:border-primary/50 transition-all group";
+                    card.innerHTML = `
+            <div class="flex items-center gap-3 mb-4">
+                <a href="/profile" class="size-12 rounded-full overflow-hidden bg-primary/20 text-primary flex justify-center items-center font-bold text-lg">
+                    ${user.name.substring(0, 2).toUpperCase()}
+                </a>
+                <div>
+                    <p class="font-bold text-sm dark:text-white">${user.name}</p>
+                    <p class="text-xs text-slate-500">${user.email}</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="window.approveUser(${user.id}, 'approve')" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-sm">check</span> Approve
+                </button>
+                <button onclick="window.approveUser(${user.id}, 'reject')" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-500/10 hover:text-red-500 dark:hover:bg-red-500/10 text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors">
+                    <span class="material-symbols-outlined text-sm">close</span> Reject
+                </button>
+            </div>
+            `;
+                    pendingContainer.appendChild(card);
+                });
+
+                // Render Directory
+                active.forEach(user => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors";
+
+                    const optionsHtml = roleOptions.map(r => `<option ${user.role === r ? 'selected' : ''}>${r}</option>`).join('');
+
+                    tr.innerHTML = `
+            <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                    <a href="/profile" class="size-8 rounded-full overflow-hidden bg-primary/20 text-primary flex justify-center items-center font-bold text-xs">
+                        ${user.name.substring(0, 2).toUpperCase()}
+                    </a>
+                    <div>
+                        <p class="text-sm font-bold dark:text-white">${user.name}</p>
+                        <p class="text-xs text-slate-500">${user.email}</p>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4">
+                <select onchange="window.changeRole(${user.id}, this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
+                    ${optionsHtml}
+                </select>
+            </td>
+            <td class="px-6 py-4">
+                <div class="flex items-center gap-1.5">
+                    <div class="size-2 rounded-full bg-emerald-500"></div>
+                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 text-xs dark:text-slate-400">-</td>
+            <td class="px-6 py-4 text-xs dark:text-slate-400">-</td>
+            <td class="px-6 py-4 text-right">
+                <button onclick="window.approveUser(${user.id}, 'reject')" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors" title="Revoke Access">
+                    <span class="material-symbols-outlined text-lg">person_remove</span>
+                </button>
+            </td>
+            `;
+                    directoryTbody.appendChild(tr);
+                });
+
+            }
+
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const filtered = allMembersData.filter(m =>
+                    m.name.toLowerCase().includes(term) ||
+                    m.email.toLowerCase().includes(term) ||
+                    m.role.toLowerCase().includes(term)
+                );
+                renderMembers(filtered);
+            });
+
+            inviteBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(teamAccessCode).then(() => {
+                    inviteText.textContent = `Copied: ${teamAccessCode}`;
+                    inviteBtn.classList.remove('bg-primary');
+                    inviteBtn.classList.add('bg-emerald-500');
+                    setTimeout(() => {
+                        inviteText.textContent = "Invite Member";
+                        inviteBtn.classList.add('bg-primary');
+                        inviteBtn.classList.remove('bg-emerald-500');
+                    }, 3000);
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    inviteText.textContent = `Code: ${teamAccessCode}`;
+                });
+            });
+
+            // Attach to window so inline onclicks can reach them
+            window.approveUser = approveUser;
+            window.changeRole = changeRole;
+
+            loadMembers();
+        });
+    </script>
+</body>
+
+</html>

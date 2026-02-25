@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Match Scouting Entry - FRC Scouting App</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Theme Config -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101823", // Matches component provided
+                        "surface-dark": "#1e293b",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Custom scrollbar for dark mode feeling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #101823;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #223249;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #314868;
+        }
+
+        .stepper-btn {
+            transition: all 0.2s ease;
+        }
+
+        .stepper-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+    <!-- Header -->
+    <header
+        class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-[#223249] px-6 py-4 bg-white dark:bg-[#101823] sticky top-0 z-50">
+        <a href="/" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
+            <div class="size-8 text-primary">
+                <svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z"
+                        fill="currentColor"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">FRC Scouting App
+                </h2>
+                <p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Scouting App v2.4</p>
+            </div>
+        </a>
+        <div class="hidden md:flex flex-1 justify-center">
+            <div
+                class="flex items-center gap-6 bg-slate-100 dark:bg-[#1e293b] px-6 py-2 rounded-full border border-slate-200 dark:border-slate-700">
+                <div class="flex flex-col items-center">
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Match</span>
+                    <span class="text-lg font-bold text-primary">#42</span>
+                </div>
+                <div class="h-8 w-px bg-slate-300 dark:bg-slate-600"></div>
+                <div class="flex flex-col items-center">
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Team</span>
+                    <span class="text-lg font-bold text-white">2611</span>
+                </div>
+                <div class="h-8 w-px bg-slate-300 dark:bg-slate-600"></div>
+                <div class="flex flex-col items-center">
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Scouter</span>
+                    <span class="text-lg font-bold text-emerald-400">Alex</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button
+                class="flex items-center justify-center rounded-lg size-10 bg-slate-100 dark:bg-[#223249] text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-[#314868] transition-colors">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+            <div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border-2 border-primary"
+                data-alt="User profile picture showing a smiling person"
+                style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBW0NayFZO35Uv9IGxj_-NzOfe5RGu95osmR7Qb_NBYCPhNhOBAJ7SUy-EPhEt9IviIrFBwmmOH_8WQdOrTtWJ0sPcr55FluNEQQZ06Ru_HrfhfEmo2ZwyDcC9SAYsCgibNf8jBYrgDKsQuycNwXjP3JrmKx9a_FizwBzqpfr6jVq7J1LOiYLIVnHnjXnItmllLyTp8445_FS83590fvN_8l3Q0ybany-CTIjSJvHnOr1YlCy1OlL9qi8-jNdO12czbUrYSu47kvOPq");'>
+            </div>
+        </div>
+    </header>
+    <!-- Mobile Match Info (Visible only on small screens) -->
+    <div class="md:hidden flex justify-between px-4 py-3 bg-[#1e293b] border-b border-[#223249]">
+        <span class="font-bold text-white">M# 42</span>
+        <span class="font-bold text-primary">T# 2611</span>
+        <span class="font-medium text-slate-400">Alex</span>
+    </div>
+    <!-- Main Content Grid -->
+    <main class="flex-grow p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+        <form class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <!-- COLUMN 1: AUTONOMOUS -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">smart_toy</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Autonomous</h2>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6">
+                    <!-- Starting Position -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Start
+                            Position</label>
+                        <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-[#101823] p-1 rounded-lg">
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startPos" type="radio" value="Left" />
+                                <div
+                                    class="text-center py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-[#223249] peer-checked:text-primary peer-checked:shadow-sm transition-all">
+                                    Left</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input checked="" class="peer sr-only" name="startPos" type="radio" value="Center" />
+                                <div
+                                    class="text-center py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-[#223249] peer-checked:text-primary peer-checked:shadow-sm transition-all">
+                                    Center</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startPos" type="radio" value="Right" />
+                                <div
+                                    class="text-center py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-[#223249] peer-checked:text-primary peer-checked:shadow-sm transition-all">
+                                    Right</div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Leave Checkbox -->
+                    <label
+                        class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823]/50 cursor-pointer hover:border-primary/50 transition-colors group">
+                        <input
+                            class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent group-hover:border-primary transition-colors"
+                            type="checkbox" />
+                        <span class="ml-3 font-medium text-slate-700 dark:text-slate-200">Leave Starting Zone</span>
+                    </label>
+                    <div class="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
+                    <!-- Auto Scoring Steppers -->
+                    <div class="space-y-5">
+                        <!-- Speaker -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-sm font-bold text-slate-700 dark:text-white">Speaker Notes</label>
+                                <span class="text-xs text-primary font-medium">5 pts</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span class="text-2xl font-bold font-mono">2</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Amp -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-sm font-bold text-slate-700 dark:text-white">Amp Notes</label>
+                                <span class="text-xs text-primary font-medium">2 pts</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span
+                                        class="text-2xl font-bold font-mono text-slate-500 dark:text-slate-500">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- COLUMN 2: TELEOP -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">sports_esports</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Teleop</h2>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6 h-full">
+                    <!-- Scoring Steppers -->
+                    <div class="space-y-6">
+                        <!-- Speaker -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-sm font-bold text-slate-700 dark:text-white">Speaker Notes</label>
+                                <span class="text-xs text-primary font-medium">2 pts</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-14 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                                    <div class="absolute inset-0 bg-primary/5"></div>
+                                    <span class="text-3xl font-bold font-mono text-primary">5</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button">
+                                    <span class="material-symbols-outlined text-3xl">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Amp -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-sm font-bold text-slate-700 dark:text-white">Amp Notes</label>
+                                <span class="text-xs text-primary font-medium">1 pt</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-14 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span
+                                        class="text-3xl font-bold font-mono text-slate-500 dark:text-slate-400">1</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button">
+                                    <span class="material-symbols-outlined text-3xl">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Amplified Speaker -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between items-end">
+                                <label class="text-sm font-bold text-purple-400">Amplified Speaker</label>
+                                <span class="text-xs text-purple-400 font-medium">5 pts</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-purple-900/30">
+                                    <span class="text-2xl font-bold font-mono text-purple-400">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-purple-600 text-white shadow-lg shadow-purple-600/20 hover:bg-purple-500"
+                                    type="button">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="h-px bg-slate-200 dark:bg-slate-700 my-2"></div>
+                    <!-- Additional Teleop Data -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex flex-col gap-2 cursor-pointer group">
+                            <span class="text-xs uppercase font-bold text-slate-500">Coop Bonus</span>
+                            <div
+                                class="h-12 border border-slate-200 dark:border-slate-600 rounded-lg flex items-center px-3 gap-3 bg-slate-50 dark:bg-[#101823] group-hover:border-primary/50 transition-colors">
+                                <input
+                                    class="w-5 h-5 rounded border-slate-300 dark:border-slate-500 text-primary focus:ring-primary bg-transparent"
+                                    type="checkbox" />
+                                <span class="font-medium text-sm">Cooperation</span>
+                            </div>
+                        </label>
+                        <div class="flex flex-col gap-2">
+                            <span class="text-xs uppercase font-bold text-slate-500">Pickup</span>
+                            <select
+                                class="h-12 w-full rounded-lg border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-[#101823] text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-primary">
+                                <option>Both</option>
+                                <option>Ground Only</option>
+                                <option>Source Only</option>
+                                <option>None</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- COLUMN 3: ENDGAME & SUMMARY -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">flag</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Endgame</h2>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6">
+                    <!-- Climb Status -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Stage
+                            Result</label>
+                        <div class="flex flex-col gap-2">
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input class="sr-only" name="stageResult" type="radio" value="None" />
+                                <span class="material-symbols-outlined text-slate-400 mr-3">close</span>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">None /
+                                        Failed</span>
+                                </div>
+                            </label>
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input class="sr-only" name="stageResult" type="radio" value="Parked" />
+                                <span class="material-symbols-outlined text-blue-400 mr-3">local_parking</span>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Parked</span>
+                                    <span class="text-xs text-slate-500">1 pt</span>
+                                </div>
+                            </label>
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input checked="" class="sr-only" name="stageResult" type="radio" value="Onstage" />
+                                <span class="material-symbols-outlined text-green-400 mr-3">upload</span>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Onstage</span>
+                                    <span class="text-xs text-slate-500">3 pts</span>
+                                </div>
+                            </label>
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input class="sr-only" name="stageResult" type="radio" value="Harmony" />
+                                <span class="material-symbols-outlined text-purple-400 mr-3">group_add</span>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Harmony (2
+                                        Robots)</span>
+                                    <span class="text-xs text-slate-500">5 pts</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Trap & Spotlight -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <label
+                            class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:border-primary/50 transition-colors group">
+                            <input
+                                class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent group-hover:border-primary transition-colors"
+                                type="checkbox" />
+                            <span class="ml-2 font-medium text-sm text-slate-700 dark:text-slate-200">Trap Note</span>
+                        </label>
+                        <label
+                            class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:border-primary/50 transition-colors group">
+                            <input
+                                class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent group-hover:border-primary transition-colors"
+                                type="checkbox" />
+                            <span class="ml-2 font-medium text-sm text-slate-700 dark:text-slate-200">Spotlight</span>
+                        </label>
+                    </div>
+                </div>
+                <!-- Footer Area (Notes & Submit) -->
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4 mt-auto">
+                    <!-- Quick Tags -->
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase mb-2 block">Quick Tags</span>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"
+                                type="button">Defensive</button>
+                            <button
+                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
+                                type="button">Broke Down</button>
+                            <button
+                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
+                                type="button">Tipped</button>
+                            <button
+                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
+                                type="button">Fast Cycle</button>
+                        </div>
+                    </div>
+                    <!-- Text Area -->
+                    <div>
+                        <textarea
+                            class="w-full h-20 rounded-lg bg-slate-50 dark:bg-[#101823] border-slate-200 dark:border-slate-700 text-sm p-3 focus:ring-primary focus:border-primary resize-none dark:text-white dark:placeholder-slate-500"
+                            placeholder="Additional notes about the robot performance..."></textarea>
+                    </div>
+                    <!-- Submit Button -->
+                    <button
+                        class="w-full h-12 bg-primary hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all transform hover:translate-y-[-1px]"
+                        type="submit">
+                        <span class="material-symbols-outlined">send</span>
+                        Submit Match Data
+                    </button>
+                </div>
+            </section>
+        </form>
+    </main>
+
+    <footer class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix</p>
+    </footer>
+
+</body>
+
+</html>

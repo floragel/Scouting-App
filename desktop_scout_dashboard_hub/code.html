@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Desktop Scout Dashboard Hub</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0a0c10",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-hidden">
+    <!-- Top Navigation Bar -->
+    <header
+        class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-background-light dark:bg-background-dark/80 backdrop-blur-md px-6 py-3 sticky top-0 z-50">
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary p-1.5 rounded-lg text-white">
+                    <span class="material-symbols-outlined text-2xl">monitoring</span>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">ScoutHub</h1>
+            </div>
+            <div class="h-6 w-px bg-slate-200 dark:border-slate-800"></div>
+            <div class="flex items-center gap-4">
+                <div
+                    class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/50 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">🟢
+                        Online</span>
+                </div>
+                <span class="text-xs text-slate-500 dark:text-slate-500 font-medium">Synced 2m ago</span>
+            </div>
+        </div>
+        <div
+            class="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 bg-primary/10 border border-primary/20 px-6 py-2 rounded-full">
+            <span class="material-symbols-outlined text-primary text-sm">sensors</span>
+            <p class="text-primary text-sm font-bold uppercase tracking-widest">Live on Field: Qual 44</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="text-sm font-bold leading-tight">Hi, Alex</p>
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">Lead Scout</p>
+            </div>
+            <div class="relative">
+                <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
+                    data-alt="Circular profile picture of user Alex"
+                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnp9GOlcDa8yzzLYbNH-rZvRzXCOhGowYtsQLEwSiFWlli3IaU7AHu9_97kWBlOit0r8unOBUNcb1sviDjjS-2wJcHmKmORqedn9EjHp5EvTQdCWjG5bGAUm2L3v1IZZU2t0S8wQQjF-EPgUcs9U6ru9xKGgwWQiqgMhCIpZm7SDFjdLyhQPlWlwP80kUNonmdKgIqFqxP3cF3KVh-lMnYK3WSedOVb4La5S1umlOMTVV4iPbc3R8zgtHbl5h5YBtoUpUN6gV-O5rZ')">
+                </div>
+                <div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Main Content Area -->
+    <main class="flex-1 flex p-6 gap-6 h-[calc(100vh-64px)] overflow-hidden">
+        <!-- Column 1: Action (Left) -->
+        <div class="w-[380px] flex flex-col gap-6 flex-shrink-0">
+            <!-- Up Next / Last Match Hero Card (Jinja2 Team Status Widget) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl relative group">
+                <div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-50"></div>
+                <div class="p-6 relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        {% if team_status.type == 'next_match' %}
+                        <span
+                            class="px-3 py-1 bg-green-500 text-white text-[10px] font-black uppercase tracking-widest rounded">Up
+                            Next</span>
+                        {% elif team_status.type == 'last_match' %}
+                        <span
+                            class="px-3 py-1 bg-slate-600 text-white text-[10px] font-black uppercase tracking-widest rounded">Last
+                            Match Result</span>
+                        {% else %}
+                        <span
+                            class="px-3 py-1 bg-slate-600 text-white text-[10px] font-black uppercase tracking-widest rounded">Status</span>
+                        {% endif %}
+                        <span class="text-slate-400 text-xs font-medium">{{ team_status.event_key | default('TBA')
+                            }}</span>
+                    </div>
+                    <div class="flex items-baseline gap-2 mb-1">
+                        <h2
+                            class="text-3xl font-black {% if team_status.color == 'green' %}text-green-400{% else %}text-slate-400{% endif %}">
+                            {{ team_status.text.split(':')[0] if ':' in team_status.text else team_status.text }}
+                        </h2>
+                    </div>
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold text-white tracking-tight">
+                            {% if ':' in team_status.text %}
+                            {{ team_status.text.split(':')[1] }}
+                            {% endif %}
+                        </h3>
+                    </div>
+                    <button
+                        class="w-full {% if team_status.color == 'green' %}bg-primary hover:bg-primary/90 shadow-primary/20{% else %}bg-slate-700 hover:bg-slate-600 shadow-slate-900/20{% endif %} text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg">
+                        <span class="material-symbols-outlined">refresh</span> Refresh Status
+                    </button>
+                </div>
+            </div>
+            <!-- My Performance Widget -->
+            <div class="bg-slate-900/40 border border-slate-800 rounded-xl p-5">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">analytics</span>
+                    My Performance
+                </h4>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
+                        <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Matches Scouted</p>
+                        <div class="flex items-end gap-2">
+                            <span class="text-3xl font-black text-white">12</span>
+                            <span class="text-green-500 text-xs font-bold pb-1 flex items-center">
+                                <span class="material-symbols-outlined text-xs">trending_up</span> +2
+                            </span>
+                        </div>
+                    </div>
+                    <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
+                        <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Accuracy</p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-3xl font-black text-primary">High</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Quick Tips/Alerts -->
+            <div class="mt-auto bg-blue-500/5 border border-blue-500/20 rounded-lg p-4 flex gap-3">
+                <span class="material-symbols-outlined text-primary">info</span>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    <strong class="text-primary">Note:</strong> FRC Scouting App has added a new climber mechanism since
+                    last match. Watch for trap scores.
+                </p>
+            </div>
+        </div>
+        <!-- Column 2: Dashboard Content (Middle) -->
+        <div
+            class="flex-1 flex flex-col bg-slate-900/20 border border-slate-800 rounded-xl overflow-hidden shadow-inner">
+            {% if is_admin %}
+            <!-- ADMIN DASHBOARD -->
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold flex items-center gap-3 text-primary">
+                    <span class="material-symbols-outlined">admin_panel_settings</span>
+                    Admin Panel
+                </h3>
+            </div>
+            <div class="flex-1 overflow-auto p-6 flex flex-col gap-6 custom-scrollbar">
+                <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <div>
+                        <h4 class="text-white font-bold mb-1">Match Assignments</h4>
+                        <p class="text-sm text-slate-400">Distribute upcoming matches to available scouts.</p>
+                    </div>
+                    <button
+                        class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">assignment_add</span> Assign Matches
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div
+                        class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-2">
+                        <span class="text-3xl font-black text-white">80%</span>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Scouting
+                            Coverage</span>
+                    </div>
+                    <div
+                        class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-2">
+                        <span class="text-3xl font-black text-white">12</span>
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Scouts</span>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- SCOUT ASSIGNMENTS -->
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center">
+                <h3 class="text-lg font-bold flex items-center gap-3">
+                    <span class="material-symbols-outlined text-slate-400">assignment_turned_in</span>
+                    My Assignments
+                </h3>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Pending: {{
+                        assignments|length }}</span>
+                </div>
+            </div>
+            <div class="flex-1 overflow-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead class="sticky top-0 bg-slate-900/90 backdrop-blur-sm z-10">
+                        <tr class="text-[10px] uppercase font-black tracking-widest text-slate-500">
+                            <th class="px-6 py-4">Match</th>
+                            <th class="px-6 py-4">Team</th>
+                            <th class="px-6 py-4">Alliance</th>
+                            <th class="px-6 py-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        {% for assignment in assignments %}
+                        <tr class="group hover:bg-slate-800/40 transition-colors">
+                            <td class="px-6 py-4 text-sm font-medium text-slate-300">{{ assignment.match_key }}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-white">{{ assignment.team_key }}</td>
+                            <td
+                                class="px-6 py-4 text-sm font-bold {% if assignment.alliance_color == 'Red' %}text-red-500{% else %}text-blue-500{% endif %}">
+                                {{ assignment.alliance_color }}</td>
+                            <td class="px-6 py-4 text-center">
+                                <button
+                                    class="bg-primary/20 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors">Start
+                                    Scouting</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-12 text-center text-slate-500 italic">No pending assignments!
+                                Enjoy the matches.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+        <!-- Column 3: Event Schedule (Right) -->
+        <div
+            class="w-[420px] flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl flex-shrink-0">
+            <div class="p-6 border-b border-slate-800 bg-slate-900/50">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="text-lg font-bold flex items-center gap-3">
+                        <span class="material-symbols-outlined text-slate-400">calendar_month</span>
+                        Event Schedule
+                    </h3>
+                    <button
+                        class="material-symbols-outlined text-slate-500 hover:text-white transition-colors">search</button>
+                </div>
+                <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">PNW District Championship</p>
+            </div>
+            <div class="flex-1 overflow-auto custom-scrollbar">
+                <table class="w-full text-[11px] font-medium border-collapse">
+                    <thead class="sticky top-0 bg-slate-950/90 backdrop-blur-sm z-10 border-b border-slate-800">
+                        <tr class="text-slate-500 uppercase font-black tracking-tighter">
+                            <th class="px-4 py-3">#</th>
+                            <th class="px-4 py-3 text-red-500/80">Red Alliance</th>
+                            <th class="px-4 py-3 text-primary">Blue Alliance</th>
+                            <th class="px-4 py-3 text-right">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800">
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="px-4 py-3 text-slate-400 font-bold">Q43</td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1.5">
+                                    <span class="text-red-400">2910</span>
+                                    <span class="text-red-400">4488</span>
+                                    <span class="text-red-400">2046</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1.5">
+                                    <span class="text-primary font-bold">1318</span>
+                                    <span class="text-primary font-bold">2522</span>
+                                    <span class="text-primary font-bold">254</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right text-slate-500">10:45 AM</td>
+                        </tr>
+                        <tr class="bg-primary/5 border-y border-primary/20">
+                            <td class="px-4 py-3 text-white font-bold">Q44</td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1.5">
+                                    <span class="text-red-500 font-black">4911</span>
+                                    <span class="text-red-500 font-black">2930</span>
+                                    <span class="text-red-500 font-black">5803</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1.5">
+                                    <span class="text-primary font-black">3663</span>
+                                    <span class="text-primary font-black">1778</span>
+                                    <span class="text-primary font-black">3223</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right text-primary font-black">ON FIELD</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40 transition-colors">
+                            <td class="px-4 py-3 text-slate-400 font-bold">Q45</td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1.5">
+                                    <span class="text-red-400">254</span>
+                                    <span class="text-red-400">1678</span>
+                                    <span class="text-red-400">1323</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="flex gap-1.5">
+                                    <span class="text-primary">6002</span>
+                                    <span class="text-primary">2910</span>
+                                    <span class="text-primary">4414</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right text-slate-500">11:05 AM</td>
+                        </tr>
+                        <!-- Additional Rows for Data Density -->
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="px-4 py-3 text-slate-400 font-bold">Q46</td>
+                            <td class="px-4 py-3 text-red-400/80">3538, 5460, 3175</td>
+                            <td class="px-4 py-3 text-primary/80">148, 118, 1619</td>
+                            <td class="px-4 py-3 text-right text-slate-500">11:15 AM</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="px-4 py-3 text-slate-400 font-bold">Q47</td>
+                            <td class="px-4 py-3 text-red-400/80">4481, 125, 111</td>
+                            <td class="px-4 py-3 text-primary/80">27, 2481, 112</td>
+                            <td class="px-4 py-3 text-right text-slate-500">11:25 AM</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="px-4 py-3 text-slate-400 font-bold">Q48</td>
+                            <td class="px-4 py-3 text-red-400/80">67, 461, 33</td>
+                            <td class="px-4 py-3 text-primary/80">195, 225, 341</td>
+                            <td class="px-4 py-3 text-right text-slate-500">11:35 AM</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="px-4 py-3 text-slate-400 font-bold">Q49</td>
+                            <td class="px-4 py-3 text-red-400/80">3538, 5460, 3175</td>
+                            <td class="px-4 py-3 text-primary/80">148, 118, 1619</td>
+                            <td class="px-4 py-3 text-right text-slate-500">11:45 AM</td>
+                        </tr>
+                        <tr class="hover:bg-slate-800/40">
+                            <td class="px-4 py-3 text-slate-400 font-bold">Q50</td>
+                            <td class="px-4 py-3 text-red-400/80">4481, 125, 111</td>
+                            <td class="px-4 py-3 text-primary/80">27, 2481, 112</td>
+                            <td class="px-4 py-3 text-right text-slate-500">11:55 AM</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-4 bg-slate-950 border-t border-slate-800 flex justify-center">
+                <button
+                    class="text-[10px] font-black uppercase tracking-widest text-primary flex items-center gap-1 hover:underline">
+                    View Full Competition Schedule
+                    <span class="material-symbols-outlined text-sm">arrow_outward</span>
+                </button>
+            </div>
+        </div>
+    </main>
+    <!-- Bottom Action Bar / Shortcuts -->
+    <footer
+        class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-between">
+        <div class="flex gap-4">
+            <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs">keyboard</span>
+                Hotkeys: [S] Scout, [TAB] Switch View, [R] Refresh
+            </span>
+        </div>
+        <div class="flex items-center gap-4 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            <span>Battery: 84%</span>
+            <div class="h-3 w-px bg-slate-800"></div>
+            <span>Signal: Strong (5G)</span>
+        </div>
+    </footer>
+
+    <footer
+        class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix</p>
+    </footer>
+
+</body>
+
+</html>

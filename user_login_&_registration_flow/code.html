@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>FRC Scouting App - Authentication</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#0d6cf2",
+            "background-light": "#f5f7f8",
+            "background-dark": "#101722",
+          },
+          fontFamily: {
+            "display": ["Space Grotesk", "sans-serif"]
+          },
+          borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+        },
+      },
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .glass-effect {
+      background: rgba(24, 36, 52, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(49, 72, 104, 0.5);
+    }
+
+    .auth-gradient {
+      background: radial-gradient(circle at top right, rgba(13, 108, 242, 0.15), transparent),
+        radial-gradient(circle at bottom left, rgba(13, 108, 242, 0.05), transparent);
+    }
+  </style>
+</head>
+
+<body
+  class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display auth-gradient">
+  <!-- Top Navigation Bar -->
+  <nav
+    class="w-full border-b border-primary/20 bg-background-light/50 dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
+          <span class="material-symbols-outlined text-xl">precision_manufacturing</span>
+        </div>
+        <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Stan<span
+            class="text-primary">Robotix</span></h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <span
+          class="text-xs font-medium px-2 py-1 rounded bg-primary/10 text-primary border border-primary/20 uppercase tracking-widest">FRC
+          Scouting v2.4</span>
+      </div>
+    </div>
+  </nav>
+  <!-- Main Content Area -->
+  <main class="flex-grow flex items-center justify-center p-6">
+    <div class="w-full max-w-[440px]">
+      <!-- Auth Card -->
+      <div class="glass-effect rounded-xl shadow-2xl p-8 border border-white/5 relative overflow-hidden">
+        <!-- Visual Accent Line -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4 border border-primary/20">
+            <span class="material-symbols-outlined text-primary text-3xl">lock_open</span>
+          </div>
+          <h2 id="auth-title" class="text-2xl font-bold text-slate-900 dark:text-white">FRC Scouting App Login</h2>
+          <p id="auth-desc" class="text-slate-500 dark:text-slate-400 mt-2 text-sm font-light leading-relaxed">
+            Access the scouting interface to manage team match data.
+          </p>
+        </div>
+        <!-- Login Form -->
+        <form id="auth-form" class="space-y-5">
+          <div id="name-container" class="hidden">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Last Name complet</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+                <span class="material-symbols-outlined text-xl">person</span>
+              </div>
+              <input id="name-input"
+                class="w-full bg-slate-100 dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-lg py-3 pl-11 pr-4 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                placeholder="Jean Dupont" type="text" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Email</label>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+                <span class="material-symbols-outlined text-xl">mail</span>
+              </div>
+              <input id="email-input"
+                class="w-full bg-slate-100 dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-lg py-3 pl-11 pr-4 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                placeholder="votre@email.com" type="email" required />
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1.5 ml-1">
+              <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+              <a class="text-xs font-medium text-primary hover:text-primary/80 transition-colors" href="#">Password
+                oublié ?</a>
+            </div>
+            <div class="relative group">
+              <div
+                class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-primary transition-colors">
+                <span class="material-symbols-outlined text-xl">key</span>
+              </div>
+              <input id="password-input"
+                class="w-full bg-slate-100 dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-lg py-3 pl-11 pr-12 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                placeholder="••••••••" type="password" required />
+              <button
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors"
+                type="button">
+                <span class="material-symbols-outlined text-xl">visibility</span>
+              </button>
+            </div>
+          </div>
+          <div class="pt-2">
+            <button
+              class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3.5 rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group"
+              type="submit">
+              <span id="submit-text">Se Connecter</span>
+              <span
+                class="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </button>
+          </div>
+        </form>
+        <!-- Footer -->
+        <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 text-center">
+          <p id="toggle-text" class="text-sm text-slate-500 dark:text-slate-400">
+            Pas encore membre de l'équipe ?
+            <a id="toggle-auth"
+              class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Create an account</a>
+          </p>
+          <p id="error-message" class="text-red-500 text-sm mt-4 hidden"></p>
+        </div>
+      </div>
+      <!-- Visual Info Card (Below Auth) -->
+      <div class="mt-8 grid grid-cols-2 gap-4">
+        <div class="glass-effect p-4 rounded-lg flex items-start gap-3">
+          <span class="material-symbols-outlined text-primary text-xl">analytics</span>
+          <div>
+            <p class="text-xs font-bold text-slate-900 dark:text-white">Real-time Data</p>
+            <p class="text-[10px] text-slate-500">Syncing with pit servers.</p>
+          </div>
+        </div>
+        <div class="glass-effect p-4 rounded-lg flex items-start gap-3">
+          <span class="material-symbols-outlined text-primary text-xl">security</span>
+          <div>
+            <p class="text-xs font-bold text-slate-900 dark:text-white">Secure Access</p>
+            <p class="text-[10px] text-slate-500">End-to-end encrypted.</p>
+          </div>
+        </div>
+      </div>
+      <!-- App Info -->
+      <div class="mt-12 text-center opacity-40">
+        <div class="flex justify-center gap-6 mb-4">
+          <div class="size-6 text-slate-900 dark:text-white">
+            <svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z"
+                fill="currentColor"></path>
+            </svg>
+          </div>
+        </div>
+        <p class="text-[10px] uppercase tracking-widest text-slate-900 dark:text-slate-100">Designed for FRC Scouting App
+          Team 2024</p>
+      </div>
+    </div>
+  </main>
+  <!-- Background Decoration -->
+  <div class="fixed top-0 right-0 -z-10 w-1/3 h-1/2 bg-primary/5 blur-[120px] rounded-full"></div>
+  <div class="fixed bottom-0 left-0 -z-10 w-1/4 h-1/3 bg-primary/5 blur-[100px] rounded-full"></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('auth-form');
+      const toggleBtn = document.getElementById('toggle-auth');
+      const toggleText = document.getElementById('toggle-text');
+      const title = document.getElementById('auth-title');
+      const desc = document.getElementById('auth-desc');
+      const nameContainer = document.getElementById('name-container');
+      const submitText = document.getElementById('submit-text');
+      const errorMsg = document.getElementById('error-message');
+
+      const emailInput = document.getElementById('email-input');
+      const passwordInput = document.getElementById('password-input');
+      const nameInput = document.getElementById('name-input');
+
+      let isLogin = true;
+
+      toggleBtn.addEventListener('click', () => {
+        isLogin = !isLogin;
+        errorMsg.classList.add('hidden');
+        if (isLogin) {
+          title.textContent = 'FRC Scouting App Login';
+          desc.textContent = "Access the scouting interface to manage team match data.";
+          nameContainer.classList.add('hidden');
+          nameInput.removeAttribute('required');
+          submitText.textContent = 'Se Connecter';
+          toggleText.innerHTML = `Pas encore membre de l'équipe ? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Create an account</a>`;
+        } else {
+          title.textContent = 'Création de compte';
+          desc.textContent = "Rejoignez l'équipe pour collecter et analyser les performances FRC en temps réel.";
+          nameContainer.classList.remove('hidden');
+          nameInput.setAttribute('required', 'true');
+          submitText.textContent = 'Créer mon compte';
+          toggleText.innerHTML = `Déjà membre ? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Log In</a>`;
+        }
+        // re-bind listener since innerHTML changed it
+        document.getElementById('toggle-auth').addEventListener('click', toggleBtn.click.bind(toggleBtn));
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errorMsg.classList.add('hidden');
+
+        const payload = {
+          email: emailInput.value,
+          password: passwordInput.value
+        };
+        if (!isLogin) payload.name = nameInput.value;
+
+        const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            if (data.user && !data.user.team_id) {
+              window.location.href = '/onboarding';
+            } else {
+              window.location.href = '/';
+            }
+          } else {
+            errorMsg.textContent = data.error || 'Une erreur est survenue';
+            errorMsg.classList.remove('hidden');
+            errorMsg.classList.add('text-red-500');
+            errorMsg.classList.remove('text-emerald-500');
+          }
+        } catch (err) {
+          errorMsg.textContent = 'Erreur réseau';
+          errorMsg.classList.remove('hidden');
+        }
+      });
+    });
+  </script>
+
+    <footer class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix</p>
+    </footer>
+
+</body>
+
+</html>
