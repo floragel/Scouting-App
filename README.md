@@ -66,17 +66,25 @@ pip install -r backend/requirements.txt
 
 ### 4. Configure Environment Variables
 
-Create a `.env` file at the project root (or verify the existing one):
+Copy the example file and add your API key:
 
-```env
-FLASK_ENV=development
-FLASK_APP=backend/app.py
-TBA_API_KEY=your_tba_api_key_here
+```bash
+cp .env.example .env
 ```
 
-> Get your TBA API key from [thebluealliance.com/account](https://www.thebluealliance.com/account)
+Then edit `.env` and replace `your_tba_api_key_here` with your actual key from [thebluealliance.com/account](https://www.thebluealliance.com/account)
 
-### 5. Run the App
+### 5. Set Up the Database
+
+Copy the empty template database:
+
+```bash
+cp data/scouting_empty.db data/scouting.db
+```
+
+> The `scouting_empty.db` contains all tables with zero data. Your actual `scouting.db` is gitignored to protect user data.
+
+### 6. Run the App
 
 ```bash
 bash start.sh
