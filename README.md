@@ -128,7 +128,8 @@ python3 backend/promote_admin.py
 | **Match Scouting** | `/match-scout` | In-match data collection form |
 | **Pit Scouting** | `/pit-scout/<id>` | Pre-match pit inspection form with **photo upload** capabilities |
 | **Team Directory** | `/teams` | Browse all teams with stats |
-| **Analytics** | `/analytics` | Head scout performance analytics |
+| **Analytics Hub** | `/head-scout-stats`| Advanced performance metrics (SD), consistency badges, and team profiles |
+| **QR Sync (BETA)** | Multiple | Offline data transfer via QR codes (Generation in forms, Scanning in Hub) |
 | **Profile** | `/profile` | User profile & settings |
 
 ---
@@ -139,6 +140,7 @@ python3 backend/promote_admin.py
 - **Frontend:** HTML5, Vanilla JS, TailwindCSS (CDN)
 - **Database:** SQLite
 - **APIs:** The Blue Alliance (TBA) REST API, **Statbotics API** (v3)
+- **Libraries:** qrcode.js (Generation), html5-qrcode (Scanning), Chart.js
 - **Auth:** Session-based with Werkzeug password hashing
 
 ---

@@ -160,6 +160,34 @@
                     </div>
                 </div>
             </div>
+
+            {% if is_admin and user.role == 'Head Scout' %}
+            <!-- Head Scout Quick Links -->
+            <div class="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-3">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">shield_person</span>
+                    Head Scout Tools
+                </h4>
+                <a href="/head-scout-stats"
+                    class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-slate-800/80 border border-primary/10 hover:border-primary/40 transition-all group">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">analytics</span>
+                        <span class="text-sm font-bold">Analytics Hub</span>
+                    </div>
+                    <span
+                        class="material-symbols-outlined text-xs text-slate-400 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+                </a>
+                <a href="/admin-hub"
+                    class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-slate-800/80 border border-primary/10 hover:border-primary/40 transition-all group">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">manage_accounts</span>
+                        <span class="text-sm font-bold">Manage Scouts</span>
+                    </div>
+                    <span
+                        class="material-symbols-outlined text-xs text-slate-400 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+                </a>
+            </div>
+            {% endif %}
             <!-- Quick Tips/Alerts -->
             <div class="mt-auto bg-blue-500/5 border border-blue-500/20 rounded-lg p-4 flex gap-3">
                 <span class="material-symbols-outlined text-primary">info</span>

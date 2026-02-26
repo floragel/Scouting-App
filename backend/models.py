@@ -88,6 +88,32 @@ class PitScoutData(db.Model):
     
     drivetrain_type = db.Column(db.String(50))
     weight = db.Column(db.Float)
+    motor_type = db.Column(db.String(100))
+    motor_count = db.Column(db.Integer, default=4)
+    dimensions_l = db.Column(db.Float)
+    dimensions_w = db.Column(db.Float)
+    auto_leave = db.Column(db.Boolean, default=False)
+    auto_score_fuel = db.Column(db.Boolean, default=False)
+    auto_collect_fuel = db.Column(db.Boolean, default=False)
+    auto_climb_l1 = db.Column(db.Boolean, default=False)
+    
+    max_fuel_capacity = db.Column(db.Integer, default=50)
+    climb_level = db.Column(db.String(20), default='None')   # None, L1, L2, L3
+    scoring_preference = db.Column(db.String(20), default='None') # Low, High, Both
+    intake_type = db.Column(db.String(20), default='None')   # Ground, Chute, Both
+
+    # Keep auto_pickup as alias or legacy if needed
+    auto_pickup = db.Column(db.Boolean, default=False)
+    
+    # 2025/2026 early-season placeholders (to be cleaned up if unused)
+    auto_coral = db.Column(db.Boolean, default=False)
+    auto_algae = db.Column(db.Boolean, default=False)
+    
+    # Legacy/Misc fields
+    fits_under_trench = db.Column(db.Boolean, default=False)
+    target_tower_level = db.Column(db.String(50), default='None')
+    fuel_capacity = db.Column(db.Integer, default=0)
+    
     notes = db.Column(db.Text)
     photo_path = db.Column(db.String(255))
     
@@ -105,6 +131,21 @@ class PitScoutData(db.Model):
             'event_id': self.event_id,
             'drivetrain_type': self.drivetrain_type,
             'weight': self.weight,
+            'motor_type': self.motor_type,
+            'motor_count': self.motor_count,
+            'dimensions_l': self.dimensions_l,
+            'dimensions_w': self.dimensions_w,
+            'auto_leave': self.auto_leave,
+            'auto_score_fuel': self.auto_score_fuel,
+            'auto_collect_fuel': self.auto_collect_fuel,
+            'auto_climb_l1': self.auto_climb_l1,
+            'max_fuel_capacity': self.max_fuel_capacity,
+            'climb_level': self.climb_level,
+            'scoring_preference': self.scoring_preference,
+            'intake_type': self.intake_type,
+            'fits_under_trench': self.fits_under_trench,
+            'target_tower_level': self.target_tower_level,
+            'fuel_capacity': self.fuel_capacity,
             'notes': self.notes,
             'photo_path': self.photo_path
         }
@@ -117,21 +158,26 @@ class MatchScoutData(db.Model):
     match_number = db.Column(db.Integer, nullable=False)
     
     # Auto
-    auto_points = db.Column(db.Integer, default=0)
-    auto_tasks = db.Column(db.Integer, default=0)
+    auto_start_balls = db.Column(db.Integer, default=0)     # balles internes au debut
+    auto_balls_shot = db.Column(db.Integer, default=0)      # balles total shootées (auto)
+    auto_balls_scored = db.Column(db.Integer, default=0)    # balles qui rentrent (auto)
+    auto_climb = db.Column(db.String(50), default='None')   # level climb auto
     
-    # Teleop
-    teleop_points = db.Column(db.Integer, default=0)
-    teleop_tasks = db.Column(db.Integer, default=0)
+    # Teleop / Match
+    teleop_intake_speed = db.Column(db.Integer, default=3)  # Numerical 0-5
+    teleop_shooter_accuracy = db.Column(db.Integer, default=3) # Numerical 0-5
+    teleop_balls_shot = db.Column(db.Integer, default=0)    # total balles shoot (teleop)
+    passes_bump = db.Column(db.Boolean, default=False)      # si il passe la bump
+    passes_trench = db.Column(db.Boolean, default=False)    # si il passe la trench
     
     # Endgame
-    climb_status = db.Column(db.String(50))
+    endgame_climb = db.Column(db.String(50), default='None') # L1 / L2 / L3
     
     # General
     notes = db.Column(db.Text)
     
     # Scouter Tracking
-    scouter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # made nullable for backwards compatibility
+    scouter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     
     # Ensure unique match data per team per match per event
     __table_args__ = (UniqueConstraint('team_id', 'event_id', 'match_number', name='_team_event_match_uc'),)
@@ -147,11 +193,16 @@ class MatchScoutData(db.Model):
             'team_id': self.team_id,
             'event_id': self.event_id,
             'match_number': self.match_number,
-            'auto_points': self.auto_points,
-            'auto_tasks': self.auto_tasks,
-            'teleop_points': self.teleop_points,
-            'teleop_tasks': self.teleop_tasks,
-            'climb_status': self.climb_status,
+            'auto_start_balls': self.auto_start_balls,
+            'auto_balls_shot': self.auto_balls_shot,
+            'auto_balls_scored': self.auto_balls_scored,
+            'auto_climb': self.auto_climb,
+            'teleop_intake_speed': self.teleop_intake_speed,
+            'teleop_shooter_accuracy': self.teleop_shooter_accuracy,
+            'teleop_balls_shot': self.teleop_balls_shot,
+            'passes_bump': self.passes_bump,
+            'passes_trench': self.passes_trench,
+            'endgame_climb': self.endgame_climb,
             'notes': self.notes,
             'scouter_id': self.scouter_id
         }

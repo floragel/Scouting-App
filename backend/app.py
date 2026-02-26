@@ -1,6 +1,8 @@
-import os, secrets, string
+import os, secrets, string, tempfile
 from dotenv import load_dotenv
 load_dotenv()
+import whisper
+from pydub import AudioSegment
 from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, abort, render_template_string
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,6 +12,49 @@ import frc_api
 from frc_api import TBAHandler
 # Initialize the Flask application
 app = Flask(__name__)
+
+# Lazy load whisper model
+whisper_model = None
+
+def get_whisper_model():
+    global whisper_model
+    if whisper_model is None:
+        print("Loading Whisper model...")
+        # Using base model for balance of speed and accuracy
+        whisper_model = whisper.load_model("base")
+    return whisper_model
+
+@app.route('/api/voice-transcribe', methods=['POST'])
+def voice_transcribe():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
+    
+    audio_file = request.files['audio']
+    if audio_file.filename == '':
+        return jsonify({'error': 'No audio file selected'}), 400
+
+    # Save to a temporary file
+    with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as temp_audio:
+        audio_file.save(temp_audio.name)
+        temp_path = temp_audio.name
+
+    try:
+        # Load model and transcribe
+        model = get_whisper_model()
+        result = model.transcribe(temp_path)
+        transcription = result.get('text', '').strip()
+
+        return jsonify({'transcription': transcription})
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        return jsonify({'error': 'Failed to transcribe audio', 'details': str(e)}), 500
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
 
 # Configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -188,7 +233,7 @@ def check_admin():
     if 'user_id' not in session:
         return None, jsonify({'error': 'Not logged in'}), 401
     user = User.query.get(session['user_id'])
-    if not user or user.role != 'Admin' or not user.team_id:
+    if not user or user.role not in ['Admin', 'Head Scout'] or not user.team_id:
         return None, jsonify({'error': 'Unauthorized'}), 403
     return user, None, None
 
@@ -661,15 +706,23 @@ def get_event_matches_api():
     valid_matches = [m for m in em if m.get('time')]
     valid_matches.sort(key=lambda x: x['time'])
     
+    all_count = len(valid_matches)
+    
     if not request.args.get('show_all'):
         import time
         current_timestamp = int(time.time())
-        valid_matches = [m for m in valid_matches if m['time'] > current_timestamp]
+        upcoming = [m for m in valid_matches if m['time'] > current_timestamp]
+        
+        # If no upcoming matches, fall back to showing ALL matches
+        # so the admin assignment dropdown is never empty
+        if upcoming:
+            valid_matches = upcoming
+        # else: keep valid_matches as-is (all matches)
         
     return jsonify({
         'matches': valid_matches,
-        'total': len(em),
-        'filtered': len(valid_matches) < len(em)
+        'total': all_count,
+        'filtered': len(valid_matches) < all_count
     })
 
 @app.route('/api/team/next-matches', methods=['GET'])
@@ -1165,25 +1218,21 @@ def submit_match_scout():
         match_num_str = assignment.match_key.split('_')[1]
         match_number = int(''.join(filter(str.isdigit, match_num_str))) # e.g. qm42 -> 42
         
-        # Calculate points based on 2024 Crescendo rules (or just use raw data)
-        # Note: In a real app, adjust points logic based on game rules
-        auto_points = int(data.get('auto_speaker', 0)) * 5 + int(data.get('auto_amp', 0)) * 2
-        teleop_points = int(data.get('teleop_speaker', 0)) * 2 + int(data.get('teleop_amp', 0)) * 1 + int(data.get('teleop_amplified', 0)) * 5
-        
-        # Check if they left start area (if checked, e.g. +2 points)
-        if data.get('left_start'):
-            auto_points += 2
-            
-        # Create match data
+        # Extract 2026 Fiche Scout data
         match_data = MatchScoutData(
             team_id=team.id,
             event_id=event.id,
             match_number=match_number,
-            auto_points=auto_points,
-            auto_tasks=int(data.get('auto_speaker', 0)) + int(data.get('auto_amp', 0)),
-            teleop_points=teleop_points,
-            teleop_tasks=int(data.get('teleop_speaker', 0)) + int(data.get('teleop_amp', 0)) + int(data.get('teleop_amplified', 0)),
-            climb_status=data.get('climb_status', 'None'),
+            auto_start_balls=int(data.get('auto_start_balls', 0)),
+            auto_balls_shot=int(data.get('auto_balls_shot', 0)),
+            auto_balls_scored=int(data.get('auto_balls_scored', 0)),
+            auto_climb=data.get('auto_climb', 'None'),
+            teleop_intake_speed=int(data.get('teleop_intake_speed', 3)),
+            teleop_shooter_accuracy=int(data.get('teleop_shooter_accuracy', 3)),
+            teleop_balls_shot=int(data.get('teleop_balls_shot', 0)),
+            passes_bump=data.get('passes_bump') == True or data.get('passes_bump') == 'true',
+            passes_trench=data.get('passes_trench') == True or data.get('passes_trench') == 'true',
+            endgame_climb=data.get('endgame_climb', 'None'),
             notes=data.get('notes', ''),
             scouter_id=session['user_id']
         )
@@ -1264,22 +1313,29 @@ def submit_pit_scout():
                 file.save(os.path.join(upload_path, unique_filename))
                 photo_path = f"/static/uploads/pit_photos/{unique_filename}"
                 
-        # Format additional form specs into notes
-        motor = data.get('motor_type', '')
-        auto_parts = []
-        if data.get('auto_leave') == 'true': auto_parts.append('Leave')
-        if data.get('auto_coral') == 'true': auto_parts.append('Score Coral')
-        if data.get('auto_algae') == 'true': auto_parts.append('Score Algae')
-        if data.get('auto_pickup') == 'true': auto_parts.append('Pick up')
-        
-        base_notes = data.get('notes', '').strip()
-        structured_notes = base_notes
-        if motor or auto_parts:
-            structured_notes += f"\n\n--- Specs ---\nMotor: {motor}\nAuto: {', '.join(auto_parts)}"
-            
-        pit_data.drivetrain_type = data.get('drivetrain_type', '')
+        # Update 2026 Rebuilt fields
+        pit_data.drivetrain_type = data.get('drivetrain_type', 'Swerve')
         pit_data.weight = float(data.get('weight', 0) if data.get('weight') else 0)
-        pit_data.notes = structured_notes.strip()
+        pit_data.motor_type = data.get('motor_type', 'Kraken X60')
+        pit_data.motor_count = int(data.get('motor_count', 4) if data.get('motor_count') else 4)
+        pit_data.dimensions_l = float(data.get('dim_l', 0) if data.get('dim_l') else 0)
+        pit_data.dimensions_w = float(data.get('dim_w', 0) if data.get('dim_w') else 0)
+        
+        # 2026 Rebuilt Specifics
+        pit_data.max_fuel_capacity = int(data.get('max_fuel', 50) if data.get('max_fuel') else 50)
+        pit_data.climb_level = data.get('climb_level', 'None')
+        pit_data.scoring_preference = data.get('scoring_pref', 'Both')
+        pit_data.intake_type = data.get('intake_type', 'Both')
+
+        # Autonomous Compliance
+        pit_data.auto_leave = (data.get('auto_leave') == 'true')
+        pit_data.auto_score_fuel = (data.get('auto_score_fuel') == 'true')
+        pit_data.auto_collect_fuel = (data.get('auto_collect_fuel') == 'true')
+        pit_data.auto_climb_l1 = (data.get('auto_climb_l1') == 'true')
+
+        # Legacy fields
+        pit_data.auto_pickup = (data.get('auto_pickup') == 'true')
+        pit_data.notes = data.get('notes', '').strip()
         if photo_path:
             pit_data.photo_path = photo_path
         
@@ -1304,6 +1360,244 @@ def pit_scout(assignment_id):
     template_path = os.path.join(basedir, '../frontend/pit_scouting_form/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user, assignment=assignment)
+
+@app.route('/head-scout-stats')
+def head_scout_analytics_hub():
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    user = User.query.get(session['user_id'])
+    # Strictly Head Scout only, Admins are blocked from stats as requested
+    if not user or user.role != 'Head Scout':
+        return "Unauthorized: High-level analytics are reserved for Head Scouts.", 403
+        
+    # Get all events for season filtering
+    events = Event.query.all()
+    # Get all pit data and match data
+    pit_data = PitScoutData.query.all()
+    match_data = MatchScoutData.query.all()
+    
+    # Calculate Team Performance Averages
+    team_averages = {}
+    
+    # Mapping for string labels found in historical/imported data
+    VAL_MAP = {
+        'Very Slow': 1.0, 'Slow': 2.0, 'Medium': 3.0, 'Fast': 4.0, 'Very Fast': 5.0,
+        'None': 0.0, 'N/A': 0.0
+    }
+
+    def to_num(val, default):
+        if val is None: return float(default)
+        if isinstance(val, (int, float)): return float(val)
+        s = str(val).strip()
+        if not s: return float(default)
+        if s in VAL_MAP: return float(VAL_MAP[s])
+        try: return float(s)
+        except (ValueError, TypeError): return float(default)
+
+    # Dictionary to store accuracy lists for SD calculation
+    accuracy_lists = {}
+
+    for m in match_data:
+        t_num = m.team.team_number if (m.team and m.team.team_number) else (m.team_id if m.team_id else '?')
+        t_id = f"frc{t_num}" if str(t_num).isdigit() else f"team_{t_num}"
+        
+        if t_id not in team_averages:
+            team_averages[t_id] = {
+                'team_number': t_num,
+                'match_count': 0,
+                'auto_balls_scored': 0.0,
+                'teleop_balls_shot': 0.0,
+                'teleop_intake_speed': 0.0,
+                'teleop_shooter_accuracy': 0.0,
+                'climb_count': 0,
+                'l3_climb_count': 0,
+                'matches': [] # List of match summaries
+            }
+            accuracy_lists[t_id] = []
+        
+        stats = team_averages[t_id]
+        stats['match_count'] += 1
+        
+        acc = to_num(m.teleop_shooter_accuracy, 3.0)
+        accuracy_lists[t_id].append(acc)
+        
+        stats['auto_balls_scored'] += to_num(m.auto_balls_scored, 0.0)
+        stats['teleop_balls_shot'] += to_num(m.teleop_balls_shot, 0.0)
+        stats['teleop_intake_speed'] += to_num(m.teleop_intake_speed, 3.0)
+        stats['teleop_shooter_accuracy'] += acc
+        
+        stats['matches'].append({
+            'number': m.match_number,
+            'auto': to_num(m.auto_balls_scored, 0),
+            'tele': to_num(m.teleop_balls_shot, 0),
+            'climb': m.endgame_climb or 'None'
+        })
+        
+        c_status = str(m.endgame_climb).strip() if m.endgame_climb else 'None'
+        if c_status != 'None':
+            stats['climb_count'] += 1
+            if c_status == 'L3':
+                stats['l3_climb_count'] += 1
+
+    # Link Pit Data
+    for p in pit_data:
+        t_id = f"frc{p.team_id}"
+        if t_id in team_averages:
+            team_averages[t_id]['pit'] = {
+                'drivetrain': p.drivetrain_type,
+                'motors': f"{p.motor_type} ({p.motor_count})",
+                'weight': p.weight,
+                'climb_level': p.climb_level
+            }
+
+    import math
+    def calculate_sd(data):
+        if len(data) < 2: return 0.0
+        mean = sum(data) / len(data)
+        variance = sum((x - mean) ** 2 for x in data) / (len(data) - 1)
+        return round(math.sqrt(variance), 2)
+
+    # Compute final averages
+    for t_id, stats in team_averages.items():
+        count = int(stats['match_count'])
+        if count > 0:
+            stats['auto_balls_avg'] = round(float(stats['auto_balls_scored']) / count, 2)
+            stats['teleop_balls_avg'] = round(float(stats['teleop_balls_shot']) / count, 2)
+            stats['intake_speed_avg'] = round(float(stats['teleop_intake_speed']) / count, 2)
+            stats['accuracy_avg'] = round(float(stats['teleop_shooter_accuracy']) / count, 2)
+            stats['accuracy_sd'] = calculate_sd(accuracy_lists[t_id])
+            stats['climb_rate'] = round((float(stats['climb_count']) / count) * 100, 1)
+            stats['l3_rate'] = round((float(stats['l3_climb_count']) / count) * 100, 1)
+        else:
+            stats['auto_balls_avg'] = 0.0
+            stats['teleop_balls_avg'] = 0.0
+            stats['intake_speed_avg'] = 0.0
+            stats['accuracy_avg'] = 0.0
+            stats['accuracy_sd'] = 0.0
+            stats['climb_rate'] = 0.0
+            stats['l3_rate'] = 0.0
+
+    # We'll pass the data as JSON to the template for Chart.js
+    import json
+    template_path = os.path.join(basedir, '../frontend/head_scout_analytics_hub/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(),
+            user=user,
+            events=events,
+            pit_data_json=json.dumps([p.to_dict() for p in pit_data]),
+            match_data_json=json.dumps([m.to_dict() for m in match_data]),
+            team_averages_json=json.dumps(team_averages)
+        )
+
+@app.route('/api/import/scout-data', methods=['POST'])
+def import_scout_data():
+    user, err_resp, err_code = check_admin()
+    if err_resp: return err_resp, err_code
+    
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+        
+    file = request.files['file']
+    if not file or not file.filename.endswith('.json'):
+        return jsonify({'error': 'Invalid file type. Please upload a .json file.'}), 400
+        
+    try:
+        import json
+        data = json.load(file)
+        
+        # Determine if it's Pit or Match data based on metadata
+        metadata = data.get('metadata', {})
+        team_key = metadata.get('team_key')
+        
+        if not team_key:
+            return jsonify({'error': 'Invalid JSON: Missing team_key in metadata'}), 400
+            
+        team = Team.query.filter_by(tba_key=team_key).first()
+        if not team:
+            # Try by team number
+            team_number = int(team_key.replace('frc', ''))
+            team = Team.query.filter_by(team_number=team_number).first()
+            
+        if not team:
+            return jsonify({'error': f'Team {team_key} not found in database'}), 404
+
+        # Assume current event if not specified
+        tba = TBAHandler()
+        team_status = tba.get_team_status(HOME_TEAM_NUMBER)
+        event_key = metadata.get('event_key') or (team_status.get('event_key') if team_status else None)
+        
+        if not event_key:
+            return jsonify({'error': 'No event context found for import'}), 400
+            
+        event = Event.query.filter_by(tba_key=event_key).first()
+        if not event:
+            return jsonify({'error': f'Event {event_key} not found in database'}), 404
+
+        # --- IMPORT LOGIC ---
+        if 'technical_specs' in data: # It's Pit Data
+            existing = PitScoutData.query.filter_by(team_id=team.id, event_id=event.id).first()
+            if not existing:
+                existing = PitScoutData(team_id=team.id, event_id=event.id)
+                db.session.add(existing)
+            
+            specs = data.get('technical_specs', {})
+            dims = specs.get('dimensions', {})
+            compliance = data.get('game_compliance', {})
+            auto = data.get('autonomous', {})
+            analysis = data.get('analysis', {})
+            
+            existing.drivetrain_type = specs.get('drivetrain', 'Swerve')
+            existing.motor_type = specs.get('motor_type', 'Kraken X60')
+            existing.motor_count = specs.get('motor_count', 4)
+            existing.weight = specs.get('weight_lbs', 0)
+            existing.dimensions_l = dims.get('length_in', 0)
+            existing.dimensions_w = dims.get('width_in', 0)
+            existing.max_fuel_capacity = compliance.get('max_fuel_capacity', 50)
+            existing.climb_level = compliance.get('climb_level', 'None')
+            existing.intake_type = compliance.get('intake_type', 'Both')
+            existing.scoring_preference = compliance.get('scoring_preference', 'Both')
+            existing.auto_leave = auto.get('leave_starting_line', False)
+            existing.auto_score_fuel = auto.get('score_fuel_hub', False)
+            existing.auto_collect_fuel = auto.get('collect_extra_fuel', False)
+            existing.auto_climb_l1 = auto.get('climb_tower_l1', False)
+            existing.notes = analysis.get('notes', '')
+            
+        elif 'match_metrics' in data or 'teleop' in data: # It's Match Data
+            match_key = metadata.get('match_key', 'qm0')
+            match_number = int(match_key.split('_')[-1].replace('qm', '').replace('sf', '').replace('f', '') or 0)
+            
+            existing = MatchScoutData.query.filter_by(team_id=team.id, event_id=event.id, match_number=match_number).first()
+            if not existing:
+                existing = MatchScoutData(team_id=team.id, event_id=event.id, match_number=match_number)
+                db.session.add(existing)
+                
+            auto = data.get('autonomous', {})
+            teleop = data.get('teleop', {})
+            metrics = teleop.get('metrics', {})
+            obstacles = teleop.get('obstacles', {})
+            endgame = data.get('endgame', {})
+            
+            existing.auto_start_balls = auto.get('starting_balls', 0)
+            existing.auto_balls_shot = auto.get('total_balls_shot', 0)
+            existing.auto_balls_scored = auto.get('balls_scored', 0)
+            existing.auto_climb = auto.get('climb_level', 'None')
+            existing.teleop_intake_speed = metrics.get('intake_speed', 3)
+            existing.teleop_shooter_accuracy = metrics.get('shooter_accuracy', 3)
+            existing.teleop_balls_shot = teleop.get('total_balls_shot', 0)
+            existing.passes_bump = obstacles.get('passes_bump', False)
+            existing.passes_trench = obstacles.get('passes_trench', False)
+            existing.endgame_climb = endgame.get('climb_level', 'None')
+            existing.notes = data.get('notes', '')
+            existing.scouter_id = metadata.get('scout_id') or metadata.get('scouter_id')
+
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'Successfully imported data for Team {team_key}'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Import error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/teams-dir')
 def teams_dir():

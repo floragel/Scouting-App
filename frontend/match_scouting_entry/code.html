@@ -19,6 +19,8 @@
         rel="stylesheet" />
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- Theme Config -->
     <script id="tailwind-config">
         tailwind.config = {
@@ -125,6 +127,11 @@
             </div>
         </div>
         <div class="flex gap-3">
+            <button onclick="exportToQR()"
+                class="flex items-center justify-center gap-2 px-4 rounded-lg h-10 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-bold text-sm">
+                <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
+                <span class="hidden sm:inline">QR Sync</span>
+            </button>
             <button
                 class="flex items-center justify-center rounded-lg size-10 bg-slate-100 dark:bg-[#223249] text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-[#314868] transition-colors">
                 <span class="material-symbols-outlined">settings</span>
@@ -158,201 +165,202 @@
                 </div>
                 <div
                     class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6">
-                    <!-- Starting Position -->
-                    <div>
-                        <label
-                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Start
-                            Position</label>
-                        <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-[#101823] p-1 rounded-lg">
-                            <label class="cursor-pointer">
-                                <input class="peer sr-only" name="startPos" type="radio" value="Left" />
+                    <!-- Ball Tracking Steppers -->
+                    <div class="space-y-6">
+                        <!-- Starting Balls -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Starting Internal
+                                Balls</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button" data-field="auto_start_balls" data-action="minus">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
                                 <div
-                                    class="text-center py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-[#223249] peer-checked:text-primary peer-checked:shadow-sm transition-all">
-                                    Left</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input checked="" class="peer sr-only" name="startPos" type="radio" value="Center" />
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span class="text-2xl font-bold font-mono" id="val-auto_start_balls">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button" data-field="auto_start_balls" data-action="plus">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Total Shot -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Total Balls Shot</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button" data-field="auto_balls_shot" data-action="minus">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
                                 <div
-                                    class="text-center py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-[#223249] peer-checked:text-primary peer-checked:shadow-sm transition-all">
-                                    Center</div>
-                            </label>
-                            <label class="cursor-pointer">
-                                <input class="peer sr-only" name="startPos" type="radio" value="Right" />
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span class="text-2xl font-bold font-mono" id="val-auto_balls_shot">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button" data-field="auto_balls_shot" data-action="plus">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Balls Scored -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Balls Scored</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button" data-field="auto_balls_scored" data-action="minus">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
                                 <div
-                                    class="text-center py-2 rounded-md text-sm font-medium text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-[#223249] peer-checked:text-primary peer-checked:shadow-sm transition-all">
-                                    Right</div>
-                            </label>
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span class="text-2xl font-bold font-mono" id="val-auto_balls_scored">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button" data-field="auto_balls_scored" data-action="plus">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <!-- Leave Checkbox -->
-                    <label
-                        class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823]/50 cursor-pointer hover:border-primary/50 transition-colors group">
-                        <input
-                            class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent group-hover:border-primary transition-colors"
-                            type="checkbox" />
-                        <span class="ml-3 font-medium text-slate-700 dark:text-slate-200">Leave Starting Zone</span>
-                    </label>
+
                     <div class="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
-                    <!-- Auto Scoring Steppers -->
-                    <div class="space-y-5">
-                        <!-- Speaker -->
-                        <div class="flex flex-col gap-2">
-                            <div class="flex justify-between items-end">
-                                <label class="text-sm font-bold text-slate-700 dark:text-white">Speaker Notes</label>
-                                <span class="text-xs text-primary font-medium">5 pts</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <button id="auto-speaker-minus"
-                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
-                                    type="button">
-                                    <span class="material-symbols-outlined">remove</span>
-                                </button>
+
+                    <!-- Auto Climb -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Level
+                            Climb Auto</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="None" checked />
                                 <div
-                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                    <span id="auto-speaker-val" class="text-2xl font-bold font-mono">0</span>
-                                </div>
-                                <button id="auto-speaker-plus"
-                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
-                                    type="button">
-                                    <span class="material-symbols-outlined">add</span>
-                                </button>
-                            </div>
-                        </div>
-                        <!-- Amp -->
-                        <div class="flex flex-col gap-2">
-                            <div class="flex justify-between items-end">
-                                <label class="text-sm font-bold text-slate-700 dark:text-white">Amp Notes</label>
-                                <span class="text-xs text-primary font-medium">2 pts</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <button id="auto-speaker-minus"
-                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
-                                    type="button">
-                                    <span class="material-symbols-outlined">remove</span>
-                                </button>
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    None</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="L1" />
                                 <div
-                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                    <span id="auto-amp-val"
-                                        class="text-2xl font-bold font-mono text-slate-500 dark:text-slate-500">0</span>
-                                </div>
-                                <button id="auto-speaker-plus"
-                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
-                                    type="button">
-                                    <span class="material-symbols-outlined">add</span>
-                                </button>
-                            </div>
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    L1</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="L2" />
+                                <div
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    L2</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="L3" />
+                                <div
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    L3</div>
+                            </label>
                         </div>
                     </div>
                 </div>
             </section>
-            <!-- COLUMN 2: TELEOP -->
+
+            <!-- COLUMN 2: TELEOP / MATCH -->
             <section class="flex flex-col gap-4">
                 <div class="flex items-center gap-2 mb-2">
                     <span class="material-symbols-outlined text-primary">sports_esports</span>
-                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Teleop</h2>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Teleop / Match</h2>
                 </div>
                 <div
                     class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6 h-full">
-                    <!-- Scoring Steppers -->
-                    <div class="space-y-6">
-                        <!-- Speaker -->
-                        <div class="flex flex-col gap-2">
-                            <div class="flex justify-between items-end">
-                                <label class="text-sm font-bold text-slate-700 dark:text-white">Speaker Notes</label>
-                                <span class="text-xs text-primary font-medium">2 pts</span>
+                    <!-- Technical Performance (Sliders) -->
+                    <div class="space-y-8">
+                        <!-- Intake Speed Slider -->
+                        <div class="flex flex-col gap-3">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Intake
+                                    Speed</label>
+                                <span class="text-lg font-bold text-primary" id="val-intake-speed">3</span>
                             </div>
+                            <input type="range" name="intake_speed" min="1" max="5" value="3"
+                                class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                                oninput="document.getElementById('val-intake-speed').innerText = this.value">
+                            <div class="flex justify-between text-[10px] text-slate-400 uppercase font-bold px-1">
+                                <span>Slow</span>
+                                <span>Fast</span>
+                            </div>
+                        </div>
+
+                        <!-- Shooter Accuracy Slider -->
+                        <div class="flex flex-col gap-3">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Shooter
+                                    Accuracy</label>
+                                <span class="text-lg font-bold text-primary" id="val-shooter-accuracy">3</span>
+                            </div>
+                            <input type="range" name="shooter_accuracy" min="1" max="5" value="3"
+                                class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                                oninput="document.getElementById('val-shooter-accuracy').innerText = this.value">
+                            <div class="flex justify-between text-[10px] text-slate-400 uppercase font-bold px-1">
+                                <span>Inaccurate</span>
+                                <span>Accurate</span>
+                            </div>
+                        </div>
+
+                        <!-- Obstacles / Mobility -->
+                        <div class="pt-2">
+                            <label
+                                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 block">Obstacles /
+                                Mobility</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label
+                                    class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823]/50 cursor-pointer hover:border-primary/50 transition-colors group">
+                                    <input type="checkbox" name="passes_bump"
+                                        class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent" />
+                                    <span class="ml-3 font-bold text-xs text-slate-700 dark:text-slate-200">Passes
+                                        Bump</span>
+                                </label>
+                                <label
+                                    class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823]/50 cursor-pointer hover:border-primary/50 transition-colors group">
+                                    <input type="checkbox" name="passes_trench"
+                                        class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent" />
+                                    <span class="ml-3 font-bold text-xs text-slate-700 dark:text-slate-200">Passes
+                                        Trench</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Teleop Balls Shot -->
+                        <div class="flex flex-col gap-2 pt-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Total Balls Shot
+                                (Teleop)</label>
                             <div class="flex items-center gap-3">
                                 <button
                                     class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
-                                    type="button">
+                                    type="button" data-field="teleop_balls_shot" data-action="minus">
                                     <span class="material-symbols-outlined">remove</span>
                                 </button>
                                 <div
                                     class="flex-1 bg-slate-100 dark:bg-[#101823] h-14 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 relative overflow-hidden">
                                     <div class="absolute inset-0 bg-primary/5"></div>
-                                    <span class="text-3xl font-bold font-mono text-primary">5</span>
+                                    <span class="text-3xl font-bold font-mono text-primary"
+                                        id="val-teleop_balls_shot">0</span>
                                 </div>
                                 <button
                                     class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
-                                    type="button">
+                                    type="button" data-field="teleop_balls_shot" data-action="plus">
                                     <span class="material-symbols-outlined text-3xl">add</span>
                                 </button>
                             </div>
-                        </div>
-                        <!-- Amp -->
-                        <div class="flex flex-col gap-2">
-                            <div class="flex justify-between items-end">
-                                <label class="text-sm font-bold text-slate-700 dark:text-white">Amp Notes</label>
-                                <span class="text-xs text-primary font-medium">1 pt</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <button
-                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
-                                    type="button">
-                                    <span class="material-symbols-outlined">remove</span>
-                                </button>
-                                <div
-                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-14 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                    <span
-                                        class="text-3xl font-bold font-mono text-slate-500 dark:text-slate-400">1</span>
-                                </div>
-                                <button
-                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
-                                    type="button">
-                                    <span class="material-symbols-outlined text-3xl">add</span>
-                                </button>
-                            </div>
-                        </div>
-                        <!-- Amplified Speaker -->
-                        <div class="flex flex-col gap-2">
-                            <div class="flex justify-between items-end">
-                                <label class="text-sm font-bold text-purple-400">Amplified Speaker</label>
-                                <span class="text-xs text-purple-400 font-medium">5 pts</span>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <button id="auto-speaker-minus"
-                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
-                                    type="button">
-                                    <span class="material-symbols-outlined">remove</span>
-                                </button>
-                                <div
-                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-purple-900/30">
-                                    <span class="text-2xl font-bold font-mono text-purple-400">0</span>
-                                </div>
-                                <button
-                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-purple-600 text-white shadow-lg shadow-purple-600/20 hover:bg-purple-500"
-                                    type="button">
-                                    <span class="material-symbols-outlined">add</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="h-px bg-slate-200 dark:bg-slate-700 my-2"></div>
-                    <!-- Additional Teleop Data -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="flex flex-col gap-2 cursor-pointer group">
-                            <span class="text-xs uppercase font-bold text-slate-500">Coop Bonus</span>
-                            <div
-                                class="h-12 border border-slate-200 dark:border-slate-600 rounded-lg flex items-center px-3 gap-3 bg-slate-50 dark:bg-[#101823] group-hover:border-primary/50 transition-colors">
-                                <input
-                                    class="w-5 h-5 rounded border-slate-300 dark:border-slate-500 text-primary focus:ring-primary bg-transparent"
-                                    type="checkbox" />
-                                <span class="font-medium text-sm">Cooperation</span>
-                            </div>
-                        </label>
-                        <div class="flex flex-col gap-2">
-                            <span class="text-xs uppercase font-bold text-slate-500">Pickup</span>
-                            <select
-                                class="h-12 w-full rounded-lg border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-[#101823] text-slate-900 dark:text-white text-sm focus:border-primary focus:ring-primary">
-                                <option>Both</option>
-                                <option>Ground Only</option>
-                                <option>Source Only</option>
-                                <option>None</option>
-                            </select>
                         </div>
                     </div>
                 </div>
             </section>
+
             <!-- COLUMN 3: ENDGAME & SUMMARY -->
             <section class="flex flex-col gap-4">
                 <div class="flex items-center gap-2 mb-2">
@@ -364,100 +372,60 @@
                     <!-- Climb Status -->
                     <div>
                         <label
-                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Stage
-                            Result</label>
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Level
+                            Climb Endgame</label>
                         <div class="flex flex-col gap-2">
                             <label
                                 class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
-                                <input class="sr-only" name="stageResult" type="radio" value="None" />
+                                <input class="sr-only" name="endgameClimb" type="radio" value="None" checked />
                                 <span class="material-symbols-outlined text-slate-400 mr-3">close</span>
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">None /
-                                        Failed</span>
-                                </div>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">None / Failed</span>
                             </label>
                             <label
                                 class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
-                                <input class="sr-only" name="stageResult" type="radio" value="Parked" />
-                                <span class="material-symbols-outlined text-blue-400 mr-3">local_parking</span>
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Parked</span>
-                                    <span class="text-xs text-slate-500">1 pt</span>
-                                </div>
+                                <input class="sr-only" name="endgameClimb" type="radio" value="L1" />
+                                <span class="material-symbols-outlined text-yellow-500 mr-3">filter_1</span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">L1</span>
                             </label>
                             <label
                                 class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
-                                <input checked="" class="sr-only" name="stageResult" type="radio" value="Onstage" />
-                                <span class="material-symbols-outlined text-green-400 mr-3">upload</span>
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Onstage</span>
-                                    <span class="text-xs text-slate-500">3 pts</span>
-                                </div>
+                                <input class="sr-only" name="endgameClimb" type="radio" value="L2" />
+                                <span class="material-symbols-outlined text-orange-500 mr-3">filter_2</span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">L2</span>
                             </label>
                             <label
                                 class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
-                                <input class="sr-only" name="stageResult" type="radio" value="Harmony" />
-                                <span class="material-symbols-outlined text-purple-400 mr-3">group_add</span>
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-sm text-slate-700 dark:text-slate-200">Harmony (2
-                                        Robots)</span>
-                                    <span class="text-xs text-slate-500">5 pts</span>
-                                </div>
+                                <input class="sr-only" name="endgameClimb" type="radio" value="L3" />
+                                <span class="material-symbols-outlined text-red-500 mr-3">filter_3</span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">L3</span>
                             </label>
                         </div>
                     </div>
-                    <!-- Trap & Spotlight -->
-                    <div class="grid grid-cols-2 gap-4">
-                        <label
-                            class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:border-primary/50 transition-colors group">
-                            <input
-                                class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent group-hover:border-primary transition-colors"
-                                type="checkbox" />
-                            <span class="ml-2 font-medium text-sm text-slate-700 dark:text-slate-200">Trap Note</span>
-                        </label>
-                        <label
-                            class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:border-primary/50 transition-colors group">
-                            <input
-                                class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent group-hover:border-primary transition-colors"
-                                type="checkbox" />
-                            <span class="ml-2 font-medium text-sm text-slate-700 dark:text-slate-200">Spotlight</span>
-                        </label>
-                    </div>
                 </div>
+
                 <!-- Footer Area (Notes & Submit) -->
                 <div
                     class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4 mt-auto">
-                    <!-- Quick Tags -->
                     <div>
-                        <span class="text-xs font-bold text-slate-500 uppercase mb-2 block">Quick Tags</span>
-                        <div class="flex flex-wrap gap-2">
-                            <button
-                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all"
-                                type="button">Defensive</button>
-                            <button
-                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
-                                type="button">Broke Down</button>
-                            <button
-                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-slate-600 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-all"
-                                type="button">Tipped</button>
-                            <button
-                                class="px-3 py-1.5 rounded-full text-xs font-bold border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all"
-                                type="button">Fast Cycle</button>
-                        </div>
+                        <span class="text-xs font-bold text-slate-500 uppercase mb-2 block">Additional Notes</span>
+                        <textarea id="notesBoard"
+                            class="w-full h-24 rounded-lg bg-slate-50 dark:bg-[#101823] border-slate-200 dark:border-slate-700 text-sm p-3 focus:ring-primary focus:border-primary resize-none dark:text-white dark:placeholder-slate-500"
+                            placeholder="Observations on shots, defense, or breakdowns..."></textarea>
                     </div>
-                    <!-- Text Area -->
-                    <div>
-                        <textarea
-                            class="w-full h-20 rounded-lg bg-slate-50 dark:bg-[#101823] border-slate-200 dark:border-slate-700 text-sm p-3 focus:ring-primary focus:border-primary resize-none dark:text-white dark:placeholder-slate-500"
-                            placeholder="Additional notes about the robot performance..."></textarea>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="exportToJSON()"
+                            class="flex-1 h-12 rounded-xl border border-primary/30 bg-primary/5 text-primary font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2"
+                            type="button">
+                            <span class="material-symbols-outlined">download</span>
+                            Export JSON
+                        </button>
+                        <button
+                            class="flex-[2] h-12 bg-primary hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all transform hover:translate-y-[-1px]"
+                            type="submit">
+                            <span class="material-symbols-outlined">send</span>
+                            Submit Match Data
+                        </button>
                     </div>
-                    <!-- Submit Button -->
-                    <button
-                        class="w-full h-12 bg-primary hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all transform hover:translate-y-[-1px]"
-                        type="submit">
-                        <span class="material-symbols-outlined">send</span>
-                        Submit Match Data
-                    </button>
                 </div>
             </section>
         </form>
@@ -470,62 +438,36 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Setup Steppers
-            // Order of pairs in HTML: Auto Speaker, Auto Amp, Teleop Speaker, Teleop Amp, Teleop Amplified
-            const stepperBtns = document.querySelectorAll('.stepper-btn');
-
-            // Group by pairs (minus, plus) and their corresponding value spans
-            const counters = [
-                { name: 'auto_speaker', minus: stepperBtns[0], plus: stepperBtns[1], span: stepperBtns[0].nextElementSibling.querySelector('span') },
-                { name: 'auto_amp', minus: stepperBtns[2], plus: stepperBtns[3], span: stepperBtns[2].nextElementSibling.querySelector('span') },
-                { name: 'teleop_speaker', minus: stepperBtns[4], plus: stepperBtns[5], span: stepperBtns[4].nextElementSibling.querySelector('span') },
-                { name: 'teleop_amp', minus: stepperBtns[6], plus: stepperBtns[7], span: stepperBtns[6].nextElementSibling.querySelector('span') },
-                { name: 'teleop_amplified', minus: stepperBtns[8], plus: stepperBtns[9], span: stepperBtns[8].nextElementSibling.querySelector('span') }
-            ];
-
             const state = {
-                auto_speaker: 0,
-                auto_amp: 0,
-                teleop_speaker: 0,
-                teleop_amp: 0,
-                teleop_amplified: 0
+                auto_start_balls: 0,
+                auto_balls_shot: 0,
+                auto_balls_scored: 0,
+                teleop_balls_shot: 0
             };
 
-            // Initialize display to 0 (HTML might have hardcoded values like '2' or '5')
-            counters.forEach(c => {
-                c.span.textContent = '0';
+            // Setup Steppers
+            document.querySelectorAll('.stepper-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const field = btn.getAttribute('data-field');
+                    const action = btn.getAttribute('data-action');
+                    const span = document.getElementById(`val-${field}`);
 
-                c.minus.addEventListener('click', (e) => {
-                    e.preventDefault(); // prevent form submit just in case
-                    if (state[c.name] > 0) {
-                        state[c.name]--;
-                        c.span.textContent = state[c.name];
-                        if (state[c.name] === 0) {
-                            c.span.classList.add('text-slate-500', 'dark:text-slate-400');
-                            c.span.classList.remove('text-primary', 'text-purple-400');
-                        }
+                    if (action === 'plus') {
+                        state[field]++;
+                    } else if (action === 'minus' && state[field] > 0) {
+                        state[field]--;
                     }
-                });
 
-                c.plus.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    state[c.name]++;
-                    c.span.textContent = state[c.name];
-                    c.span.classList.remove('text-slate-500', 'dark:text-slate-400');
-                    if (c.name === 'teleop_amplified') c.span.classList.add('text-purple-400');
-                    else c.span.classList.add('text-primary');
-                });
-            });
+                    span.textContent = state[field];
 
-            // Quick Tags logic
-            const tags = document.querySelectorAll('.flex-wrap.gap-2 button');
-            const textarea = document.querySelector('textarea');
-            tags.forEach(tag => {
-                tag.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const tagText = `[${tag.textContent}] `;
-                    if (!textarea.value.includes(tagText)) {
-                        textarea.value = tagText + textarea.value;
+                    // Style updates for non-zero values
+                    if (state[field] > 0) {
+                        span.classList.remove('text-slate-500', 'dark:text-slate-400');
+                        span.classList.add('text-primary');
+                    } else {
+                        span.classList.add('text-slate-500', 'dark:text-slate-400');
+                        span.classList.remove('text-primary');
                     }
                 });
             });
@@ -535,40 +477,24 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
 
-                // Get Radios/Checkboxes/Selects
-                const startPos = document.querySelector('input[name="startPos"]:checked')?.value || 'Center';
-
-                // "Leave Starting Zone" is the first standalone checkbox
-                const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
-                const leftStart = allCheckboxes[0].checked;
-                const coopBonus = allCheckboxes[1].checked;
-                const trapNote = allCheckboxes[2].checked;
-                const spotlight = allCheckboxes[3].checked;
-
-                const stageResult = document.querySelector('input[name="stageResult"]:checked')?.value || 'None';
-                const pickup = document.querySelector('select').value;
-                const assignmentId = '{{ assignment.id if assignment else "" }}';
-
                 const submitBtn = form.querySelector('button[type="submit"]');
                 const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Saving...';
                 submitBtn.disabled = true;
 
                 const payload = {
-                    assignment_id: assignmentId,
-                    start_position: startPos,
-                    left_start: leftStart,
-                    auto_speaker: state.auto_speaker,
-                    auto_amp: state.auto_amp,
-                    teleop_speaker: state.teleop_speaker,
-                    teleop_amp: state.teleop_amp,
-                    teleop_amplified: state.teleop_amplified,
-                    coop_bonus: coopBonus,
-                    pickup_location: pickup,
-                    climb_status: stageResult,
-                    trap_note: trapNote,
-                    spotlight: spotlight,
-                    notes: textarea.value
+                    assignment_id: '{{ assignment.id if assignment else "" }}',
+                    auto_start_balls: state.auto_start_balls,
+                    auto_balls_shot: state.auto_balls_shot,
+                    auto_balls_scored: state.auto_balls_scored,
+                    auto_climb: document.querySelector('input[name="autoClimb"]:checked')?.value || 'None',
+                    teleop_intake_speed: parseInt(document.querySelector('input[name="intake_speed"]').value),
+                    teleop_shooter_accuracy: parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
+                    teleop_balls_shot: state.teleop_balls_shot,
+                    passes_bump: document.querySelector('input[name="passes_bump"]').checked,
+                    passes_trench: document.querySelector('input[name="passes_trench"]').checked,
+                    endgame_climb: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'None',
+                    notes: document.getElementById('notesBoard').value
                 };
 
                 try {
@@ -595,8 +521,99 @@
                     submitBtn.disabled = false;
                 }
             });
+
+            window.exportToJSON = function () {
+                const data = {
+                    metadata: {
+                        assignment_id: '{{ assignment.id if assignment else "" }}',
+                        match_key: '{{ assignment.match_key if assignment else "TEST_MATCH" }}',
+                        team_key: '{{ assignment.team_key if assignment else "frc0000" }}',
+                        scouter_id: parseInt("{{ session.user_id or 0 }}"),
+                        exported_at: new Date().toISOString()
+                    },
+                    autonomous: {
+                        start_balls: state.auto_start_balls,
+                        balls_shot: state.auto_balls_shot,
+                        balls_scored: state.auto_balls_scored,
+                        climb: document.querySelector('input[name="autoClimb"]:checked')?.value || 'None'
+                    },
+                    teleop: {
+                        intake_speed: parseInt(document.querySelector('input[name="intake_speed"]').value),
+                        shooter_accuracy: parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
+                        balls_shot: state.teleop_balls_shot,
+                        passes_bump: document.querySelector('input[name="passes_bump"]').checked,
+                        passes_trench: document.querySelector('input[name="passes_trench"]').checked
+                    },
+                    endgame: {
+                        climb: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'None'
+                    },
+                    notes: document.getElementById('notesBoard').value
+                };
+
+                // QR Code Export
+                window.exportToQR = function () {
+                    const data = {
+                        v: "2.4", // version
+                        m: '{{ assignment.match_key if assignment else "TEST" }}',
+                        t: '{{ assignment.team_key if assignment else "0000" }}',
+                        s: parseInt("{{ session.user_id or 0 }}"),
+                        a: [state.auto_start_balls, state.auto_balls_shot, state.auto_balls_scored, document.querySelector('input[name="autoClimb"]:checked')?.value || 'N'],
+                        tO: [
+                            parseInt(document.querySelector('input[name="intake_speed"]').value),
+                            parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
+                            state.teleop_balls_shot,
+                            document.querySelector('input[name="passes_bump"]').checked ? 1 : 0,
+                            document.querySelector('input[name="passes_trench"]').checked ? 1 : 0
+                        ],
+                        e: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'N',
+                        n: document.getElementById('notesBoard').value.substring(0, 100) // Truncate notes for QR capacity
+                    };
+
+                    const qrString = JSON.stringify(data);
+                    const qrContainer = document.getElementById('qrcode-container');
+                    qrContainer.innerHTML = '';
+                    new QRCode(qrContainer, {
+                        text: qrString,
+                        width: 256,
+                        height: 256,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+
+                    document.getElementById('qr-modal').classList.remove('hidden');
+                };
+
+                window.closeQRModal = function () {
+                    document.getElementById('qr-modal').classList.add('hidden');
+                };
+
+                const jsonString = JSON.stringify(data, null, 4);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const matchName = data.metadata.match_key.split('_')[1] || 'match';
+                a.download = `match_scout_${matchName}_${data.metadata.team_key}_${new Date().getTime()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
         });
     </script>
+    <!-- QR Modal -->
+    <div id="qr-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeQRModal()"></div>
+        <div class="relative bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full">
+            <h3 class="text-xl font-bold text-slate-900">Sync QR Code</h3>
+            <div id="qrcode-container" class="p-4 bg-white rounded-xl border-4 border-slate-100"></div>
+            <p class="text-xs text-center text-slate-500 font-medium">Have the Head Scout scan this QR code to sync your
+                data instantly.</p>
+            <button onclick="closeQRModal()"
+                class="w-full h-12 rounded-xl bg-slate-100 text-slate-900 font-bold hover:bg-slate-200 transition-colors">Close</button>
+        </div>
+    </div>
 </body>
 
 </html>
