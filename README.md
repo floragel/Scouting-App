@@ -122,11 +122,11 @@ python3 backend/promote_admin.py
 | Feature | Route | Description |
 |---|---|---|
 | **Login / Register** | `/login`, `/register` | Authentication with password hashing |
-| **Dashboard** | `/` | Scout's personal dashboard with assignments |
+| **Dashboard** | `/` | Dynamic scout dashboard with live Statbotics stats and upcoming TBA matches |
 | **Events & Schedule** | `/events-dashboard` | FRC events with TBA live data |
-| **Admin Hub** | `/admin-hub` | Team management, role assignment, match grid |
+| **Admin Hub** | `/admin-hub` | Team management, role assignment, match grid, and **Pit Assignments** |
 | **Match Scouting** | `/match-scout` | In-match data collection form |
-| **Pit Scouting** | `/pit-scout` | Pre-match pit inspection form |
+| **Pit Scouting** | `/pit-scout/<id>` | Pre-match pit inspection form with **photo upload** capabilities |
 | **Team Directory** | `/teams` | Browse all teams with stats |
 | **Analytics** | `/analytics` | Head scout performance analytics |
 | **Profile** | `/profile` | User profile & settings |
@@ -138,7 +138,7 @@ python3 backend/promote_admin.py
 - **Backend:** Python, Flask, SQLAlchemy
 - **Frontend:** HTML5, Vanilla JS, TailwindCSS (CDN)
 - **Database:** SQLite
-- **API:** The Blue Alliance (TBA) REST API
+- **APIs:** The Blue Alliance (TBA) REST API, **Statbotics API** (v3)
 - **Auth:** Session-based with Werkzeug password hashing
 
 ---
