@@ -130,12 +130,16 @@ class MatchScoutData(db.Model):
     # General
     notes = db.Column(db.Text)
     
+    # Scouter Tracking
+    scouter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True) # made nullable for backwards compatibility
+    
     # Ensure unique match data per team per match per event
     __table_args__ = (UniqueConstraint('team_id', 'event_id', 'match_number', name='_team_event_match_uc'),)
     
-    # Relationships to Team and Event models
+    # Relationships to Team, Event, and User models
     team = db.relationship('Team', backref=db.backref('match_data', lazy=True))
     event = db.relationship('Event', backref=db.backref('match_data', lazy=True))
+    scouter = db.relationship('User', backref=db.backref('match_data', lazy=True))
 
     def to_dict(self):
         return {
@@ -148,22 +152,25 @@ class MatchScoutData(db.Model):
             'teleop_points': self.teleop_points,
             'teleop_tasks': self.teleop_tasks,
             'climb_status': self.climb_status,
-            'notes': self.notes
+            'notes': self.notes,
+            'scouter_id': self.scouter_id
         }
 
 class ScoutAssignment(db.Model):
     __tablename__ = 'scout_assignment'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    match_key = db.Column(db.String(50), nullable=False) # e.g., '2026qcmo_qm1'
+    assignment_type = db.Column(db.String(20), default='Match') # 'Match' or 'Pit'
+    match_key = db.Column(db.String(50), nullable=False) # e.g., '2026qcmo_qm1' (empty for pit)
     team_key = db.Column(db.String(50), nullable=False)  # e.g., 'frc6622'
-    alliance_color = db.Column(db.String(20)) # 'Red' or 'Blue'
+    alliance_color = db.Column(db.String(20)) # 'Red' or 'Blue' (empty for pit)
     status = db.Column(db.String(50), default='Pending') # 'Pending', 'Completed'
 
     def to_dict(self):
         return {
             'id': self.id,
             'user_id': self.user_id,
+            'assignment_type': self.assignment_type,
             'match_key': self.match_key,
             'team_key': self.team_key,
             'alliance_color': self.alliance_color,

@@ -158,94 +158,29 @@
             <aside class="lg:col-span-1 space-y-6">
                 <!-- Mini Stats Card -->
                 <div class="rounded-xl bg-card-dark border border-slate-800 p-5">
-                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Team Status</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-300">Global Rank</span>
-                            <span class="text-xl font-bold text-white">#42</span>
-                        </div>
-                        <div class="w-full h-px bg-slate-700/50"></div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-300">EPA Rating</span>
-                            <span class="text-xl font-bold text-primary">54.2</span>
-                        </div>
-                        <div class="w-full h-px bg-slate-700/50"></div>
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-300">Win Rate</span>
-                            <span class="text-xl font-bold text-green-400">72%</span>
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Team Status (<span
+                            id="team-status-year">-</span>)</h3>
+                    <div id="team-status-content" class="space-y-4">
+                        <div class="animate-pulse flex space-x-4">
+                            <div class="flex-1 space-y-4 py-1">
+                                <div class="h-4 bg-slate-700 rounded w-3/4"></div>
+                                <div class="space-y-2">
+                                    <div class="h-4 bg-slate-700 rounded"></div>
+                                    <div class="h-4 bg-slate-700 rounded w-5/6"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <!-- Upcoming Matches List -->
                 <div class="rounded-xl bg-card-dark border border-slate-800 overflow-hidden">
                     <div class="p-4 border-b border-slate-700 bg-slate-800/50">
-                        <h3 class="text-sm font-semibold text-white">Next Matches (CASJ)</h3>
+                        <h3 class="text-sm font-semibold text-white">Next Matches (<span
+                                id="next-matches-team">-</span>)</h3>
                     </div>
-                    <div class="divide-y divide-slate-700/50">
-                        <!-- Match Item -->
-                        <div class="p-4 hover:bg-card-hover transition-colors cursor-pointer group">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">QM
-                                    42</span>
-                                <span class="text-xs text-slate-400">In 12 mins</span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm">
-                                <div class="flex gap-2 font-mono font-medium text-red-400">
-                                    <span>254</span>
-                                    <span>1678</span>
-                                    <span>971</span>
-                                </div>
-                                <span class="text-slate-600 text-xs">VS</span>
-                                <div class="flex gap-2 font-mono font-medium text-blue-400">
-                                    <span>1323</span>
-                                    <span
-                                        class="text-white font-bold underline decoration-primary decoration-2 underline-offset-4">4414</span>
-                                    <span>359</span>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Match Item -->
-                        <div class="p-4 hover:bg-card-hover transition-colors cursor-pointer group">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-xs font-mono text-slate-400 bg-slate-700/30 px-2 py-0.5 rounded">QM
-                                    48</span>
-                                <span class="text-xs text-slate-500">10:45 AM</span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm">
-                                <div class="flex gap-2 font-mono font-medium text-red-400 opacity-80">
-                                    <span>118</span>
-                                    <span>148</span>
-                                    <span>3310</span>
-                                </div>
-                                <span class="text-slate-600 text-xs">VS</span>
-                                <div class="flex gap-2 font-mono font-medium text-blue-400 opacity-80">
-                                    <span class="text-white font-bold">4414</span>
-                                    <span>624</span>
-                                    <span>3847</span>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Match Item -->
-                        <div class="p-4 hover:bg-card-hover transition-colors cursor-pointer group">
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-xs font-mono text-slate-400 bg-slate-700/30 px-2 py-0.5 rounded">QM
-                                    54</span>
-                                <span class="text-xs text-slate-500">11:30 AM</span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm">
-                                <div class="flex gap-2 font-mono font-medium text-red-400 opacity-80">
-                                    <span>2056</span>
-                                    <span>1114</span>
-                                    <span class="text-white font-bold">4414</span>
-                                </div>
-                                <span class="text-slate-600 text-xs">VS</span>
-                                <div class="flex gap-2 font-mono font-medium text-blue-400 opacity-80">
-                                    <span>1241</span>
-                                    <span>610</span>
-                                    <span>865</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div id="next-matches-content" class="divide-y divide-slate-700/50">
+                        <!-- Matches will be populated here via JavaScript -->
+                        <div class="p-6 text-center text-sm text-slate-400">Loading next matches...</div>
                     </div>
                     <div class="p-3 bg-slate-800/30 text-center">
                         <button class="text-xs font-medium text-primary hover:text-blue-400 transition-colors">View Full
@@ -253,17 +188,15 @@
                     </div>
                 </div>
                 <!-- Quick Scout Action -->
-                <div
+                <div id="scouting-duty-widget"
                     class="rounded-xl bg-gradient-to-br from-primary/20 to-transparent border border-primary/30 p-5 text-center">
                     <div class="inline-flex p-3 rounded-full bg-primary/20 text-primary mb-3">
                         <span class="material-symbols-outlined">edit_document</span>
                     </div>
                     <h3 class="text-white font-bold mb-1">Scouting Duty</h3>
-                    <p class="text-slate-400 text-sm mb-4">You are assigned to scout <span
-                            class="text-white font-bold">Red 2</span> in the next match.</p>
-                    <button
-                        class="w-full py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition shadow-lg shadow-blue-500/20">Start
-                        Scouting</button>
+                    <div id="scouting-duty-content">
+                        <p class="text-slate-400 text-sm mb-4">Loading your next assignment...</p>
+                    </div>
                 </div>
             </aside>
         </div>
@@ -400,6 +333,7 @@
                     if (seasonTitle) seasonTitle.textContent = `${year} ${gameName} Season`;
 
                     renderEvents();
+                    fetchTeamStatus(year);
                 } catch (error) {
                     console.error("Failed to fetch events:", error);
                     eventsLoader.classList.add("hidden");
@@ -444,9 +378,156 @@
                 }
             };
 
+            const THE_TEAM_KEY = "{{ user.affiliation or 'frc6622' }}";
+            const THE_TEAM_NUMBER = THE_TEAM_KEY.replace('frc', '');
+            const USER_ROLE = "{{ user.role }}";
+
+            // Dashboard Widgets Fetch Functions
+            const fetchTeamStatus = async (year) => {
+                document.getElementById('team-status-year').textContent = year;
+                const statusContainer = document.getElementById('team-status-content');
+                statusContainer.innerHTML = '<div class="text-slate-400 text-sm text-center">Loading stats...</div>';
+
+                try {
+                    const res = await fetch(`https://api.statbotics.io/v3/team_year/${THE_TEAM_NUMBER}/${year}`);
+                    if (!res.ok) throw new Error("Statbotics unavailable");
+                    const data = await res.json();
+
+                    const rank = data.epa?.ranks?.total?.rank ? `#${data.epa.ranks.total.rank}` : 'N/A';
+                    const winrateFloat = data.record?.winrate || 0;
+                    const winrate = `${(winrateFloat * 100).toFixed(0)}%`;
+
+                    statusContainer.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-300">Global Rank</span>
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-yellow-400">emoji_events</span>
+                                <span class="text-xl font-bold text-white">${rank}</span>
+                            </span>
+                        </div>
+                        <div class="w-full h-px bg-slate-700/50"></div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-300">Win Rate</span>
+                            <span class="text-xl font-bold text-green-400">${winrate}</span>
+                        </div>
+                    `;
+                } catch (err) {
+                    console.error("Error fetching team stats:", err);
+                    statusContainer.innerHTML = '<div class="text-slate-500 text-sm text-center py-4">No data available for this season.</div>';
+                }
+            };
+
+            const formatTime = (unixTs) => {
+                if (!unixTs) return '';
+                const d = new Date(unixTs * 1000);
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
+
+            const fetchNextMatches = async () => {
+                const matchesContainer = document.getElementById('next-matches-content');
+                document.getElementById('next-matches-team').textContent = THE_TEAM_NUMBER;
+                matchesContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-400">Loading next matches...</div>';
+
+                try {
+                    const res = await fetch('/api/team/next-matches');
+                    const data = await res.json();
+
+                    if (!data.matches || data.matches.length === 0) {
+                        matchesContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-500 italic">No upcoming matches found for our team.</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.matches.forEach((m, idx) => {
+                        const isNext = idx === 0;
+                        const redTeams = m.alliances.red.team_keys.map(t => t.replace('frc', ''));
+                        const blueTeams = m.alliances.blue.team_keys.map(t => t.replace('frc', ''));
+
+                        const renderTeam = (teamNumbers, highlightColor) => {
+                            return teamNumbers.map(t => {
+                                if (t === THE_TEAM_NUMBER) {
+                                    return `<span class="text-white font-bold underline decoration-${highlightColor}-500 decoration-2 underline-offset-4">${t}</span>`;
+                                }
+                                return `<span>${t}</span>`;
+                            }).join(' ');
+                        };
+
+                        const redHtml = renderTeam(redTeams, 'red');
+                        const blueHtml = renderTeam(blueTeams, 'blue');
+
+                        const timeBadge = isNext ? `<span class="text-xs text-green-400 font-bold animate-pulse">Up Next</span>` : `<span class="text-xs text-slate-500">${formatTime(m.time)}</span>`;
+
+                        html += `
+                        <div class="p-4 hover:bg-card-hover transition-colors cursor-pointer group">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-mono ${isNext ? 'text-primary bg-primary/10' : 'text-slate-400 bg-slate-700/30'} px-2 py-0.5 rounded">${m.comp_level.toUpperCase()} ${m.match_number}</span>
+                                ${timeBadge}
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <div class="flex gap-2 font-mono font-medium text-red-400 ${!isNext ? 'opacity-80' : ''}">${redHtml}</div>
+                                <span class="text-slate-600 text-xs">VS</span>
+                                <div class="flex gap-2 font-mono font-medium text-blue-400 ${!isNext ? 'opacity-80' : ''}">${blueHtml}</div>
+                            </div>
+                        </div>
+                        `;
+                    });
+                    matchesContainer.innerHTML = html;
+
+                } catch (err) {
+                    console.error("Error fetching next matches:", err);
+                    matchesContainer.innerHTML = '<div class="p-6 text-center text-sm text-red-400">Error loading matches.</div>';
+                }
+            };
+
+            const fetchScoutingDuty = async () => {
+                const dutyContainer = document.getElementById('scouting-duty-content');
+
+                if (USER_ROLE === 'Admin' || USER_ROLE === 'Head Scout') {
+                    dutyContainer.innerHTML = `
+                        <p class="text-slate-400 text-sm mb-4">Go to the admin hub to assign scouts or see scouting data.</p>
+                        <a href="/admin-hub" class="block w-full py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20">Admin Hub</a>
+                    `;
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/user/next-assignment');
+                    const data = await res.json();
+
+                    if (data.has_assignment && data.assignment) {
+                        const a = data.assignment;
+                        if (a.assignment_type === 'Pit') {
+                            dutyContainer.innerHTML = `
+                                <p class="text-slate-400 text-sm mb-4">You are assigned to pit scout <span class="text-white font-bold">${a.team_key.replace('frc', '')}</span>.</p>
+                                <a href="/pit-scout/${a.id}" class="block w-full py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition shadow-lg shadow-blue-500/20">Start Pit Scouting</a>
+                            `;
+                        } else {
+                            const badgeColor = a.alliance_color.toLowerCase() === 'red' ? 'text-red-400 bg-red-400/10' : 'text-blue-400 bg-blue-400/10';
+                            dutyContainer.innerHTML = `
+                                <p class="text-slate-400 text-sm mb-4">You are assigned to scout <span class="px-2 py-0.5 rounded font-bold ${badgeColor}">${a.alliance_color} ${a.team_key.replace('frc', '')}</span> in match <span class="text-white font-mono">${a.match_key.split('_')[1].toUpperCase()}</span>.</p>
+                                <a href="/match-scout/${a.id}" class="block w-full py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition shadow-lg shadow-blue-500/20">Start Match Scouting</a>
+                            `;
+                        }
+                    } else {
+                        dutyContainer.innerHTML = `
+                            <p class="text-slate-400 text-sm mb-4">You currently have no assignments. Enjoy the match!</p>
+                            <button disabled class="w-full py-2 bg-slate-700 text-slate-400 text-sm font-bold rounded-lg cursor-not-allowed">Relax</button>
+                        `;
+                    }
+                } catch (err) {
+                    console.error("Error fetching assignments:", err);
+                    dutyContainer.innerHTML = '<p class="text-red-400 text-sm">Failed to load assignment.</p>';
+                }
+            };
+
+            // Initialize Widgets
+            fetchNextMatches();
+            fetchScoutingDuty();
+
             initSeasons();
         });
     </script>
+
 
     <footer
         class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">

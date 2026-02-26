@@ -198,7 +198,14 @@ def get_team_members():
     if err_resp: return err_resp, err_code
 
     members = User.query.filter_by(team_id=admin.team_id).all()
-    return jsonify([m.to_dict() for m in members]), 200
+    
+    members_data = []
+    for m in members:
+        m_dict = m.to_dict()
+        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        members_data.append(m_dict)
+        
+    return jsonify(members_data), 200
 
 @app.route('/api/admin/approve/<int:user_id>', methods=['POST'])
 def approve_user(user_id):
@@ -594,7 +601,11 @@ def admin_page():
     if not team_members:
         team_members = User.query.all()
         
-    members_data = [m.to_dict() for m in team_members]
+    members_data = []
+    for m in team_members:
+        m_dict = m.to_dict()
+        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        members_data.append(m_dict)
     
     # 2. Fetch Assignments
     assignments = ScoutAssignment.query.all() # Or filter by team if needed
@@ -650,15 +661,196 @@ def get_event_matches_api():
     valid_matches = [m for m in em if m.get('time')]
     valid_matches.sort(key=lambda x: x['time'])
     
-    show_all = request.args.get('show_all', 'false').lower() == 'true'
-    if not show_all:
+    if not request.args.get('show_all'):
         import time
-        current_unix = int(time.time())
-        future_matches = [m for m in valid_matches if m['time'] > (current_unix - 600)]
-        # Return future matches + a flag indicating if we filtered any out
-        return jsonify({'matches': future_matches, 'total': len(valid_matches), 'filtered': True})
+        current_timestamp = int(time.time())
+        valid_matches = [m for m in valid_matches if m['time'] > current_timestamp]
+        
+    return jsonify({
+        'matches': valid_matches,
+        'total': len(em),
+        'filtered': len(valid_matches) < len(em)
+    })
+
+@app.route('/api/team/next-matches', methods=['GET'])
+def get_team_next_matches():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
     
-    return jsonify({'matches': valid_matches, 'total': len(valid_matches), 'filtered': False})
+    user = User.query.get(session['user_id'])
+    team_key = user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622'
+    
+    tba = TBAHandler()
+    team_status = tba.get_team_status(team_key)
+    
+    if not team_status or not team_status.get('event_key'):
+        return jsonify([])
+        
+    em = frc_api.get_event_matches(team_status['event_key'])
+    import time
+    current_timestamp = int(time.time())
+    
+    # Filter matches where our team is playing
+    team_matches = []
+    for m in em:
+        if not m.get('time'): continue
+        all_teams = m['alliances']['red']['team_keys'] + m['alliances']['blue']['team_keys']
+        if team_key in all_teams:
+            m['our_alliance'] = 'red' if team_key in m['alliances']['red']['team_keys'] else 'blue'
+            team_matches.append(m)
+            
+    # Sort and get future matches
+    team_matches.sort(key=lambda x: x['time'])
+    future_matches = [m for m in team_matches if m['time'] > (current_timestamp - 300)]
+    
+    return jsonify({
+        'matches': future_matches[:3], # Return the next 3 matches
+        'team_key': team_key
+    })
+
+@app.route('/api/user/next-assignment', methods=['GET'])
+def get_next_assignment():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    user = User.query.get(session['user_id'])
+    # Get the earliest pending assignment
+    next_assignment = ScoutAssignment.query.filter_by(
+        user_id=user.id, 
+        status='Pending'
+    ).order_by(ScoutAssignment.id.asc()).first()
+    
+    if next_assignment:
+        return jsonify({
+            'has_assignment': True,
+            'assignment': next_assignment.to_dict()
+        })
+    return jsonify({'has_assignment': False})
+
+@app.route('/api/admin/auto-assign', methods=['POST'])
+def auto_assign():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user or user.role not in ['Admin', 'Head Scout']:
+        return jsonify({'error': 'Unauthorized role'}), 403
+        
+    # Get all active scouts (Pit Scouts, Stand Scouts, Strategy Leads)
+    team_members = []
+    if hasattr(user, 'team_id') and user.team_id:
+        team_members = User.query.filter_by(team_id=user.team_id).all()
+        
+    if not team_members:
+        team_members = User.query.all()
+        
+    eligible_scouts = [m for m in team_members if m.role in ['Stand Scout', 'Pit Scout', 'Strategy Lead'] and m.status == 'active']
+    
+    if len(eligible_scouts) < 6:
+        return jsonify({'error': f'Need at least 6 active scouts. Only found {len(eligible_scouts)}.'}), 400
+        
+    # Get upcoming matches
+    tba = TBAHandler()
+    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    if not team_status or not team_status.get('event_key'):
+        return jsonify({'error': 'Team not registered for an active event.'}), 400
+        
+    em = frc_api.get_event_matches(team_status['event_key'])
+    import time
+    current_time = int(time.time())
+    
+    # Normally we'd only want future matches but for testing/back-filling we'll just sort them
+    upcoming_matches = [m for m in em if m.get('time')]
+    
+    # Sort backwards to prioritize the matches that are happening closest to now/next
+    upcoming_matches.sort(key=lambda x: x['time'])
+    
+    # Filter out ones that are already fully assigned
+    upcoming_matches = [m for m in upcoming_matches if ScoutAssignment.query.filter_by(match_key=m['key']).count() < 6]
+    
+    if not upcoming_matches:
+        return jsonify({'error': 'No upcoming matches found to assign.'}), 400
+        
+    # We will assign the next 5 matches to keep the queue manageable
+    matches_to_assign = upcoming_matches[:5]
+    
+    # Track scout fatigue (consecutive matches) and total assignments
+    scout_stats = {
+        s.id: {
+            'total_assigned': ScoutAssignment.query.filter_by(user_id=s.id).count(),
+            'consecutive': 0,
+            'teams_scouted': set([d.team_key for d in ScoutAssignment.query.filter_by(user_id=s.id).all()])
+        } for s in eligible_scouts
+    }
+    
+    assignments_created = 0
+    
+    for match in matches_to_assign:
+        # Check if match is already fully assigned (has 6 assignments)
+        existing = ScoutAssignment.query.filter_by(match_key=match['key']).count()
+        if existing >= 6:
+            continue
+            
+        teams = match['alliances']['red']['team_keys'] + match['alliances']['blue']['team_keys']
+        
+        # Sort scouts by easiest workload first, penalizing consecutive matches
+        # Score = total_assigned + (consecutive * 2)
+        sorted_scouts = sorted(
+            eligible_scouts, 
+            key=lambda s: scout_stats[s.id]['total_assigned'] + (scout_stats[s.id]['consecutive'] * 2)
+        )
+        
+        assigned_to_this_match = set()
+        
+        for team_key in teams:
+            alliance_color = 'Red' if team_key in match['alliances']['red']['team_keys'] else 'Blue'
+            
+            # Check if this specific slot is already assigned
+            if ScoutAssignment.query.filter_by(match_key=match['key'], team_key=team_key).first():
+                continue
+                
+            # Find Best Scout (hasn't scouted this match yet, ideally hasn't scouted this team yet)
+            best_scout = None
+            for scout in sorted_scouts:
+                if scout.id in assigned_to_this_match:
+                    continue
+                # Slight preference to NOT scout the same team twice
+                if team_key in scout_stats[scout.id]['teams_scouted'] and len([s for s in sorted_scouts if s.id not in assigned_to_this_match]) > 1:
+                    # If they've seen this team, check if next person hasn't
+                    next_idx = sorted_scouts.index(scout) + 1
+                    if next_idx < len(sorted_scouts) and team_key not in scout_stats[sorted_scouts[next_idx].id]['teams_scouted']:
+                        continue 
+                        
+                best_scout = scout
+                break
+                
+            if best_scout:
+                new_assignment = ScoutAssignment(
+                    user_id=best_scout.id,
+                    match_key=match['key'],
+                    team_key=team_key,
+                    alliance_color=alliance_color
+                )
+                db.session.add(new_assignment)
+                assigned_to_this_match.add(best_scout.id)
+                
+                # Update stats for next loop
+                scout_stats[best_scout.id]['total_assigned'] += 1
+                scout_stats[best_scout.id]['consecutive'] += 1
+                scout_stats[best_scout.id]['teams_scouted'].add(team_key)
+                assignments_created += 1
+        
+        # Reset consecutive counter for scouts who got a break this match
+        for s in eligible_scouts:
+            if s.id not in assigned_to_this_match:
+                scout_stats[s.id]['consecutive'] = 0
+                
+    db.session.commit()
+    return jsonify({
+        'success': True, 
+        'message': f'Successfully auto-assigned {assignments_created} scout slots across upcoming matches.'
+    })
+
 @app.route('/api/admin/assignments', methods=['POST'])
 def create_assignment():
     if 'user_id' not in session:
@@ -684,6 +876,119 @@ def create_assignment():
         db.session.add(new_assignment)
         db.session.commit()
         return jsonify({'message': 'Assignment created successfully', 'assignment': new_assignment.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/assign-pit', methods=['POST'])
+def create_pit_assignment():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    admin_user = User.query.get(session['user_id'])
+    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+        return jsonify({'error': 'Forbidden'}), 403
+        
+    data = request.json
+    required_fields = ['user_id', 'team_key']
+    if not all(field in data for field in required_fields):
+        return jsonify({'error': 'Missing required fields'}), 400
+        
+    try:
+        new_assignment = ScoutAssignment(
+            user_id=data['user_id'],
+            assignment_type='Pit',
+            match_key='',
+            team_key=data['team_key'],
+            alliance_color='',
+            status='Pending'
+        )
+        db.session.add(new_assignment)
+        db.session.commit()
+        return jsonify({'message': 'Pit Assignment created successfully', 'assignment': new_assignment.to_dict()}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/auto-assign-pit', methods=['POST'])
+def auto_assign_pit():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user or user.role not in ['Admin', 'Head Scout']:
+        return jsonify({'error': 'Unauthorized role'}), 403
+        
+    team_members = []
+    if hasattr(user, 'team_id') and user.team_id:
+        team_members = User.query.filter_by(team_id=user.team_id).all()
+    if not team_members:
+        team_members = User.query.all()
+        
+    pit_scouts = [m for m in team_members if m.role == 'Pit Scout' and m.status == 'active']
+    
+    if not pit_scouts:
+        return jsonify({'error': 'No active Pit Scouts found.'}), 400
+        
+    tba = TBAHandler()
+    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    if not team_status or not team_status.get('event_key'):
+        return jsonify({'error': 'Team not registered for an active event.'}), 400
+        
+    event_teams = frc_api.get_teams_for_event(team_status['event_key'])
+    if not event_teams:
+        return jsonify({'error': 'No teams found for the current event.'}), 400
+        
+    unassigned_teams = []
+    for team in event_teams:
+        existing = ScoutAssignment.query.filter_by(team_key=team['key'], assignment_type='Pit').first()
+        if not existing:
+            # Also check if already scouted
+            team_number = int(team['key'].replace('frc', ''))
+            team_obj = Team.query.filter_by(team_number=team_number).first()
+            if team_obj:
+                pit_data = PitScoutData.query.filter_by(team_id=team_obj.id).first()
+                if pit_data:
+                    continue
+            unassigned_teams.append(team)
+
+    if not unassigned_teams:
+        return jsonify({'error': 'All teams have already been assigned or scouted for pit data.'}), 400
+
+    assignments_created = 0
+    for i, team in enumerate(unassigned_teams):
+        scout = pit_scouts[i % len(pit_scouts)]
+        new_assignment = ScoutAssignment(
+            user_id=scout.id,
+            match_key='',
+            team_key=team['key'],
+            alliance_color='',
+            assignment_type='Pit',
+            status='Pending'
+        )
+        db.session.add(new_assignment)
+        assignments_created += 1
+
+    try:
+        db.session.commit()
+        return jsonify({'message': f'Successfully assigned {assignments_created} teams to {len(pit_scouts)} Pit Scouts.', 'count': assignments_created}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/assignments/all', methods=['DELETE'])
+def delete_all_assignments():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    admin_user = User.query.get(session['user_id'])
+    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+        return jsonify({'error': 'Forbidden'}), 403
+        
+    try:
+        ScoutAssignment.query.delete()
+        db.session.commit()
+        return jsonify({'message': 'All assignments revoked successfully'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -718,9 +1023,15 @@ def scout_dashboard():
     assignments = []
     matches_scouted = 0
     if not is_admin:
-        assign_records = ScoutAssignment.query.filter_by(user_id=user.id, status='Pending').all()
+        assignment_type_filter = 'Pit' if user.role == 'Pit Scout' else 'Match'
+        assign_records = ScoutAssignment.query.filter_by(user_id=user.id, status='Pending', assignment_type=assignment_type_filter).all()
         assignments = [a.to_dict() for a in assign_records]
-        matches_scouted = ScoutAssignment.query.filter_by(user_id=user.id, status='Completed').count()
+        
+        # Determine stats
+        if user.role == 'Pit Scout':
+            matches_scouted = PitScoutData.query.filter_by(scouter_id=user.id).count() if hasattr(PitScoutData, 'scouter_id') else 0
+        else:
+            matches_scouted = MatchScoutData.query.filter_by(scouter_id=user.id).count()
         
     # 2. Fetch Team Status using TBA API
     tba = TBAHandler()
@@ -760,7 +1071,9 @@ def scout_dashboard():
 
     
     # 5. Read template and render with Jinja
-    template_path = os.path.join(basedir, '../frontend/desktop_scout_dashboard_hub/code.html')
+    is_pit_scout = user.role == 'Pit Scout'
+    template_name = 'desktop_pit_scout_dashboard_hub' if is_pit_scout else 'desktop_scout_dashboard_hub'
+    template_path = os.path.join(basedir, f'../frontend/{template_name}/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         template_content = f.read()
         
@@ -814,23 +1127,183 @@ def analytics():
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user)
 
-@app.route('/match-scout')
-def match_scout():
+@app.route('/match-scout/<int:assignment_id>')
+def match_scout(assignment_id):
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
+    
     user = User.query.get(session['user_id'])
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    
+    # Optional: Verify the assignment belongs to the user, or user is admin
+    if assignment.user_id != user.id and user.role != 'Admin':
+        return "Not authorized to scout this match", 403
+        
     template_path = os.path.join(basedir, '../frontend/match_scouting_entry/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+        return render_template_string(f.read(), user=user, assignment=assignment)
 
-@app.route('/pit-scout')
-def pit_scout():
+@app.route('/api/submit-match-scout', methods=['POST'])
+def submit_match_scout():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.json
+    try:
+        assignment_id = data.get('assignment_id')
+        assignment = ScoutAssignment.query.get(assignment_id)
+        if not assignment:
+            return jsonify({'error': 'Invalid assignment'}), 400
+            
+        # Get team ID and event ID based on the assignment keys
+        team = Team.query.filter_by(team_number=int(assignment.team_key.replace('frc',''))).first()
+        event = Event.query.filter_by(tba_key=assignment.match_key.split('_')[0]).first()
+        
+        if not team or not event:
+            return jsonify({'error': 'Team or Event not found in local DB'}), 400
+            
+        match_num_str = assignment.match_key.split('_')[1]
+        match_number = int(''.join(filter(str.isdigit, match_num_str))) # e.g. qm42 -> 42
+        
+        # Calculate points based on 2024 Crescendo rules (or just use raw data)
+        # Note: In a real app, adjust points logic based on game rules
+        auto_points = int(data.get('auto_speaker', 0)) * 5 + int(data.get('auto_amp', 0)) * 2
+        teleop_points = int(data.get('teleop_speaker', 0)) * 2 + int(data.get('teleop_amp', 0)) * 1 + int(data.get('teleop_amplified', 0)) * 5
+        
+        # Check if they left start area (if checked, e.g. +2 points)
+        if data.get('left_start'):
+            auto_points += 2
+            
+        # Create match data
+        match_data = MatchScoutData(
+            team_id=team.id,
+            event_id=event.id,
+            match_number=match_number,
+            auto_points=auto_points,
+            auto_tasks=int(data.get('auto_speaker', 0)) + int(data.get('auto_amp', 0)),
+            teleop_points=teleop_points,
+            teleop_tasks=int(data.get('teleop_speaker', 0)) + int(data.get('teleop_amp', 0)) + int(data.get('teleop_amplified', 0)),
+            climb_status=data.get('climb_status', 'None'),
+            notes=data.get('notes', ''),
+            scouter_id=session['user_id']
+        )
+        
+        db.session.add(match_data)
+        
+        # Once scouted, we can remove the assignment to clear their queue
+        db.session.delete(assignment)
+        
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Match data saved'})
+    except Exception as e:
+        print("Error saving match data:", e)
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/submit-pit-scout', methods=['POST'])
+def submit_pit_scout():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    data = request.form
+    assignment_id = data.get('assignment_id')
+    team_key = data.get('team_key')
+    team_name = data.get('team_name', '').strip()
+    
+    if not assignment_id or not team_key:
+        return jsonify({'error': 'Missing required fields'}), 400
+        
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    if assignment.user_id != session['user_id']:
+        return jsonify({'error': 'Not your assignment'}), 403
+        
+    user = User.query.get(session['user_id'])
+    event_id = None
+    if user.team:
+        event = user.team.events.first()
+        if event:
+            event_id = event.id
+            
+    if not event_id:
+        tba = TBAHandler()
+        status = tba.get_team_status(HOME_TEAM_NUMBER)
+        if status and status.get('event_key'):
+            event_obj = Event.query.filter_by(tba_key=status['event_key']).first()
+            if event_obj:
+                event_id = event_obj.id
+
+    team_number = int(team_key.replace('frc', ''))
+    team = Team.query.filter_by(team_number=team_number).first()
+    if not team:
+        team = Team(tba_key=team_key, team_number=team_number, team_name=team_name or team_key)
+        db.session.add(team)
+        db.session.flush() # get team.id
+    elif team_name and (not team.team_name or team.team_name == team.tba_key):
+        team.team_name = team_name
+    
+    if not event_id:
+        return jsonify({'error': 'Could not determine current event'}), 400
+
+    try:
+        pit_data = PitScoutData.query.filter_by(team_id=team.id, event_id=event_id).first()
+        if not pit_data:
+            pit_data = PitScoutData(team_id=team.id, event_id=event_id)
+            db.session.add(pit_data)
+            
+        # Handle file upload
+        photo_path = ''
+        if 'photo' in request.files:
+            file = request.files['photo']
+            if file and file.filename != '':
+                from werkzeug.utils import secure_filename
+                import time
+                filename = secure_filename(file.filename)
+                unique_filename = f"t{team_key}_{int(time.time())}_{filename}"
+                upload_path = os.path.join(basedir, 'static', 'uploads', 'pit_photos')
+                os.makedirs(upload_path, exist_ok=True)
+                file.save(os.path.join(upload_path, unique_filename))
+                photo_path = f"/static/uploads/pit_photos/{unique_filename}"
+                
+        # Format additional form specs into notes
+        motor = data.get('motor_type', '')
+        auto_parts = []
+        if data.get('auto_leave') == 'true': auto_parts.append('Leave')
+        if data.get('auto_coral') == 'true': auto_parts.append('Score Coral')
+        if data.get('auto_algae') == 'true': auto_parts.append('Score Algae')
+        if data.get('auto_pickup') == 'true': auto_parts.append('Pick up')
+        
+        base_notes = data.get('notes', '').strip()
+        structured_notes = base_notes
+        if motor or auto_parts:
+            structured_notes += f"\n\n--- Specs ---\nMotor: {motor}\nAuto: {', '.join(auto_parts)}"
+            
+        pit_data.drivetrain_type = data.get('drivetrain_type', '')
+        pit_data.weight = float(data.get('weight', 0) if data.get('weight') else 0)
+        pit_data.notes = structured_notes.strip()
+        if photo_path:
+            pit_data.photo_path = photo_path
+        
+        db.session.delete(assignment)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Pit data saved'})
+    except Exception as e:
+        print("Error saving pit data:", e)
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/pit-scout/<int:assignment_id>')
+def pit_scout(assignment_id):
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     user = User.query.get(session['user_id'])
+    
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    if assignment.user_id != user.id:
+        return "Unauthorized", 403
+        
     template_path = os.path.join(basedir, '../frontend/pit_scouting_form/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+        return render_template_string(f.read(), user=user, assignment=assignment)
 
 @app.route('/teams-dir')
 def teams_dir():

@@ -206,6 +206,8 @@
                             </th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Join
                                 Date</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Matches
+                                Scouted</th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Last
                                 Active</th>
                             <th
@@ -392,6 +394,11 @@
                     </h3>
                     <p class="text-sm text-slate-500">Assign specific scouts to upcoming matches and teams.</p>
                 </div>
+                <button id="auto-assign-btn"
+                    class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
+                    <span class="material-symbols-outlined text-sm">smart_toy</span>
+                    <span>Auto-Assign All</span>
+                </button>
             </div>
 
             <!-- Assignment Form -->
@@ -459,101 +466,177 @@
                     </div>
                 </form>
             </div>
-        </section>
-
-        <!-- Match Schedule Grid -->
-        <section
-            class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
-            <div
-                class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">calendar_month</span>
-                        Match Schedule
-                    </h3>
-                    <p class="text-sm text-slate-500" id="match-grid-subtitle">Loading matches...</p>
+            <!-- Pit Assignments Section -->
+            <section
+                class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
+                <div
+                    class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">engineering</span>
+                            Pit Assignments
+                        </h3>
+                        <p class="text-sm text-slate-500">Assign specific scouts to gather technical data from teams in
+                            the pits.</p>
+                    </div>
+                    <button id="auto-assign-pit-btn" onclick="autoAssignPit()"
+                        class="px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 hover:opacity-90 text-white text-sm font-bold rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                        <span>Auto-Assign All</span>
+                    </button>
                 </div>
-                <button id="toggle-all-matches-btn"
-                    class="hidden px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
-                    <span class="material-symbols-outlined text-sm">visibility</span>
-                    <span id="toggle-all-matches-text">Show All Matches</span>
-                </button>
-            </div>
 
-            <div id="match-grid-container" class="p-4 overflow-x-auto custom-scrollbar">
-                <div class="flex items-center justify-center py-12 text-slate-400">
-                    <span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>
-                    Loading match schedule...
+                <!-- Pit Assignment Form -->
+                <div class="p-6 bg-slate-50 dark:bg-slate-900/30 border-b border-slate-200 dark:border-slate-800">
+                    <form id="pit-assignment-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
+                        onsubmit="submitPitAssignment(event)">
+                        <!-- Scout Selection -->
+                        <div>
+                            <label
+                                class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
+                            <select id="assign-pit-scout"
+                                class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
+                                required>
+                                <option value="">Select Scout...</option>
+                                {% for member in team_members %}
+                                <option value="{{ member.id }}">{{ member.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Team Input -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team
+                                Number</label>
+                            <input id="assign-pit-team" type="number"
+                                class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
+                                placeholder="e.g. 254" required />
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div>
+                            <button type="submit" id="pit-assign-btn"
+                                class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                                Assign Pit
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- Active Assignments Table -->
-        <section
-            class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-800">
-                <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">checklist</span>
-                    Active Assignments
-                </h3>
-                <p class="text-sm text-slate-500">All current scout-to-match assignments.</p>
-            </div>
-            <div class="overflow-x-auto custom-scrollbar">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-50 dark:bg-slate-900/50">
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Scout
-                            </th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Match
-                            </th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Team
-                            </th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
-                                Alliance</th>
-                            <th
-                                class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">
-                                Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                        {% for assignment in assignments %}
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                            <td class="px-6 py-4">
-                                <span class="text-sm font-bold dark:text-white">
-                                    {% for member in team_members %}
-                                    {% if member.id == assignment.user_id %}
-                                    {{ member.name }}
+            <!-- Match Schedule Grid -->
+            <section
+                class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
+                <div
+                    class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">calendar_month</span>
+                            Match Schedule
+                        </h3>
+                        <p class="text-sm text-slate-500" id="match-grid-subtitle">Loading matches...</p>
+                    </div>
+                    <button id="toggle-all-matches-btn"
+                        class="hidden px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">visibility</span>
+                        <span id="toggle-all-matches-text">Show All Matches</span>
+                    </button>
+                </div>
+
+                <div id="match-grid-container" class="p-4 overflow-x-auto custom-scrollbar">
+                    <div class="flex items-center justify-center py-12 text-slate-400">
+                        <span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>
+                        Loading match schedule...
+                    </div>
+                </div>
+            </section>
+
+            <!-- Active Assignments Table -->
+            <section
+                class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
+                <div
+                    class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">checklist</span>
+                            Active Assignments
+                        </h3>
+                        <p class="text-sm text-slate-500">All current scout-to-match assignments.</p>
+                    </div>
+                    <button id="revoke-all-btn" onclick="revokeAllAssignments()"
+                        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg shadow-lg shadow-red-500/20 transition-all flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">delete_sweep</span>
+                        <span>Revoke All</span>
+                    </button>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-slate-900/50">
+                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
+                                    Scout
+                                </th>
+                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
+                                    Match
+                                </th>
+                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
+                                    Team
+                                </th>
+                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
+                                    Alliance</th>
+                                <th
+                                    class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">
+                                    Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            {% for assignment in assignments %}
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                                <td class="px-6 py-4">
+                                    <span class="text-sm font-bold dark:text-white">
+                                        {% for member in team_members %}
+                                        {% if member.id == assignment.user_id %}
+                                        {{ member.name }}
+                                        {% endif %}
+                                        {% endfor %}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium dark:text-slate-300">
+                                    {% if assignment.match_key %} {{ assignment.match_key }} {% else %} <span
+                                        class="text-slate-500 italic">Pit</span> {% endif %}
+                                </td>
+                                <td class="px-6 py-4 text-sm font-bold dark:text-white">{{ assignment.team_key }}</td>
+                                <td class="px-6 py-4">
+                                    {% if assignment.alliance_color %}
+                                    <span
+                                        class="px-2 py-1 rounded text-xs font-bold {{ 'bg-red-500/10 text-red-500' if assignment.alliance_color == 'Red' else 'bg-blue-500/10 text-blue-500' }}">
+                                        {{ assignment.alliance_color }}
+                                    </span>
+                                    {% else %}
+                                    <span
+                                        class="px-2 py-1 rounded text-xs font-bold bg-slate-500/10 text-slate-500">N/A</span>
                                     {% endif %}
-                                    {% endfor %}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm font-medium dark:text-slate-300">{{ assignment.match_key }}
-                            </td>
-                            <td class="px-6 py-4 text-sm font-bold dark:text-white">{{ assignment.team_key }}</td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="px-2 py-1 rounded text-xs font-bold {{ 'bg-red-500/10 text-red-500' if assignment.alliance_color == 'Red' else 'bg-blue-500/10 text-blue-500' }}">
-                                    {{ assignment.alliance_color }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <button onclick="revokeAssignment({{ assignment.id }})"
-                                    class="p-1 px-3 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors text-xs font-bold">
-                                    Revoke
-                                </button>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
-                                No active assignments found.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button onclick="revokeAssignment({{ assignment.id }})"
+                                        class="p-1 px-3 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors text-xs font-bold">
+                                        Revoke
+                                    </button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5"
+                                    class="px-6 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+                                    No active assignments found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
     </main>
     <footer class="mt-auto p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161e2b]">
         <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
@@ -706,6 +789,7 @@
                 </div>
             </td>
             <td class="px-6 py-4 text-xs dark:text-slate-400">-</td>
+            <td class="px-6 py-4 text-xs font-bold text-primary">${user.matches_scouted || 0}</td>
             <td class="px-6 py-4 text-xs dark:text-slate-400">-</td>
             <td class="px-6 py-4 text-right">
                 <button onclick="window.approveUser(${user.id}, 'reject')" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors" title="Revoke Access">
@@ -716,6 +800,29 @@
                     directoryTbody.appendChild(tr);
                 });
 
+                // Update assignment dropdowns with active members
+                const matchScoutSelect = document.getElementById('assign-scout');
+                const pitScoutSelect = document.getElementById('assign-pit-scout');
+
+                if (matchScoutSelect) {
+                    matchScoutSelect.innerHTML = '<option value="">Select Scout...</option>';
+                    active.forEach(user => {
+                        const opt = document.createElement('option');
+                        opt.value = user.id;
+                        opt.textContent = user.name;
+                        matchScoutSelect.appendChild(opt);
+                    });
+                }
+
+                if (pitScoutSelect) {
+                    pitScoutSelect.innerHTML = '<option value="">Select Scout...</option>';
+                    active.forEach(user => {
+                        const opt = document.createElement('option');
+                        opt.value = user.id;
+                        opt.textContent = user.name;
+                        pitScoutSelect.appendChild(opt);
+                    });
+                }
             }
 
             searchInput.addEventListener('input', (e) => {
@@ -817,6 +924,36 @@
                 showingAll = !showingAll;
                 fetchAndRenderMatches(showingAll);
             });
+
+            // Auto Assign All
+            const autoAssignBtn = document.getElementById('auto-assign-btn');
+            if (autoAssignBtn) {
+                autoAssignBtn.addEventListener('click', async () => {
+                    const originalHTML = autoAssignBtn.innerHTML;
+                    autoAssignBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">autorenew</span><span>Assigning...</span>';
+                    autoAssignBtn.disabled = true;
+
+                    try {
+                        const res = await fetch('/api/admin/auto-assign', { method: 'POST' });
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            autoAssignBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check_circle</span><span>Done</span>';
+                            autoAssignBtn.classList.replace('bg-emerald-500', 'bg-green-600');
+                            alert(data.message || "Auto-assignment complete!");
+                            setTimeout(() => window.location.reload(), 1000);
+                        } else {
+                            alert(data.error || "Failed to auto-assign");
+                            autoAssignBtn.innerHTML = originalHTML;
+                            autoAssignBtn.disabled = false;
+                        }
+                    } catch (e) {
+                        alert("Network error during auto-assignment.");
+                        autoAssignBtn.innerHTML = originalHTML;
+                        autoAssignBtn.disabled = false;
+                    }
+                });
+            }
 
             // ---- Render Match Grid ----
             function renderMatchGrid(matches) {
@@ -1043,10 +1180,101 @@
                 }
             };
 
+            window.submitPitAssignment = async (e) => {
+                e.preventDefault();
+
+                const userId = document.getElementById('assign-pit-scout').value;
+                const teamNumber = document.getElementById('assign-pit-team').value;
+
+                if (!userId || !teamNumber) {
+                    alert("Please select a scout and enter a team number.");
+                    return;
+                }
+
+                const btn = document.getElementById('pit-assign-btn');
+                btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">refresh</span> Assigning...`;
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('/api/admin/assign-pit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            team_key: 'frc' + teamNumber
+                        })
+                    });
+
+                    if (res.ok) {
+                        window.location.reload();
+                    } else {
+                        const data = await res.json();
+                        alert(data.error || "Failed to create pit assignment");
+                        btn.innerHTML = `<span class="material-symbols-outlined text-sm">add</span> Assign Pit`;
+                        btn.disabled = false;
+                    }
+                } catch (err) {
+                    console.error("Pit Assignment error:", err);
+                    alert("A network error occurred.");
+                    btn.innerHTML = `<span class="material-symbols-outlined text-sm">add</span> Assign Pit`;
+                    btn.disabled = false;
+                }
+            };
+
             // ---- Initial Load ----
             fetchAndRenderMatches(false);
 
             loadMembers();
+
+            window.autoAssignPit = async () => {
+                if (!confirm("Auto-assign pit scouting for all valid teams to all active Pit Scouts? This might take a few seconds.")) {
+                    return;
+                }
+                const btn = document.getElementById('auto-assign-pit-btn');
+                const origHtml = btn.innerHTML;
+                btn.innerHTML = `<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Assigning...`;
+                btn.disabled = true;
+
+                try {
+                    const res = await fetch('/api/admin/auto-assign-pit', { method: 'POST' });
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        alert(data.message || `Assigned ${data.count} teams.`);
+                        window.location.reload();
+                    } else {
+                        alert(data.error || "Failed to auto-assign pit scouts.");
+                        btn.innerHTML = origHtml;
+                        btn.disabled = false;
+                    }
+                } catch (e) {
+                    console.error("Auto-assign pit error:", e);
+                    alert("A network error occurred.");
+                    btn.innerHTML = origHtml;
+                    btn.disabled = false;
+                }
+            };
+
+            window.revokeAllAssignments = async () => {
+                if (!confirm("Are you SURE you want to revoke ALL assignments for ALL scouts? This action cannot be undone.")) {
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/admin/assignments/all', {
+                        method: 'DELETE'
+                    });
+                    if (res.ok) {
+                        window.location.reload();
+                    } else {
+                        const data = await res.json();
+                        alert(data.error || "Failed to revoke assignments.");
+                    }
+                } catch (err) {
+                    console.error("Revoke All error:", err);
+                    alert("A network error occurred.");
+                }
+            };
         });
     </script>
 </body>

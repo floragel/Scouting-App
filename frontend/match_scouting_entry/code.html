@@ -105,19 +105,22 @@
                 <div class="flex flex-col items-center">
                     <span
                         class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Match</span>
-                    <span class="text-lg font-bold text-primary">#42</span>
+                    <span class="text-lg font-bold text-primary">{{ assignment.match_key.split('_')[1].upper() if
+                        assignment else 'TEST' }}</span>
                 </div>
                 <div class="h-8 w-px bg-slate-300 dark:bg-slate-600"></div>
                 <div class="flex flex-col items-center">
                     <span
                         class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Team</span>
-                    <span class="text-lg font-bold text-white">2611</span>
+                    <span class="text-lg font-bold text-white">{{ assignment.team_key.replace('frc','') if assignment
+                        else '0000' }}</span>
                 </div>
                 <div class="h-8 w-px bg-slate-300 dark:bg-slate-600"></div>
                 <div class="flex flex-col items-center">
                     <span
                         class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Scouter</span>
-                    <span class="text-lg font-bold text-emerald-400">Alex</span>
+                    <span class="text-lg font-bold text-emerald-400">{{ user.name.split()[0] if user else 'Scout'
+                        }}</span>
                 </div>
             </div>
         </div>
@@ -138,9 +141,11 @@
     </header>
     <!-- Mobile Match Info (Visible only on small screens) -->
     <div class="md:hidden flex justify-between px-4 py-3 bg-[#1e293b] border-b border-[#223249]">
-        <span class="font-bold text-white">M# 42</span>
-        <span class="font-bold text-primary">T# 2611</span>
-        <span class="font-medium text-slate-400">Alex</span>
+        <span class="font-bold text-white">M# {{ assignment.match_key.split('_')[1].upper() if assignment else 'TEST'
+            }}</span>
+        <span class="font-bold text-primary">T# {{ assignment.team_key.replace('frc','') if assignment else '0000'
+            }}</span>
+        <span class="font-medium text-slate-400">{{ user.name.split()[0] if user else 'Scout' }}</span>
     </div>
     <!-- Main Content Grid -->
     <main class="flex-grow p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
@@ -197,16 +202,16 @@
                                 <span class="text-xs text-primary font-medium">5 pts</span>
                             </div>
                             <div class="flex items-center gap-3">
-                                <button
+                                <button id="auto-speaker-minus"
                                     class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
                                     type="button">
                                     <span class="material-symbols-outlined">remove</span>
                                 </button>
                                 <div
                                     class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                    <span class="text-2xl font-bold font-mono">2</span>
+                                    <span id="auto-speaker-val" class="text-2xl font-bold font-mono">0</span>
                                 </div>
-                                <button
+                                <button id="auto-speaker-plus"
                                     class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
                                     type="button">
                                     <span class="material-symbols-outlined">add</span>
@@ -220,17 +225,17 @@
                                 <span class="text-xs text-primary font-medium">2 pts</span>
                             </div>
                             <div class="flex items-center gap-3">
-                                <button
+                                <button id="auto-speaker-minus"
                                     class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
                                     type="button">
                                     <span class="material-symbols-outlined">remove</span>
                                 </button>
                                 <div
                                     class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
-                                    <span
+                                    <span id="auto-amp-val"
                                         class="text-2xl font-bold font-mono text-slate-500 dark:text-slate-500">0</span>
                                 </div>
-                                <button
+                                <button id="auto-speaker-plus"
                                     class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
                                     type="button">
                                     <span class="material-symbols-outlined">add</span>
@@ -305,7 +310,7 @@
                                 <span class="text-xs text-purple-400 font-medium">5 pts</span>
                             </div>
                             <div class="flex items-center gap-3">
-                                <button
+                                <button id="auto-speaker-minus"
                                     class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
                                     type="button">
                                     <span class="material-symbols-outlined">remove</span>
@@ -463,6 +468,135 @@
         <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix</p>
     </footer>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup Steppers
+            // Order of pairs in HTML: Auto Speaker, Auto Amp, Teleop Speaker, Teleop Amp, Teleop Amplified
+            const stepperBtns = document.querySelectorAll('.stepper-btn');
+
+            // Group by pairs (minus, plus) and their corresponding value spans
+            const counters = [
+                { name: 'auto_speaker', minus: stepperBtns[0], plus: stepperBtns[1], span: stepperBtns[0].nextElementSibling.querySelector('span') },
+                { name: 'auto_amp', minus: stepperBtns[2], plus: stepperBtns[3], span: stepperBtns[2].nextElementSibling.querySelector('span') },
+                { name: 'teleop_speaker', minus: stepperBtns[4], plus: stepperBtns[5], span: stepperBtns[4].nextElementSibling.querySelector('span') },
+                { name: 'teleop_amp', minus: stepperBtns[6], plus: stepperBtns[7], span: stepperBtns[6].nextElementSibling.querySelector('span') },
+                { name: 'teleop_amplified', minus: stepperBtns[8], plus: stepperBtns[9], span: stepperBtns[8].nextElementSibling.querySelector('span') }
+            ];
+
+            const state = {
+                auto_speaker: 0,
+                auto_amp: 0,
+                teleop_speaker: 0,
+                teleop_amp: 0,
+                teleop_amplified: 0
+            };
+
+            // Initialize display to 0 (HTML might have hardcoded values like '2' or '5')
+            counters.forEach(c => {
+                c.span.textContent = '0';
+
+                c.minus.addEventListener('click', (e) => {
+                    e.preventDefault(); // prevent form submit just in case
+                    if (state[c.name] > 0) {
+                        state[c.name]--;
+                        c.span.textContent = state[c.name];
+                        if (state[c.name] === 0) {
+                            c.span.classList.add('text-slate-500', 'dark:text-slate-400');
+                            c.span.classList.remove('text-primary', 'text-purple-400');
+                        }
+                    }
+                });
+
+                c.plus.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    state[c.name]++;
+                    c.span.textContent = state[c.name];
+                    c.span.classList.remove('text-slate-500', 'dark:text-slate-400');
+                    if (c.name === 'teleop_amplified') c.span.classList.add('text-purple-400');
+                    else c.span.classList.add('text-primary');
+                });
+            });
+
+            // Quick Tags logic
+            const tags = document.querySelectorAll('.flex-wrap.gap-2 button');
+            const textarea = document.querySelector('textarea');
+            tags.forEach(tag => {
+                tag.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const tagText = `[${tag.textContent}] `;
+                    if (!textarea.value.includes(tagText)) {
+                        textarea.value = tagText + textarea.value;
+                    }
+                });
+            });
+
+            // Handle Form Submit
+            const form = document.querySelector('form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                // Get Radios/Checkboxes/Selects
+                const startPos = document.querySelector('input[name="startPos"]:checked')?.value || 'Center';
+
+                // "Leave Starting Zone" is the first standalone checkbox
+                const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+                const leftStart = allCheckboxes[0].checked;
+                const coopBonus = allCheckboxes[1].checked;
+                const trapNote = allCheckboxes[2].checked;
+                const spotlight = allCheckboxes[3].checked;
+
+                const stageResult = document.querySelector('input[name="stageResult"]:checked')?.value || 'None';
+                const pickup = document.querySelector('select').value;
+                const assignmentId = '{{ assignment.id if assignment else "" }}';
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Saving...';
+                submitBtn.disabled = true;
+
+                const payload = {
+                    assignment_id: assignmentId,
+                    start_position: startPos,
+                    left_start: leftStart,
+                    auto_speaker: state.auto_speaker,
+                    auto_amp: state.auto_amp,
+                    teleop_speaker: state.teleop_speaker,
+                    teleop_amp: state.teleop_amp,
+                    teleop_amplified: state.teleop_amplified,
+                    coop_bonus: coopBonus,
+                    pickup_location: pickup,
+                    climb_status: stageResult,
+                    trap_note: trapNote,
+                    spotlight: spotlight,
+                    notes: textarea.value
+                };
+
+                try {
+                    const res = await fetch('/api/submit-match-scout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Saved!';
+                        submitBtn.classList.replace('bg-primary', 'bg-green-500');
+                        setTimeout(() => window.location.href = '/', 1000);
+                    } else {
+                        alert(data.error || 'Failed to submit match');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('Network error. Please try again.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

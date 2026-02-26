@@ -221,30 +221,24 @@
                 <table class="w-full text-left border-collapse">
                     <thead class="sticky top-0 bg-slate-900/90 backdrop-blur-sm z-10">
                         <tr class="text-[10px] uppercase font-black tracking-widest text-slate-500">
-                            <th class="px-6 py-4">Match</th>
                             <th class="px-6 py-4">Team</th>
-                            <th class="px-6 py-4">Alliance</th>
                             <th class="px-6 py-4 text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-800">
                         {% for assignment in assignments %}
                         <tr class="group hover:bg-slate-800/40 transition-colors">
-                            <td class="px-6 py-4 text-sm font-medium text-slate-300">{{ assignment.match_key }}</td>
                             <td class="px-6 py-4 text-sm font-bold text-white">{{ assignment.team_key }}</td>
-                            <td
-                                class="px-6 py-4 text-sm font-bold {% if assignment.alliance_color == 'Red' %}text-red-500{% else %}text-blue-500{% endif %}">
-                                {{ assignment.alliance_color }}</td>
                             <td class="px-6 py-4 text-center">
-                                <a href="/match-scout/{{ assignment.id }}"
+                                <a href="/pit-scout/{{ assignment.id }}"
                                     class="bg-primary/20 text-primary hover:bg-primary hover:text-white px-3 py-1.5 rounded-md text-xs font-bold transition-colors inline-block text-center cursor-pointer">Start
                                     Scouting</a>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="px-6 py-12 text-center text-slate-500 italic">No pending assignments!
-                                Enjoy the matches.</td>
+                            <td colspan="2" class="px-6 py-12 text-center text-slate-500 italic">No pending assignments!
+                                Enjoy the pits.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
