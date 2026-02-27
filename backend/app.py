@@ -1497,6 +1497,98 @@ def head_scout_analytics_hub():
             team_averages_json=json.dumps(team_averages)
         )
 
+# Route for Drag & Drop Pick List Generator
+@app.route('/picklist')
+def pick_list_hub():
+    # Only allow Head Scouts and Admins
+    user, err_resp, err_code = check_admin() # check_admin is actually head scout + admin
+    if err_resp: return err_resp, err_code
+
+    # Get all events (same as Head Scout hub)
+    events = Event.query.all()
+
+    # Re-use the Analytics Hub aggregation logic to get accurate data
+    match_data = MatchScoutData.query.all()
+    pit_data = PitScoutData.query.all()
+
+    team_averages: Dict[str, Any] = {}
+    accuracy_lists: Dict[str, list] = {}
+
+    for m in match_data:
+        t_id = f"frc{m.team_id}"
+        if t_id not in team_averages:
+            team_averages[t_id] = {
+                'team_id': m.team_id, 'match_count': 0, 'auto_balls_scored': 0.0,
+                'teleop_balls_shot': 0.0, 'teleop_intake_speed': 0.0,
+                'teleop_shooter_accuracy': 0.0, 'climb_count': 0, 'l3_climb_count': 0,
+                'matches': [], 'pit': None
+            }
+            accuracy_lists[t_id] = []
+
+        stats = team_averages[t_id]
+        stats['match_count'] += 1
+        
+        acc = to_num(m.teleop_shooter_accuracy, 0.0)
+        accuracy_lists[t_id].append(acc)
+        
+        stats['auto_balls_scored'] += to_num(m.auto_balls_scored, 0.0)
+        stats['teleop_balls_shot'] += to_num(m.teleop_balls_shot, 0.0)
+        stats['teleop_intake_speed'] += to_num(m.teleop_intake_speed, 3.0)
+        stats['teleop_shooter_accuracy'] += acc
+        
+        c_status = str(m.endgame_climb).strip() if m.endgame_climb else 'None'
+        if c_status != 'None':
+            stats['climb_count'] += 1
+            if c_status == 'L3':
+                stats['l3_climb_count'] += 1
+
+    # Link Pit Data
+    for p in pit_data:
+        t_id = f"frc{p.team_id}"
+        if t_id in team_averages:
+            team_averages[t_id]['pit'] = {
+                'drivetrain': p.drivetrain_type,
+                'motors': f"{p.motor_type} ({p.motor_count})"
+            }
+
+    import math
+    def calculate_sd(data):
+        if len(data) < 2: return 0.0
+        mean = sum(data) / len(data)
+        variance = sum((x - mean) ** 2 for x in data) / (len(data) - 1)
+        return round(float(math.sqrt(float(variance))), 2)
+
+    # Compute final averages and Power Score
+    sorted_teams = []
+    for t_id, stats in team_averages.items():
+        count = int(stats['match_count'])
+        if count > 0:
+            stats['auto_balls_avg'] = round(float(stats['auto_balls_scored']) / count, 2)
+            stats['teleop_balls_avg'] = round(float(stats['teleop_balls_shot']) / count, 2)
+            stats['accuracy_avg'] = round(float(stats['teleop_shooter_accuracy']) / count, 2)
+            stats['climb_rate'] = round((float(stats['climb_count']) / count) * 100, 1)
+            
+            # Formulate a Base Power Score for initial sorting
+            # Example metric: Auto is worth 2x, Teleop worth 1x multiplied by accuracy, plus climb boost
+            power_score = (stats['auto_balls_avg'] * 2) + (stats['teleop_balls_avg'] * (stats['accuracy_avg'] / 100)) + (stats['climb_rate'] / 20)
+            stats['power_score'] = round(power_score, 2)
+        else:
+            stats['power_score'] = 0.0
+        
+        sorted_teams.append(stats)
+
+    # Pre-sort the array descending by power_score
+    sorted_teams.sort(key=lambda x: x['power_score'], reverse=True)
+
+    import json
+    template_path = os.path.join(basedir, '../frontend/head_scout_pick_list/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(),
+            user=user,
+            sorted_teams_json=json.dumps(sorted_teams)
+        )
+
 @app.route('/api/import/scout-data', methods=['POST'])
 def import_scout_data():
     user, err_resp, err_code = check_admin()

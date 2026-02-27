@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alliance Pick List | FRC Scouting App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#151e2e', 900: '#0f172a' },
+                        blue: { 500: '#3b82f6', 600: '#2563eb' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <!-- SortableJS for Drag and Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .drag-handle {
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #1e293b;
+            border: 2px dashed #3b82f6;
+        }
+
+        .sortable-drag {
+            cursor: grabbing !important;
+        }
+    </style>
+    <!-- Inject Global Translation Widget -->
+    <script src="/shared_assets/translator.js"></script>
+</head>
+
+<body class="bg-slate-900 text-slate-300 min-h-screen">
+
+    <!-- Top Navigation -->
+    <nav class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/50 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-8">
+                    <a href="/head-scout-stats"
+                        class="flex items-center gap-3 text-white hover:text-blue-400 transition-colors">
+                        <span class="material-symbols-outlined text-blue-500">list_alt</span>
+                        <span class="font-bold text-lg tracking-tight">Strategy Pick List</span>
+                    </a>
+
+                    <div class="hidden md:flex space-x-1">
+                        <a href="/head-scout-stats"
+                            class="text-slate-300 hover:text-white hover:bg-slate-700/50 px-3 py-2 rounded-md text-sm font-medium transition-colors">Analytics
+                            Hub</a>
+                        <a href="/picklist"
+                            class="text-blue-400 bg-blue-500/10 px-3 py-2 rounded-md text-sm font-medium">Pick List</a>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <button id="export-pdf-btn"
+                        class="flex items-center gap-2 bg-gradient-to-r from-red-600 to-orange-500 hover:from-red-500 hover:to-orange-400 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-all active:scale-95">
+                        <span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                        <span class="hidden sm:inline">Export PDF</span>
+                    </button>
+                    <a href="/"
+                        class="flex items-center gap-2 text-slate-400 hover:text-white transition-colors bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg text-sm font-medium border border-slate-700">
+                        <span class="material-symbols-outlined text-[18px]">logout</span>
+                        Exit Hub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div class="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                    <span class="material-symbols-outlined text-blue-500 text-3xl">drag_indicator</span>
+                    Dynamic Pick List
+                </h1>
+                <p class="text-slate-400 mt-2 text-sm sm:text-base">
+                    Teams are natively pre-sorted by their <b>Power Score</b>. Drag and drop rows to customize your
+                    final alliance selection priorities.
+                </p>
+            </div>
+            <button id="reset-list-btn"
+                class="flex items-center gap-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 transition-all active:scale-95">
+                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                Reset Order
+            </button>
+        </div>
+
+        <!-- Pick List Container (Export Target) -->
+        <div id="pdf-container" class="bg-slate-850 rounded-2xl border border-slate-700/50 shadow-2xl p-6">
+
+            <div class="flex justify-between items-center border-b border-slate-700/50 pb-4 mb-4 px-2">
+                <h2 class="text-xl font-bold text-white">Alliance Selection Board</h2>
+                <div class="text-sm text-slate-400"><span id="saved-status"
+                        class="text-emerald-400 flex items-center gap-1 opacity-0 transition-opacity duration-300"><span
+                            class="material-symbols-outlined text-sm">cloud_done</span> Saved</span></div>
+            </div>
+
+            <!-- Header Row -->
+            <div
+                class="grid grid-cols-[50px_80px_1fr_auto] sm:grid-cols-[50px_100px_3fr_1fr_1fr_1fr_auto] gap-4 px-4 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                <div class="text-center">Rank</div>
+                <div>Team</div>
+                <div class="hidden sm:block">Performance Profile</div>
+                <div class="hidden sm:block text-right">Auto Avg</div>
+                <div class="hidden sm:block text-right">Teleop Avg</div>
+                <div class="hidden sm:block text-right">Power</div>
+                <div class="text-center pr-2">Notes</div>
+            </div>
+
+            <!-- Sortable List -->
+            <ul id="team-list" class="flex flex-col gap-2">
+                <!-- Javascript will populate rows here -->
+            </ul>
+
+        </div>
+
+        <div class="mt-12 text-center text-sm text-slate-500">
+            <p>Pick list data is saved locally to your browser via localStorage.</p>
+            <p>Export to PDF before clearing your browser cache.</p>
+        </div>
+
+    </main>
+
+    <!-- Passing server data to client -->
+    <script id="server-data" type="application/json">
+        {{ sorted_teams_json | safe }}
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const rawData = document.getElementById('server-data').textContent;
+            let preSortedTeams = [];
+            try { preSortedTeams = JSON.parse(rawData); } catch (e) { console.error("Data parse error", e); }
+
+            const listContainer = document.getElementById('team-list');
+            const saveStatusIndicator = document.getElementById('saved-status');
+            const STORAGE_KEY = 'scout_picklist_order_2026';
+            const NOTES_KEY = 'scout_picklist_notes_2026';
+
+            // Load saved state or default
+            let savedOrder = JSON.parse(localStorage.getItem(STORAGE_KEY));
+            let savedNotes = JSON.parse(localStorage.getItem(NOTES_KEY)) || {};
+
+            // Render Teams
+            function renderList() {
+                listContainer.innerHTML = '';
+
+                // Determine display order: user custom order OR default power sort
+                let teamsToRender = [];
+                if (savedOrder && savedOrder.length > 0) {
+                    // Reconstruct from saved order
+                    savedOrder.forEach(teamId => {
+                        const team = preSortedTeams.find(t => t.team_id == teamId);
+                        if (team) teamsToRender.push(team);
+                    });
+                    // Add any new teams that weren't saved in local storage to the bottom
+                    preSortedTeams.forEach(t => {
+                        if (!savedOrder.includes(t.team_id.toString())) teamsToRender.push(t);
+                    });
+                } else {
+                    teamsToRender = preSortedTeams;
+                }
+
+                teamsToRender.forEach((team, index) => {
+                    const row = document.createElement('li');
+                    row.className = "group bg-slate-800 hover:bg-slate-700/80 border border-slate-700/50 rounded-xl p-3 flex items-center gap-4 transition-colors cursor-default";
+                    row.dataset.id = team.team_id;
+
+                    const noteText = savedNotes[team.team_id] || '';
+                    const hasNote = noteText.length > 0;
+
+                    row.innerHTML = `
+                        <!-- Drag Handle & Rank -->
+                        <div class="drag-handle w-[40px] flex items-center justify-center text-slate-500 group-hover:text-white transition-colors">
+                            <span class="material-symbols-outlined text-xl">drag_indicator</span>
+                        </div>
+                        <div class="w-[30px] text-center font-bold text-lg rank-number ${index < 8 ? 'text-emerald-400' : 'text-slate-400'}">
+                            ${index + 1}
+                        </div>
+
+                        <!-- Team Number -->
+                        <div class="w-[60px] sm:w-[80px]">
+                            <span class="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg font-mono font-bold text-lg block text-center">
+                                ${team.team_id}
+                            </span>
+                        </div>
+
+                        <!-- Profile (Mobile hidden) -->
+                        <div class="flex-1 hidden sm:flex flex-col justify-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-medium text-slate-300">Accuracy: ${team.accuracy_avg}%</span>
+                                <div class="h-2 w-24 bg-slate-900 rounded-full overflow-hidden">
+                                    <div class="h-full bg-blue-500 rounded-full" style="width: ${team.accuracy_avg}%"></div>
+                                </div>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-1 flex gap-3">
+                                <span>Climb Rate: ${team.climb_rate}%</span>
+                                <span>Matches: ${team.match_count}</span>
+                            </div>
+                            <!-- Note Text Display -->
+                            <div class="team-note-display text-xs font-medium text-red-400 mt-1.5 ${hasNote ? 'block' : 'hidden'}">
+                                ⚠️ ${noteText}
+                            </div>
+                        </div>
+
+                        <!-- Mini Note Display (Mobile only) -->
+                        <div class="flex-1 sm:hidden">
+                            <div class="team-note-display text-xs font-medium text-red-400 ${hasNote ? 'block' : 'hidden'}">
+                                ⚠️ ${noteText}
+                            </div>
+                        </div>
+
+                        <!-- Stats (Mobile hidden) -->
+                        <div class="hidden sm:block text-right w-[80px] font-mono font-semibold text-indigo-300">
+                            ${team.auto_balls_avg}
+                        </div>
+                        <div class="hidden sm:block text-right w-[80px] font-mono font-semibold text-emerald-300">
+                            ${team.teleop_balls_avg}
+                        </div>
+                        <div class="hidden sm:block text-right w-[80px] font-mono font-bold text-amber-400 text-lg">
+                            ${team.power_score}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="pr-2 pl-4 border-l border-slate-700/50">
+                            <button onclick="editTeamNote('${team.team_id}')" class="p-2 rounded-lg hover:bg-slate-600 transition-colors ${hasNote ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'text-slate-400 hover:text-white'}" title="Add/Edit Note">
+                                <span class="material-symbols-outlined text-[20px]">${hasNote ? 'edit_note' : 'note_add'}</span>
+                            </button>
+                        </div>
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+
+            // Initialize SortableJS
+            const sortable = new Sortable(listContainer, {
+                handle: '.drag-handle',
+                animation: 250,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: function (evt) {
+                    updateRanksAndSave();
+                }
+            });
+
+            // Update Numbers and Save to LocalStorage
+            function updateRanksAndSave() {
+                const rows = listContainer.children;
+                const newOrderArr = [];
+                for (let i = 0; i < rows.length; i++) {
+                    // Update Rank Number UI
+                    const rankElem = rows[i].querySelector('.rank-number');
+                    rankElem.innerText = i + 1;
+                    if (i < 8) { rankElem.className = 'w-[30px] text-center font-bold text-lg rank-number text-emerald-400'; }
+                    else { rankElem.className = 'w-[30px] text-center font-bold text-lg rank-number text-slate-400'; }
+
+                    // Push ID to array
+                    newOrderArr.push(rows[i].dataset.id);
+                }
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(newOrderArr));
+                flashSaveIndicator();
+            }
+
+            // Global Note Edit Function
+            window.editTeamNote = function (teamId) {
+                const currentNote = savedNotes[teamId] || '';
+                const newNote = prompt(`Add a red warning note for Team ${teamId} (leave blank to remove):`, currentNote);
+
+                if (newNote !== null) {
+                    if (newNote.trim() === '') {
+                        delete savedNotes[teamId];
+                    } else {
+                        savedNotes[teamId] = newNote.trim();
+                    }
+                    localStorage.setItem(NOTES_KEY, JSON.stringify(savedNotes));
+                    renderList(); // Quickly re-render to show updated note badge
+                    flashSaveIndicator();
+                }
+            };
+
+            // UX Save Indicator
+            function flashSaveIndicator() {
+                saveStatusIndicator.classList.remove('opacity-0');
+                setTimeout(() => { saveStatusIndicator.classList.add('opacity-0'); }, 2000);
+            }
+
+            // Reset Logic
+            document.getElementById('reset-list-btn').addEventListener('click', () => {
+                if (confirm("Are you sure you want to revert to the default algorithmic Power Score order? This will wipe your custom drag-and-drop arrangement.")) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    savedOrder = null;
+                    renderList();
+                }
+            });
+
+            // PDF Export Logic
+            document.getElementById('export-pdf-btn').addEventListener('click', () => {
+                const element = document.getElementById('pdf-container');
+                const opt = {
+                    margin: 10,
+                    filename: 'FRC_Alliance_Pick_List.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#0f172a' },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                // Visual tweaks right before screenshot
+                element.style.padding = '10px';
+                html2pdf().set(opt).from(element).save().then(() => {
+                    element.style.padding = '24px'; // Restore padding
+                });
+            });
+
+            // Initial Execution
+            renderList();
+        });
+    </script>
+</body>
+
+</html>
