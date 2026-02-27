@@ -1,8 +1,8 @@
 import os, secrets, string, tempfile
 from dotenv import load_dotenv
 load_dotenv()
-import whisper
-from pydub import AudioSegment
+# import whisper  # Optional/unused dependency causing pyre lints
+# from pydub import AudioSegment  # Optional/unused dependency causing pyre lints
 from flask import Flask, request, jsonify, send_from_directory, session, redirect, url_for, abort, render_template_string
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -79,6 +79,12 @@ os.makedirs(app.config['PITS_UPLOAD_FOLDER'], exist_ok=True)
 @app.route('/uploads/<path:filename>')
 def serve_uploads(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+# Route to serve unified shared assets (e.g. translation scripts)
+@app.route('/shared_assets/<path:filename>')
+def serve_shared_assets(filename):
+    shared_dir = os.path.join(basedir, '..', 'frontend', 'shared_assets')
+    return send_from_directory(shared_dir, filename)
 
 # Initialize the database with the app
 db.init_app(app)
@@ -1377,7 +1383,8 @@ def head_scout_analytics_hub():
     match_data = MatchScoutData.query.all()
     
     # Calculate Team Performance Averages
-    team_averages = {}
+    import typing
+    team_averages: typing.Dict[str, typing.Any] = {}
     
     # Mapping for string labels found in historical/imported data
     VAL_MAP = {
@@ -1455,7 +1462,7 @@ def head_scout_analytics_hub():
         if len(data) < 2: return 0.0
         mean = sum(data) / len(data)
         variance = sum((x - mean) ** 2 for x in data) / (len(data) - 1)
-        return round(math.sqrt(variance), 2)
+        return round(float(math.sqrt(float(variance))), 2)
 
     # Compute final averages
     for t_id, stats in team_averages.items():
@@ -1557,13 +1564,13 @@ def import_scout_data():
             existing.climb_level = compliance.get('climb_level', 'None')
             existing.intake_type = compliance.get('intake_type', 'Both')
             existing.scoring_preference = compliance.get('scoring_preference', 'Both')
-            existing.auto_leave = auto.get('leave_starting_line', False)
-            existing.auto_score_fuel = auto.get('score_fuel_hub', False)
-            existing.auto_collect_fuel = auto.get('collect_extra_fuel', False)
-            existing.auto_climb_l1 = auto.get('climb_tower_l1', False)
-            existing.notes = analysis.get('notes', '')
+            existing.auto_leave = auto.get('leave_starting_line', auto.get('leave_line', False))
+            existing.auto_score_fuel = auto.get('score_fuel_hub', auto.get('score_fuel', False))
+            existing.auto_collect_fuel = auto.get('collect_extra_fuel', auto.get('collect_fuel', False))
+            existing.auto_climb_l1 = auto.get('climb_tower_l1', auto.get('climb_l1', False))
+            existing.notes = analysis.get('notes', data.get('notes', ''))
             
-        elif 'match_metrics' in data or 'teleop' in data: # It's Match Data
+        elif 'teleop' in data or 'match_metrics' in data: # It's Match Data
             match_key = metadata.get('match_key', 'qm0')
             match_number = int(match_key.split('_')[-1].replace('qm', '').replace('sf', '').replace('f', '') or 0)
             
@@ -1574,20 +1581,18 @@ def import_scout_data():
                 
             auto = data.get('autonomous', {})
             teleop = data.get('teleop', {})
-            metrics = teleop.get('metrics', {})
-            obstacles = teleop.get('obstacles', {})
             endgame = data.get('endgame', {})
             
-            existing.auto_start_balls = auto.get('starting_balls', 0)
-            existing.auto_balls_shot = auto.get('total_balls_shot', 0)
+            existing.auto_start_balls = auto.get('start_balls', auto.get('starting_balls', 0))
+            existing.auto_balls_shot = auto.get('balls_shot', auto.get('total_balls_shot', 0))
             existing.auto_balls_scored = auto.get('balls_scored', 0)
-            existing.auto_climb = auto.get('climb_level', 'None')
-            existing.teleop_intake_speed = metrics.get('intake_speed', 3)
-            existing.teleop_shooter_accuracy = metrics.get('shooter_accuracy', 3)
-            existing.teleop_balls_shot = teleop.get('total_balls_shot', 0)
-            existing.passes_bump = obstacles.get('passes_bump', False)
-            existing.passes_trench = obstacles.get('passes_trench', False)
-            existing.endgame_climb = endgame.get('climb_level', 'None')
+            existing.auto_climb = auto.get('climb', auto.get('climb_level', 'None'))
+            existing.teleop_intake_speed = teleop.get('intake_speed', 3)
+            existing.teleop_shooter_accuracy = teleop.get('shooter_accuracy', 3)
+            existing.teleop_balls_shot = teleop.get('balls_shot', teleop.get('total_balls_shot', 0))
+            existing.passes_bump = teleop.get('passes_bump', False)
+            existing.passes_trench = teleop.get('passes_trench', False)
+            existing.endgame_climb = endgame.get('climb', endgame.get('climb_level', 'None'))
             existing.notes = data.get('notes', '')
             existing.scouter_id = metadata.get('scout_id') or metadata.get('scouter_id')
 

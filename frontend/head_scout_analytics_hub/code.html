@@ -2,6 +2,7 @@
 <html class="dark" lang="en">
 
 <head>
+    <script src="/shared_assets/translator.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Head Scout Analytics Hub - FRC Scouting App</title>
@@ -64,6 +65,13 @@
 
 <body
     class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Global Status Toast -->
+    <div id="global-status"
+        class="fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[200] transition-all duration-300 flex items-center gap-2 transform scale-95 opacity-0 pointer-events-none">
+        <span id="global-status-text"></span>
+    </div>
+
     <!-- Header -->
     <header
         class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6 py-4 sticky top-0 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm z-50">
@@ -104,24 +112,31 @@
                 </select>
 
                 <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    <div class="relative group">
-                        <input type="file" id="json-import" accept=".json" class="hidden"
+                    <div id="queue-actions" class="hidden flex items-center gap-2 mr-2">
+                        <button onclick="syncOfflineQueue()" id="sync-queue-btn"
+                            class="h-12 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-all flex items-center justify-center px-4 shadow-lg shadow-emerald-500/20 whitespace-nowrap">
+                            Sync Queue (0)
+                        </button>
+                        <button onclick="clearOfflineQueue()"
+                            class="h-12 w-12 flex-shrink-0 rounded-xl border border-red-500/20 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center text-xl group">
+                            <span
+                                class="material-symbols-outlined group-hover:scale-110 transition-transform">delete_sweep</span>
+                        </button>
+                    </div>
+                    <div class="relative group flex-1 sm:flex-none">
+                        <input type="file" id="json-import" accept=".json" class="hidden" multiple
                             onchange="handleImport(event)" />
                         <button onclick="document.getElementById('json-import').click()"
-                            class="w-full h-12 rounded-xl border border-dashed border-primary/50 bg-primary/5 text-primary font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 px-6">
+                            class="w-full h-12 rounded-xl border border-dashed border-primary/50 bg-primary/5 text-primary font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 px-6 whitespace-nowrap">
                             <span class="material-symbols-outlined text-[20px]">upload_file</span>
                             Import JSON
                         </button>
                     </div>
                     <button onclick="openQRScanner()"
-                        class="h-12 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all flex items-center justify-center gap-2 px-6 shadow-lg shadow-primary/20">
+                        class="h-12 w-full sm:w-auto rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all flex items-center justify-center gap-2 px-6 shadow-lg shadow-primary/20 whitespace-nowrap">
                         <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
                         Scan QR Code
                     </button>
-                    <div id="import-status"
-                        class="hidden absolute top-full left-0 right-0 mt-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-500 text-xs font-bold text-center z-10">
-                        Importing...
-                    </div>
                 </div>
             </div>
         </div>
@@ -339,6 +354,33 @@
         const matchDataRaw = JSON.parse('{{ match_data_json | safe }}');
         const teamPerformance = JSON.parse('{{ team_averages_json | safe }}');
         let currentTab = 'teams';
+        let offlineQueue = JSON.parse(localStorage.getItem('scoutOfflineQueue') || '[]');
+
+        function showStatus(text, type = 'success') {
+            const toast = document.getElementById('global-status');
+            const toastText = document.getElementById('global-status-text');
+            toastText.innerText = text;
+
+            toast.className = `fixed top-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl font-bold text-sm shadow-2xl z-[200] transition-all duration-300 flex items-center gap-2 scale-100 opacity-100 ${type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`;
+
+            setTimeout(() => {
+                toast.classList.remove('scale-100', 'opacity-100');
+                toast.classList.add('scale-95', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function updateQueueUI() {
+            const queueActions = document.getElementById('queue-actions');
+            const syncBtn = document.getElementById('sync-queue-btn');
+            if (offlineQueue.length > 0) {
+                queueActions.classList.remove('hidden');
+                syncBtn.innerText = `Sync Queue (${offlineQueue.length})`;
+            } else {
+                queueActions.classList.add('hidden');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', updateQueueUI);
 
         function switchTab(tabId) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -351,33 +393,180 @@
         }
 
         async function handleImport(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
 
-            const status = document.getElementById('import-status');
-            status.classList.remove('hidden');
-            status.innerText = "⏳ Importing " + file.name + "...";
+            let addedCount = 0;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const text = await file.text();
+                try {
+                    const data = JSON.parse(text);
+                    offlineQueue.push({ type: 'json', data: data, name: file.name });
+                    addedCount++;
+                } catch (e) { console.error("Invalid JSON:", file.name); }
+            }
 
-            const formData = new FormData();
-            formData.append('file', file);
+            if (addedCount > 0) {
+                localStorage.setItem('scoutOfflineQueue', JSON.stringify(offlineQueue));
+                updateQueueUI();
+                showStatus(`✅ Added ${addedCount} file(s) to Offline Sync Queue`, 'success');
+            }
+        }
 
-            try {
-                const res = await fetch('/api/import/scout-data', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await res.json();
+        async function syncOfflineQueue() {
+            if (offlineQueue.length === 0) return;
 
-                if (res.ok) {
-                    status.classList.add('bg-green-500/20', 'text-green-500');
-                    status.innerText = "✅ " + data.message;
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    status.classList.add('bg-red-500/20', 'text-red-500');
-                    status.innerText = "❌ " + (data.error || "Import failed");
+            const btn = document.getElementById('sync-queue-btn');
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">sync</span> Syncing...`;
+            btn.disabled = true;
+
+            let successCount = 0;
+
+            for (let i = 0; i < offlineQueue.length; i++) {
+                const item = offlineQueue[i];
+                try {
+                    const data = item.data;
+                    const metadata = data.metadata || {};
+                    const team_key = metadata.team_key;
+                    if (!team_key) continue;
+
+                    const t_num = team_key.replace('frc', '');
+                    const t_id = `frc${t_num}`;
+
+                    // Initialize team in teamPerformance if not exists
+                    if (!teamPerformance[t_id]) {
+                        teamPerformance[t_id] = {
+                            team_number: t_num, match_count: 0, auto_balls_scored: 0,
+                            teleop_balls_shot: 0, teleop_intake_speed: 0, teleop_shooter_accuracy: 0,
+                            climb_count: 0, l3_climb_count: 0, matches: [],
+                            auto_balls_avg: 0, teleop_balls_avg: 0, intake_speed_avg: 0,
+                            accuracy_avg: 0, accuracy_sd: 0, climb_rate: 0, l3_rate: 0
+                        };
+                    }
+
+                    const stats = teamPerformance[t_id];
+
+                    if (data.pit_data || (data.technical_specs && data.game_compliance)) {
+                        // Handle Pit Data
+                        const pData = data.pit_data || data;
+                        const tech = pData.technical_specs || {};
+                        const game = pData.game_compliance || {};
+
+                        const newPit = {
+                            team_id: t_num,
+                            team_number: t_num,
+                            drivetrain_type: tech.drivetrain || 'Unknown',
+                            motor_type: tech.motor_type || 'Unknown',
+                            motor_count: tech.motor_count || 4,
+                            weight: tech.weight_lbs || 0,
+                            max_fuel_capacity: game.max_fuel_capacity || 0,
+                            climb_level: game.climb_level || 'None'
+                        };
+
+                        // Check if pit data exists for this team in pitDataRaw and replace or push
+                        const existingPitIndex = pitDataRaw.findIndex(p => p.team_id == t_num || p.team_number == t_num);
+                        if (existingPitIndex >= 0) {
+                            pitDataRaw[existingPitIndex] = newPit;
+                        } else {
+                            pitDataRaw.push(newPit);
+                        }
+
+                        // Update stats
+                        stats.pit = {
+                            drivetrain: newPit.drivetrain_type,
+                            motors: `${newPit.motor_type} (${newPit.motor_count})`,
+                            weight: newPit.weight,
+                            climb_level: newPit.climb_level
+                        };
+                        successCount++;
+
+                    } else if (data.match_data || (data.autonomous && data.teleop)) {
+                        // Handle Match Data
+                        const mData = data.match_data || data;
+                        const auto = mData.actions?.auto || mData.autonomous || {};
+                        const tele = mData.actions?.teleop || mData.teleop || {};
+                        const endgame = mData.endgame || {};
+                        const match_num = metadata.match_number || mData.metadata?.match_number || mData.match_key || '?';
+
+                        const auto_scored = parseFloat(auto.balls_scored || 0);
+                        const tele_shot = parseFloat(tele.balls_shot || 0);
+                        const intake_spd = parseFloat(tele.intake_speed || 3);
+                        // Convert string labels to numbers if necessary
+                        let accuracy = tele.shooter_accuracy;
+                        if (typeof accuracy === 'string') {
+                            const mapping = { 'Very Slow': 1, 'Slow': 2, 'Medium': 3, 'Fast': 4, 'Very Fast': 5 };
+                            accuracy = mapping[accuracy] || parseFloat(accuracy) || 3;
+                        } else {
+                            accuracy = parseFloat(accuracy || 3);
+                        }
+
+                        const climb_status = endgame.climb_level || endgame.climb || 'None';
+
+                        const newMatch = {
+                            team_id: t_num,
+                            team_number: t_num,
+                            match_number: match_num,
+                            auto_balls_scored: auto_scored,
+                            teleop_balls_shot: tele_shot,
+                            teleop_intake_speed: intake_spd,
+                            teleop_shooter_accuracy: accuracy,
+                            endgame_climb: climb_status
+                        };
+                        matchDataRaw.push(newMatch);
+
+                        // Update running aggregations
+                        stats.match_count++;
+                        stats.auto_balls_scored += auto_scored;
+                        stats.teleop_balls_shot += tele_shot;
+                        stats.teleop_intake_speed += intake_spd;
+                        stats.teleop_shooter_accuracy += accuracy;
+
+                        if (climb_status !== 'None') {
+                            stats.climb_count++;
+                            if (climb_status === 'L3') stats.l3_climb_count++;
+                        }
+
+                        stats.matches.push({
+                            number: match_num, auto: auto_scored, tele: tele_shot, climb: climb_status
+                        });
+
+                        // Recalculate Averages
+                        stats.auto_balls_avg = parseFloat((stats.auto_balls_scored / stats.match_count).toFixed(2));
+                        stats.teleop_balls_avg = parseFloat((stats.teleop_balls_shot / stats.match_count).toFixed(2));
+                        stats.intake_speed_avg = parseFloat((stats.teleop_intake_speed / stats.match_count).toFixed(2));
+                        stats.accuracy_avg = parseFloat((stats.teleop_shooter_accuracy / stats.match_count).toFixed(2));
+                        stats.climb_rate = parseFloat(((stats.climb_count / stats.match_count) * 100).toFixed(1));
+                        stats.l3_rate = parseFloat(((stats.l3_climb_count / stats.match_count) * 100).toFixed(1));
+
+                        successCount++;
+                    }
+                } catch (err) {
+                    console.error("Local sync error for item:", item, err);
                 }
-            } catch (err) {
-                status.innerText = "❌ Network error";
+            }
+
+            offlineQueue = [];
+            localStorage.setItem('scoutOfflineQueue', JSON.stringify(offlineQueue));
+            updateQueueUI();
+            updateUI(); // Re-render everything with the injected local data
+
+            btn.disabled = false;
+            btn.innerText = `Sync Queue`;
+
+            if (successCount > 0) {
+                showStatus(`✅ Successfully loaded ${successCount} entries into current session!`, 'success');
+            } else {
+                showStatus(`❌ No valid entries to load.`, 'error');
+            }
+        }
+
+        function clearOfflineQueue() {
+            if (confirm('Are you sure you want to delete all offline data? This cannot be undone.')) {
+                offlineQueue = [];
+                localStorage.setItem('scoutOfflineQueue', JSON.stringify(offlineQueue));
+                updateQueueUI();
+                showStatus('🗑️ Offline queue cleared', 'success');
             }
         }
 
@@ -527,7 +716,7 @@
 
                 const row = `
                     <tr class="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
-                        <td class="px-6 py-4 font-bold text-primary">frc${p.team_id}</td>
+                        <td class="px-6 py-4 font-bold text-primary">frc${p.team_number}</td>
                         <td class="px-6 py-4 text-sm">${p.drivetrain_type}</td>
                         <td class="px-6 py-4 text-sm">${p.motor_type} (${p.motor_count})</td>
                         <td class="px-6 py-4 text-sm">${p.weight} lbs</td>
@@ -604,7 +793,7 @@
             matchDataRaw.forEach(m => {
                 const row = `
                     <tr class="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
-                        <td class="px-6 py-4 font-bold text-primary">frc${m.team_id}</td>
+                        <td class="px-6 py-4 font-bold text-primary">frc${m.team_number}</td>
                         <td class="px-6 py-4 text-sm font-medium">QM ${m.match_number}</td>
                         <td class="px-6 py-4 text-sm">${m.auto_balls_scored}</td>
                         <td class="px-6 py-4 text-sm">${m.teleop_balls_shot}</td>
@@ -702,9 +891,6 @@
 
         async function processQRScan(decodedText) {
             closeQRScanner();
-            const status = document.getElementById('import-status');
-            status.classList.remove('hidden', 'bg-red-500/10', 'text-red-500', 'bg-green-500/10', 'text-green-500');
-            status.innerText = "⏳ Processing QR data...";
 
             try {
                 const compact = JSON.parse(decodedText);
@@ -767,29 +953,16 @@
                     };
                 }
 
-                // Upload as file to match backend expectation
-                const blob = new Blob([JSON.stringify(fullData)], { type: 'application/json' });
-                const formData = new FormData();
-                formData.append('file', blob, 'qr_import.json');
+                // Add to Offline Queue
+                const itemName = (fullData.metadata.match_key || 'pit') + '_' + fullData.metadata.team_key;
+                offlineQueue.push({ type: 'qr', data: fullData, name: itemName + '.json' });
+                localStorage.setItem('scoutOfflineQueue', JSON.stringify(offlineQueue));
+                updateQueueUI();
 
-                const res = await fetch('/api/import/scout-data', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const result = await res.json();
-                if (res.ok) {
-                    status.classList.add('bg-green-500/10', 'text-green-500');
-                    status.innerText = "✅ QR Sync Successful: " + (fullData.metadata.team_key || "Team Data");
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    status.classList.add('bg-red-500/10', 'text-red-500');
-                    status.innerText = "❌ Sync Error: " + (result.error || "Unknown");
-                }
+                showStatus(`✅ QR Saved: ${fullData.metadata.team_key}`, 'success');
             } catch (err) {
                 console.error("QR Process Error:", err);
-                status.classList.add('bg-red-500/10', 'text-red-500');
-                status.innerText = "❌ Invalid QR format";
+                showStatus("❌ Invalid QR format", 'error');
             }
         }
     </script>

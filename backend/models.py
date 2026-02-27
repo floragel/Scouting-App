@@ -128,6 +128,7 @@ class PitScoutData(db.Model):
         return {
             'id': self.id,
             'team_id': self.team_id,
+            'team_number': self.team.team_number if self.team else self.team_id,
             'event_id': self.event_id,
             'drivetrain_type': self.drivetrain_type,
             'weight': self.weight,
@@ -191,6 +192,7 @@ class MatchScoutData(db.Model):
         return {
             'id': self.id,
             'team_id': self.team_id,
+            'team_number': self.team.team_number if self.team else self.team_id,
             'event_id': self.event_id,
             'match_number': self.match_number,
             'auto_start_balls': self.auto_start_balls,
