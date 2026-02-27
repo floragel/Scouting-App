@@ -129,6 +129,7 @@ python3 backend/promote_admin.py
 | **Pit Scouting** | `/pit-scout/<id>` | Pre-match pit inspection form with **photo upload** capabilities |
 | **Team Directory** | `/teams` | Browse all teams with stats |
 | **Analytics Hub** | `/head-scout-stats`| Advanced performance metrics (SD), consistency badges, and team profiles |
+| **Pick List Board** | `/picklist` | Drag-and-drop alliance selection tool with TBA ranking fallback and PDF export |
 | **JSON Data Sync**| `/head-scout-stats`| Offline Data Export/Import via JSON files |
 | **QR Sync (BETA)** | Multiple | Offline data transfer via QR codes (Generation in forms, Scanning in Hub) |
 | **Translation** | All Pages | Integrated Multi-Language Support (EN, FR, ES, HI, ZH, RU, AR) |

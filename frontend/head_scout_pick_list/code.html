@@ -245,8 +245,11 @@
                         <div class="hidden sm:block text-right w-[80px] font-mono font-semibold text-emerald-300">
                             ${team.teleop_balls_avg}
                         </div>
-                        <div class="hidden sm:block text-right w-[80px] font-mono font-bold text-amber-400 text-lg">
-                            ${team.power_score}
+                        <div class="hidden sm:block w-[120px] text-right font-mono font-bold">
+                            ${(team.power_score === 0.0 && team.tba_rank !== undefined)
+                            ? `<span class="text-sm text-slate-400 font-medium">TBA Rank: </span><span class="text-amber-400 text-lg">${team.tba_rank === 999 ? 'N/A' : team.tba_rank}</span>`
+                            : `<span class="text-amber-400 text-lg">${team.power_score}</span>`
+                        }
                         </div>
 
                         <!-- Actions -->

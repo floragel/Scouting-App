@@ -1542,7 +1542,42 @@ def pick_list_hub():
             if c_status == 'L3':
                 stats['l3_climb_count'] += 1
 
-    # Link Pit Data
+    # --- TBA FALLBACK ---
+    # If no local match data exists, populate the list with all teams from
+    # the user's current event via TBA, and use official TBA rankings if available.
+    is_tba_fallback = False
+    if not match_data:
+        tba = TBAHandler()
+        # Default to frc6622 if affiliation not set
+        team_key = getattr(user, 'affiliation', 'frc6622')
+        if not team_key: 
+            team_key = 'frc6622'
+            
+        event_key = tba.get_team_latest_event(team_key)
+        if event_key:
+            event_teams = frc_api.get_teams_for_event(event_key)
+            event_rankings = frc_api.get_event_rankings(event_key)
+            
+            rankings_dict = {}
+            if event_rankings and 'rankings' in event_rankings:
+                for rank_data in event_rankings['rankings']:
+                    rankings_dict[rank_data['team_key']] = rank_data['rank']
+                    
+            if event_teams:
+                is_tba_fallback = True
+                for t in event_teams:
+                    tk = t['key']
+                    t_num = t['team_number']
+                    # Populate minimal stats
+                    team_averages[tk] = {
+                        'team_id': t_num, 'match_count': 0, 'auto_balls_scored': 0.0,
+                        'teleop_balls_shot': 0.0, 'teleop_intake_speed': 0.0,
+                        'teleop_shooter_accuracy': 0.0, 'climb_count': 0, 'l3_climb_count': 0,
+                        'matches': [], 'pit': None,
+                        'tba_rank': rankings_dict.get(tk, 999) # 999 if no rank
+                    }
+
+    # Link Pit Data (if any exists locally)
     for p in pit_data:
         t_id = f"frc{p.team_id}"
         if t_id in team_averages:
@@ -1568,8 +1603,6 @@ def pick_list_hub():
             stats['accuracy_avg'] = round(float(stats['teleop_shooter_accuracy']) / count, 2)
             stats['climb_rate'] = round((float(stats['climb_count']) / count) * 100, 1)
             
-            # Formulate a Base Power Score for initial sorting
-            # Example metric: Auto is worth 2x, Teleop worth 1x multiplied by accuracy, plus climb boost
             power_score = (stats['auto_balls_avg'] * 2) + (stats['teleop_balls_avg'] * (stats['accuracy_avg'] / 100)) + (stats['climb_rate'] / 20)
             stats['power_score'] = round(power_score, 2)
         else:
@@ -1577,8 +1610,11 @@ def pick_list_hub():
         
         sorted_teams.append(stats)
 
-    # Pre-sort the array descending by power_score
-    sorted_teams.sort(key=lambda x: x['power_score'], reverse=True)
+    # Sorting Logic: Official TBA Rank (ascending) if fallback, else Power Score (descending)
+    if is_tba_fallback:
+        sorted_teams.sort(key=lambda x: x.get('tba_rank', 999))
+    else:
+        sorted_teams.sort(key=lambda x: x.get('power_score', 0), reverse=True)
 
     import json
     template_path = os.path.join(basedir, '../frontend/head_scout_pick_list/code.html')

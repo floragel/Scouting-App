@@ -35,6 +35,14 @@ def get_event_matches(event_key):
         return response.json()
     return []
 
+def get_event_rankings(event_key):
+    """Fetch official rankings for a specific event."""
+    url = f"{BASE_URL}/event/{event_key}/rankings"
+    response = requests.get(url, headers=HEADERS)
+    if response.status_code == 200:
+        return response.json()
+    return {}
+
 def get_team_info(team_key):
     """Fetch detailed information for a specific team."""
     url = f"{BASE_URL}/team/{team_key}"
@@ -129,6 +137,28 @@ class TBAHandler:
 
         except Exception as e:
             return {"text": f"TBA Error: {str(e)}", "color": "grey", "type": "error"}
+
+    def get_team_latest_event(self, team_key):
+        """
+        Gets the first event key for a team in the current season,
+        regardless of whether they have played any matches yet.
+        """
+        try:
+            status_res = requests.get(f"{BASE_URL}/status", headers=self.headers, timeout=5)
+            current_year = 2024
+            if status_res.status_code == 200:
+                current_year = status_res.json().get('current_season', 2024)
+            
+            events_url = f"{BASE_URL}/team/{team_key}/events/{current_year}/simple"
+            res = requests.get(events_url, headers=self.headers, timeout=5)
+            if res.status_code == 200:
+                events = res.json()
+                if events:
+                    # Return the first registered event for the season
+                    return events[0]['key']
+            return None
+        except Exception:
+            return None
 
 def test_api():
     events = get_events_for_year(2024)

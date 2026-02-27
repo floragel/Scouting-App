@@ -76,6 +76,15 @@
                 <h1 class="text-xl font-bold tracking-tight">FRC Scouting App</h1>
             </a>
             <div class="h-6 w-px bg-slate-200 dark:border-slate-800"></div>
+            {% if user.role in ['Admin', 'Head Scout'] %}
+            <div class="hidden md:flex items-center gap-1">
+                <a href="/picklist"
+                    class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-500/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[14px]">drag_indicator</span>
+                    Pick List
+                </a>
+            </div>
+            {% endif %}
         </div>
         <div
             class="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 bg-primary/10 border border-primary/20 px-6 py-2 rounded-full">
@@ -162,13 +171,25 @@
                 </div>
             </div>
 
-            {% if is_admin and user.role == 'Head Scout' %}
-            <!-- Head Scout Quick Links -->
+            {% if is_admin %}
+            <!-- Strategic & Admin Tools -->
             <div class="bg-primary/5 border border-primary/20 rounded-xl p-5 space-y-3">
                 <h4 class="text-xs font-bold uppercase tracking-widest text-primary mb-2 flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">shield_person</span>
-                    Head Scout Tools
+                    Strategic Tools
                 </h4>
+                <a href="/picklist"
+                    class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-slate-800/80 border border-primary/10 hover:border-primary/40 transition-all group shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">drag_indicator</span>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold">Pick List Board</span>
+                            <span class="text-[10px] text-slate-500">Rank & drag teams for selection</span>
+                        </div>
+                    </div>
+                    <span
+                        class="material-symbols-outlined text-xs text-slate-400 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
+                </a>
                 <a href="/head-scout-stats"
                     class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-slate-800/80 border border-primary/10 hover:border-primary/40 transition-all group">
                     <div class="flex items-center gap-3">
@@ -182,7 +203,7 @@
                     class="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-slate-800/80 border border-primary/10 hover:border-primary/40 transition-all group">
                     <div class="flex items-center gap-3">
                         <span class="material-symbols-outlined text-primary">manage_accounts</span>
-                        <span class="text-sm font-bold">Manage Scouts</span>
+                        <span class="text-sm font-bold">Manage Scouts / Hub</span>
                     </div>
                     <span
                         class="material-symbols-outlined text-xs text-slate-400 group-hover:translate-x-1 transition-transform">arrow_forward_ios</span>
