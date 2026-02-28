@@ -133,10 +133,6 @@
                 <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
                 <span class="hidden sm:inline">QR Sync</span>
             </button>
-            <button
-                class="flex items-center justify-center rounded-lg size-10 bg-slate-100 dark:bg-[#223249] text-slate-600 dark:text-white hover:bg-slate-200 dark:hover:bg-[#314868] transition-colors">
-                <span class="material-symbols-outlined">settings</span>
-            </button>
             <a href="/profile/edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
                 <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
                     data-alt="Circular profile picture of user {{ user.name }}"
@@ -166,6 +162,37 @@
                 </div>
                 <div
                     class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6">
+
+                    <!-- Starting Position -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Starting
+                            Position</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startingPosition" type="radio" value="Left" />
+                                <div
+                                    class="text-center py-2 text-sm md:text-base font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    Left</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startingPosition" type="radio" value="Center"
+                                    checked />
+                                <div
+                                    class="text-center py-2 text-sm md:text-base font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    Center</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startingPosition" type="radio" value="Right" />
+                                <div
+                                    class="text-center py-2 text-sm md:text-base font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    Right</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
+
                     <!-- Ball Tracking Steppers -->
                     <div class="space-y-6">
                         <!-- Starting Balls -->
@@ -370,6 +397,7 @@
                 </div>
                 <div
                     class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6">
+                    <!-- Note: Starting Position is now recorded interactively on the Auto Trajectory Map -->
                     <!-- Climb Status -->
                     <div>
                         <label
@@ -429,6 +457,66 @@
                     </div>
                 </div>
             </section>
+
+            <!-- AUTO TRAJECTORY MAP -->
+            <section class="lg:col-span-3 flex flex-col gap-4 mt-2 mb-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">route</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Auto Trajectory Map</h2>
+                    <p class="text-xs text-slate-400 ml-2 hidden sm:block">Trace the robot's starting position and
+                        autonomous path.</p>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4">
+                    <!-- Toolbox -->
+                    <div class="flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-red-500 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-red-500 transition-colors"
+                                data-color="#ef4444"></button>
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-blue-500 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-blue-500 transition-colors"
+                                style="border-color: white;" data-color="#3b82f6"></button>
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-green-500 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-green-500 transition-colors"
+                                data-color="#22c55e"></button>
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-slate-900 border border-slate-700 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-slate-900 transition-colors"
+                                data-color="#0f172a"></button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="undo-btn"
+                                class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#223249] transition-colors font-bold text-sm">
+                                <span class="material-symbols-outlined">undo</span> <span
+                                    class="hidden sm:inline">Undo</span>
+                            </button>
+                            <button type="button" id="clear-btn"
+                                class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors font-bold text-sm">
+                                <span class="material-symbols-outlined text-lg">delete</span> <span
+                                    class="hidden sm:inline">Clear</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Canvas Area -->
+                    <div id="canvas-container"
+                        class="relative w-full aspect-[2/1] bg-slate-100 dark:bg-[#101823] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700"
+                        style="touch-action: none;">
+                        <img src="/static/images/auto_field_new.png"
+                            class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-80 dark:opacity-70"
+                            alt="Auto Field Map" />
+                        <!-- Strategy Canvas -->
+                        <canvas id="strategyCanvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+                        <!-- Draggable Robot Icon -->
+                        <div id="robot-start-icon" title="Drag to set Starting Position"
+                            class="absolute z-10 flex items-center justify-center size-8 bg-blue-500/20 border-2 border-blue-500 rounded cursor-grab active:cursor-grabbing shadow-lg backdrop-blur-sm touch-none"
+                            style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                            <span class="material-symbols-outlined text-blue-500 font-bold"
+                                style="font-size: 20px;">smart_toy</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </form>
     </main>
 
@@ -473,6 +561,52 @@
                 });
             });
 
+            // Robot Start Icon Dragging Logic
+            const robotIcon = document.getElementById('robot-start-icon');
+            const canvasContainer = document.getElementById('canvas-container');
+            let isDraggingRobot = false;
+            window.robotMoved = false;
+
+            function moveIcon(clientX, clientY) {
+                const rect = canvasContainer.getBoundingClientRect();
+                let x = clientX - rect.left;
+                let y = clientY - rect.top;
+
+                x = Math.max(0, Math.min(x, rect.width));
+                y = Math.max(0, Math.min(y, rect.height));
+
+                robotIcon.style.left = `${(x / rect.width) * 100}%`;
+                robotIcon.style.top = `${(y / rect.height) * 100}%`;
+                window.robotMoved = true;
+            }
+
+            robotIcon.addEventListener('mousedown', (e) => {
+                isDraggingRobot = true;
+                robotIcon.classList.add('scale-110');
+            });
+
+            robotIcon.addEventListener('touchstart', (e) => {
+                isDraggingRobot = true;
+                robotIcon.classList.add('scale-110');
+                if (e.cancelable) e.preventDefault();
+            }, { passive: false });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingRobot) moveIcon(e.clientX, e.clientY);
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (isDraggingRobot && e.touches.length > 0) moveIcon(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: false });
+
+            window.addEventListener('mouseup', () => {
+                isDraggingRobot = false;
+                robotIcon.classList.remove('scale-110');
+            });
+            window.addEventListener('touchend', () => {
+                isDraggingRobot = false;
+                robotIcon.classList.remove('scale-110');
+            });
+
             // Handle Form Submit
             const form = document.querySelector('form');
             form.addEventListener('submit', async (e) => {
@@ -483,8 +617,32 @@
                 submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Saving...';
                 submitBtn.disabled = true;
 
+                // Get relative positioning
+                const canvasContainer = document.getElementById('canvas-container');
+                const rcElt = canvasContainer.getBoundingClientRect();
+                const iconElt = document.getElementById('robot-start-icon');
+                const iElt = iconElt.getBoundingClientRect();
+                // Normalized coordinates 0.0 -> 1.0 based on container width/height
+                const startX = ((iElt.left - rcElt.left) + (iElt.width / 2)) / rcElt.width;
+                const startY = ((iElt.top - rcElt.top) + (iElt.height / 2)) / rcElt.height;
+
+                // Ensure paths array has normalized coordinates as well for DB persistence 
+                // We keep paths as is, since they are drawn via getCoordinates, which is offset from canvas.
+                // We normalize coords before saving.
+                const cw = canvasContainer.clientWidth;
+                const ch = canvasContainer.clientHeight;
+                const normalizedPaths = paths.map(path => ({
+                    color: path.color,
+                    points: path.points.map(pt => ({
+                        x: pt.x / cw,
+                        y: pt.y / ch
+                    }))
+                }));
+
                 const payload = {
                     assignment_id: '{{ assignment.id if assignment else "" }}',
+                    starting_position: { x: startX, y: startY },
+                    auto_trajectory: normalizedPaths,
                     auto_start_balls: state.auto_start_balls,
                     auto_balls_shot: state.auto_balls_shot,
                     auto_balls_scored: state.auto_balls_scored,
@@ -508,6 +666,49 @@
                     const data = await res.json();
 
                     if (res.ok) {
+                        if (window.canvasHasDrawn || window.robotMoved) {
+                            if (data.match_id) {
+                                try {
+                                    submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Saving Canvas...';
+
+                                    // Make sure the robot icon is burned into the canvas before saving!
+                                    const canvasElt = document.getElementById('strategyCanvas');
+                                    const ctx = canvasElt.getContext('2d');
+                                    const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+                                    const iconElt = document.getElementById('robot-start-icon');
+                                    const iconRect = iconElt.getBoundingClientRect();
+
+                                    // calculate relative center coordinate of the draggable icon
+                                    const rx = (iconRect.left - containerRect.left + iconRect.width / 2);
+                                    const ry = (iconRect.top - containerRect.top + iconRect.height / 2);
+
+                                    // Scale to internal canvas resolution
+                                    const scaleX = canvasElt.width / containerRect.width;
+                                    const scaleY = canvasElt.height / containerRect.height;
+
+                                    ctx.fillStyle = 'rgba(59, 130, 246, 0.5)';
+                                    ctx.fillRect((rx * scaleX) - 15, (ry * scaleY) - 15, 30, 30);
+                                    ctx.lineWidth = 3;
+                                    ctx.strokeStyle = '#3b82f6';
+                                    ctx.strokeRect((rx * scaleX) - 15, (ry * scaleY) - 15, 30, 30);
+
+                                    const uploadRes = await fetch('/api/match-scout/upload-strategy', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            match_id: data.match_id,
+                                            image_data: canvasElt.toDataURL('image/png')
+                                        })
+                                    });
+                                    if (!uploadRes.ok) {
+                                        console.error('Failed to upload strategy canvas');
+                                    }
+                                } catch (err) {
+                                    console.error('Error saving strategy canvas:', err);
+                                }
+                            }
+                        }
+
                         submitBtn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Saved!';
                         submitBtn.classList.replace('bg-primary', 'bg-green-500');
                         setTimeout(() => window.location.href = '/', 1000);
@@ -550,45 +751,6 @@
                     },
                     notes: document.getElementById('notesBoard').value
                 };
-
-                // QR Code Export
-                window.exportToQR = function () {
-                    const data = {
-                        v: "2.4", // version
-                        m: '{{ assignment.match_key if assignment else "TEST" }}',
-                        t: '{{ assignment.team_key if assignment else "0000" }}',
-                        s: parseInt("{{ session.user_id or 0 }}"),
-                        a: [state.auto_start_balls, state.auto_balls_shot, state.auto_balls_scored, document.querySelector('input[name="autoClimb"]:checked')?.value || 'N'],
-                        tO: [
-                            parseInt(document.querySelector('input[name="intake_speed"]').value),
-                            parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
-                            state.teleop_balls_shot,
-                            document.querySelector('input[name="passes_bump"]').checked ? 1 : 0,
-                            document.querySelector('input[name="passes_trench"]').checked ? 1 : 0
-                        ],
-                        e: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'N',
-                        n: document.getElementById('notesBoard').value.substring(0, 100) // Truncate notes for QR capacity
-                    };
-
-                    const qrString = JSON.stringify(data);
-                    const qrContainer = document.getElementById('qrcode-container');
-                    qrContainer.innerHTML = '';
-                    new QRCode(qrContainer, {
-                        text: qrString,
-                        width: 256,
-                        height: 256,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.M
-                    });
-
-                    document.getElementById('qr-modal').classList.remove('hidden');
-                };
-
-                window.closeQRModal = function () {
-                    document.getElementById('qr-modal').classList.add('hidden');
-                };
-
                 const jsonString = JSON.stringify(data, null, 4);
                 const blob = new Blob([jsonString], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -599,8 +761,162 @@
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+                // QR cleanup
                 URL.revokeObjectURL(url);
             };
+
+            // QR Code Export
+            window.exportToQR = function () {
+                // Determine starting position before export
+                const cContainer = document.getElementById('canvas-container');
+                const crect = cContainer.getBoundingClientRect();
+                const icNode = document.getElementById('robot-start-icon');
+                const irect = icNode.getBoundingClientRect();
+                const sX = (((irect.left - crect.left) + (irect.width / 2)) / crect.width).toFixed(2);
+                const sY = (((irect.top - crect.top) + (irect.height / 2)) / crect.height).toFixed(2);
+
+                const data = {
+                    v: "2.5", // version
+                    m: '{{ assignment.match_key if assignment else "TEST" }}',
+                    t: '{{ assignment.team_key if assignment else "0000" }}',
+                    s: parseInt("{{ session.user_id or 0 }}"),
+                    a: [[sX, sY], state.auto_start_balls, state.auto_balls_shot, state.auto_balls_scored, document.querySelector('input[name="autoClimb"]:checked')?.value || 'N'],
+                    tO: [
+                        parseInt(document.querySelector('input[name="intake_speed"]').value),
+                        parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
+                        state.teleop_balls_shot,
+                        document.querySelector('input[name="passes_bump"]').checked ? 1 : 0,
+                        document.querySelector('input[name="passes_trench"]').checked ? 1 : 0
+                    ],
+                    e: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'N',
+                    n: document.getElementById('notesBoard').value.substring(0, 100) // Truncate notes for QR capacity
+                };
+
+                const qrString = JSON.stringify(data);
+                const qrContainer = document.getElementById('qrcode-container');
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: qrString,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                document.getElementById('qr-modal').classList.remove('hidden');
+            };
+
+            window.closeQRModal = function () {
+                document.getElementById('qr-modal').classList.add('hidden');
+            };
+
+            // --- Strategy Whiteboard Logic ---
+            const canvas = document.getElementById('strategyCanvas');
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+            let paths = [];
+            let currentPath = [];
+            let currentColor = '#3b82f6'; // Match the selected button
+            const lineWidth = 5;
+            window.canvasHasDrawn = false;
+
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                redrawPaths();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            setTimeout(resizeCanvas, 150);
+
+            function redrawPaths() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = lineWidth;
+                paths.forEach(path => {
+                    if (path.points.length < 2) return;
+                    ctx.strokeStyle = path.color;
+                    ctx.beginPath();
+                    ctx.moveTo(path.points[0].x, path.points[0].y);
+                    for (let i = 1; i < path.points.length; i++) {
+                        ctx.lineTo(path.points[i].x, path.points[i].y);
+                    }
+                    ctx.stroke();
+                });
+            }
+
+            function getCoordinates(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            }
+
+            function startDrawing(e) {
+                // Ignore touches outside of single fingers
+                if (e.touches && e.touches.length > 1) return;
+
+                isDrawing = true;
+                const coords = getCoordinates(e);
+                currentPath = { color: currentColor, points: [coords] };
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault(); // Prevent scrolling while drawing on mobile
+                const coords = getCoordinates(e);
+                currentPath.points.push(coords);
+
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = lineWidth;
+                ctx.strokeStyle = currentColor;
+
+                ctx.beginPath();
+                const lastIdx = currentPath.points.length - 2;
+                ctx.moveTo(currentPath.points[lastIdx].x, currentPath.points[lastIdx].y);
+                ctx.lineTo(coords.x, coords.y);
+                ctx.stroke();
+                window.canvasHasDrawn = true;
+            }
+
+            function stopDrawing(e) {
+                if (!isDrawing) return;
+                isDrawing = false;
+                if (currentPath.points.length > 0) {
+                    paths.push(currentPath);
+                }
+            }
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            window.addEventListener('mouseup', stopDrawing); // capture mouseup outside canvas
+
+            canvas.addEventListener('touchstart', startDrawing, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            window.addEventListener('touchend', stopDrawing);
+
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.color-btn').forEach(b => b.style.borderColor = 'transparent');
+                    currentColor = btn.getAttribute('data-color');
+                    btn.style.borderColor = 'white';
+                });
+            });
+
+            document.getElementById('undo-btn').addEventListener('click', () => {
+                paths.pop();
+                redrawPaths();
+                if (paths.length === 0) window.canvasHasDrawn = false;
+            });
+
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                paths = [];
+                window.canvasHasDrawn = false;
+                redrawPaths();
+            });
         });
     </script>
     <!-- QR Modal -->

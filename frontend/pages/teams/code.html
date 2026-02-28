@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <script src="/shared_assets/translator.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>FRC Scouting App Scouting - Team Directory</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Theme Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "primary-dark": "#0a56c2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101823",
+                        "surface-dark": "#1a2433",
+                        "surface-lighter": "#243042",
+                        "border-dark": "#2d3b50",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Space Grotesk", "sans-serif"],
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <style>
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #101823;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2d3b50;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3d4f6a;
+        }
+
+        .radar-chart-bg {
+            background-image:
+                radial-gradient(circle at center, transparent 0%, transparent 69%, #2d3b50 70%, transparent 71%),
+                radial-gradient(circle at center, transparent 0%, transparent 49%, #2d3b50 50%, transparent 51%),
+                radial-gradient(circle at center, transparent 0%, transparent 29%, #2d3b50 30%, transparent 31%);
+        }
+
+        /* Simple CSS only tabs */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-radio:checked+.tab-label {
+            background-color: #0d6cf2;
+            color: white;
+            border-color: #0d6cf2;
+        }
+
+        #tab1:checked~.tab-bar .tab-label[for="tab1"],
+        #tab2:checked~.tab-bar .tab-label[for="tab2"] {
+            background-color: #0d6cf2;
+            color: white;
+            border-color: #0d6cf2;
+        }
+
+        #tab1:checked~#content1,
+        #tab2:checked~#content2 {
+            display: block;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display h-screen flex flex-col overflow-hidden">
+    <!-- Global Navigation -->
+    <header
+        class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-background-light dark:bg-background-dark/80 backdrop-blur-md px-6 py-3 sticky top-0 z-50">
+        <div class="flex items-center gap-6">
+            <a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                <div class="bg-primary p-1.5 rounded-lg text-white">
+                    <span class="material-symbols-outlined text-2xl">monitoring</span>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight">FRC Scouting App</h1>
+            </a>
+            <div class="h-6 w-px bg-slate-200 dark:border-slate-800"></div>
+            {% if user.role in ['Admin', 'Head Scout'] %}
+            <div class="hidden md:flex items-center gap-1">
+                <a href="/picklist"
+                    class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-500/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-all flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[14px]">drag_indicator</span>
+                    Pick List
+                </a>
+            </div>
+            {% endif %}
+            <a href="/dashboard"
+                class="text-xs font-bold px-3 py-1.5 rounded-full bg-slate-700/50 text-slate-300 border border-slate-600/50 hover:bg-slate-600 hover:text-white transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-[14px]">arrow_back</span>
+                Dashboard
+            </a>
+        </div>
+        <div
+            class="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 bg-primary/10 border border-primary/20 px-6 py-2 rounded-full">
+            <span class="material-symbols-outlined text-primary text-sm">sensors</span>
+            <p class="text-primary text-sm font-bold uppercase tracking-widest">Live on Field: {{ live_match }}</p>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right">
+                <p class="text-sm font-bold leading-tight">Hi, {{ user.name.split()[0] if user.name else 'Scout' }}</p>
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">{{ user.role }}</p>
+            </div>
+            <a href="/profile/edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
+                <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
+                    data-alt="Circular profile picture of user {{ user.name }}"
+                    style="background-image: url('{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuA803XpE2v25qTbQNZkC9Jy96HI8b63bTYEE_7hvUMpuC587x35z-5Z7eXSCB1U0am99XygRrAHdfbiMUbVa9QxvraFR-r7gumvM6v3ykq0hOkgoMu9aifgQY-sgOFP6ruOt9XgDpd1cyRiEOpAQ5x0whyh6rEssokO0S7kHiw5jyFeTpfcqjnDB73Hz3XIm5Ru_SBHFOriwBTQtR8AlNfj7Hd6dFuRrAEkmu5B5Rxdg0YVyDaGGgK3RzKD9Jlxxt0DICDNbZ-rC2u0' }}')">
+                </div>
+                <div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
+                </div>
+            </a>
+        </div>
+    </header>
+    <!-- Main Content Grid -->
+    <div class="flex-1 flex overflow-hidden w-full">
+        <!-- Center Column: Team List -->
+        <main class="w-[350px] shrink-0 bg-background-dark flex flex-col border-r border-border-dark relative">
+            <div
+                class="p-4 border-b border-border-dark flex flex-col gap-3 bg-background-dark/95 backdrop-blur sticky top-0 z-10">
+                <div class="flex items-center justify-between">
+                    <h2 id="teamCountHeader" class="text-white text-lg font-bold">Teams (0)</h2>
+                    <div class="flex gap-2">
+                        <button id="sortBtn"
+                            class="p-2 text-slate-400 hover:text-white bg-surface-dark rounded border border-border-dark transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">sort</span>
+                        </button>
+                        <button id="viewToggleBtn"
+                            class="p-2 text-slate-400 hover:text-white bg-surface-dark rounded border border-border-dark transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">grid_view</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-slate-400 text-[18px]">search</span>
+                    </div>
+                    <input id="teamSearchInput"
+                        class="block w-full pl-10 pr-3 py-2 border border-border-dark rounded-lg leading-5 bg-surface-dark text-slate-300 placeholder-slate-500 focus:outline-none focus:bg-surface-lighter focus:border-primary text-sm transition duration-150 ease-in-out"
+                        placeholder="Search teams..." type="text" />
+                </div>
+                <select id="eventSelector"
+                    class="bg-surface-dark border-border-dark text-slate-300 text-sm rounded-lg focus:ring-primary focus:border-primary block w-full p-2">
+                    <option value="">Choose an event...</option>
+                    {% for event in events %}
+                    <option value="{{ event.id }}" data-name="{{ event.name }}">{{ event.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div id="teams-loader" class="flex justify-center items-center py-20 hidden w-full">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+            <div id="teams-container" class="overflow-y-auto flex-1 p-4 flex flex-col gap-3 content-start">
+                <!-- Teams populated by JS via fetch to /teams -->
+            </div>
+        </main>
+        <!-- Right Column: Detail View -->
+        <aside class="flex-1 min-w-0 bg-surface-dark flex flex-col overflow-y-auto border-l border-border-dark">
+            <!-- Profile Header -->
+            <div id="team-detail-view" class="relative h-48 w-full overflow-hidden shrink-0 group hidden">
+                <div
+                    class="absolute inset-0 bg-gradient-to-t from-surface-dark via-surface-dark/60 to-transparent z-10">
+                </div>
+                <img alt="Robot in workshop environment"
+                    class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
+                    data-alt="Robot in workshop environment"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUkvigEE6L7SaRZR2HS1VK-pnLuJcoBVnWzBn7vBwgfZGUsl4s3F20WKV4y5Iwr1tbMu_YAIoRDMKxvsa3mo74lnr7D85QP-ai18a2brCaPIWEGq1eJ0yn_3QHz4pQdgn3D6X_btsFXsmYqaQjpHM9P3Oa6-LMD_oAPvLQmve_ympefy-3AbIGX8mZBFbjznLuelYNtXlFsbwqeA7X-hDZFh_61NxFPV9RX-WY9nw6BdEj7AbYKAByTLNxOt0UP50nxTIYjfFj6hoD" />
+                <div class="absolute bottom-0 left-0 w-full p-6 z-20 flex items-end justify-between">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1">
+                            <h1 id="detail-team-number" class="text-5xl font-bold text-white tracking-tight">--</h1>
+                            <div class="flex flex-col">
+                                <span id="detail-team-name"
+                                    class="text-xl font-medium text-slate-200 leading-none">--</span>
+                                <span id="detail-team-location"
+                                    class="text-sm text-slate-400 flex items-center gap-1 mt-1">
+                                    <span class="material-symbols-outlined text-[14px]">location_on</span>
+                                    Location Unknown
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Empty Detail View -->
+            <div id="empty-detail-view" class="h-full flex flex-col items-center justify-center text-slate-500">
+                <span class="material-symbols-outlined text-[48px] mb-4 opacity-50">smart_toy</span>
+                <p>Select a team to view their profile</p>
+            </div>
+            <div id="team-stats-container" class="hidden flex-col h-full">
+                <!-- Dashboard Grid -->
+                <div class="p-6 space-y-6">
+                    <!-- Top Metrics Row -->
+                    <div class="grid grid-cols-4 gap-4">
+                        <div class="bg-background-dark p-3 rounded-lg border border-border-dark">
+                            <p class="text-slate-500 text-xs font-medium uppercase mb-1">Avg Auto Pts</p>
+                            <p id="stat-auto" class="text-white text-xl font-bold">--</p>
+                        </div>
+                        <div class="bg-background-dark p-3 rounded-lg border border-border-dark">
+                            <p class="text-slate-500 text-xs font-medium uppercase mb-1">Avg Teleop Pts</p>
+                            <p id="stat-teleop" class="text-white text-xl font-bold">--</p>
+                        </div>
+                        <div class="bg-background-dark p-3 rounded-lg border border-border-dark">
+                            <p class="text-slate-500 text-xs font-medium uppercase mb-1">Matches Played</p>
+                            <p id="stat-matches" class="text-white text-xl font-bold">--</p>
+                        </div>
+                        <div class="bg-background-dark p-3 rounded-lg border border-border-dark">
+                            <p class="text-slate-500 text-xs font-medium uppercase mb-1">Total Avg Pts</p>
+                            <p id="stat-total" class="text-white text-xl font-bold">--</p>
+                        </div>
+                    </div>
+                    <!-- Chart & Stats Split -->
+                    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                        <!-- Radar Chart Container -->
+                        <div class="bg-surface-lighter rounded-xl p-4 border border-border-dark flex flex-col">
+                            <h3 class="text-slate-300 font-bold mb-4 text-sm flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[18px] text-primary">radar</span>
+                                Performance Profile
+                            </h3>
+                            <div class="flex-1 flex items-center justify-center relative min-h-[250px]">
+                                <canvas id="performanceRadarChart"></canvas>
+                            </div>
+                        </div>
+                        <!-- Pit Info -->
+                        <div class="bg-surface-lighter rounded-xl p-4 border border-border-dark flex flex-col">
+                            <h3 class="text-slate-300 font-bold mb-4 text-sm flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[18px] text-primary">build</span> Pit Specs
+                            </h3>
+                            <div class="space-y-3 flex-1">
+                                <div class="flex justify-between border-b border-border-dark pb-2">
+                                    <span class="text-slate-500 text-sm">Drivetrain</span>
+                                    <span id="pit-drive" class="text-white text-sm font-medium">--</span>
+                                </div>
+                                <div class="flex justify-between border-b border-border-dark pb-2">
+                                    <span class="text-slate-500 text-sm">Weight</span>
+                                    <span id="pit-weight" class="text-white text-sm font-medium">--</span>
+                                </div>
+                                <div class="flex justify-between border-b border-border-dark pb-2">
+                                    <span class="text-slate-500 text-sm">Programming</span>
+                                    <span class="text-white text-sm font-medium">Java / Kotlin</span>
+                                </div>
+                                <div class="flex justify-between border-b border-border-dark pb-2">
+                                    <span class="text-slate-500 text-sm">Shooter</span>
+                                    <span id="pit-shooter" class="text-white text-sm font-medium">--</span>
+                                </div>
+                                <div class="pt-1">
+                                    <span class="text-slate-500 text-sm block mb-1">Notes</span>
+                                    <p id="pit-notes" class="text-slate-300 text-sm leading-snug">--</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tabbed Data Area -->
+                    <div>
+                        <!-- Radio inputs must be siblings of content for CSS ~ to work -->
+                        <input checked="" class="tab-radio hidden" id="tab1" name="tabs" type="radio" />
+                        <input class="tab-radio hidden" id="tab2" name="tabs" type="radio" />
+                        <!-- Tabs Header -->
+                        <div
+                            class="tab-bar flex space-x-1 rounded-lg bg-background-dark p-1 mb-4 border border-border-dark w-fit">
+                            <label
+                                class="tab-label cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors border border-transparent"
+                                for="tab1">Match History</label>
+                            <label
+                                class="tab-label cursor-pointer rounded-md px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors border border-transparent"
+                                for="tab2">Robot Gallery</label>
+                        </div>
+                        <!-- Match History Content -->
+                        <div class="tab-content block" id="content1">
+                            <div class="bg-surface-lighter rounded-xl border border-border-dark overflow-hidden">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm text-slate-400">
+                                        <thead class="bg-background-dark text-xs uppercase text-slate-300 font-medium">
+                                            <tr>
+                                                <th class="px-6 py-3" scope="col">Match</th>
+                                                <th class="px-6 py-3 text-right" scope="col">Auto Pts</th>
+                                                <th class="px-6 py-3 text-right" scope="col">Teleop Pts</th>
+                                                <th class="px-6 py-3 text-right" scope="col">Total Pts</th>
+                                                <th class="px-6 py-3" scope="col">Notes</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="match-history-body" class="divide-y divide-border-dark">
+                                            <!-- Populated by JS -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gallery Content -->
+                        <div id="content2" class="tab-content pt-4">
+                            <div id="robot-gallery-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 h-[400px]">
+                                <!-- Left: Pit Photo -->
+                                <div id="pit-photo-wrapper"
+                                    class="bg-surface-lighter rounded-xl overflow-hidden border border-border-dark flex items-center justify-center relative group">
+                                    <img id="pit-photo-img" alt="Robot Photo"
+                                        class="w-full h-full object-contain transition-transform group-hover:scale-105"
+                                        src="" />
+                                    <div id="pit-photo-placeholder"
+                                        class="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+                                        <span class="material-symbols-outlined text-4xl mb-2">image</span>
+                                        <p class="text-sm font-medium">No robot photo available</p>
+                                    </div>
+                                </div>
+                                <!-- Right: Auto Trajectory -->
+                                <div
+                                    class="bg-surface-lighter rounded-xl overflow-hidden border border-border-dark relative flex flex-col">
+                                    <div
+                                        class="px-4 py-3 border-b border-border-dark flex justify-between items-center bg-background-dark/20">
+                                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                                            Autonomous Trajectory</h4>
+                                        <span class="text-[10px] text-slate-500 font-medium">Avg Path & Start Pos</span>
+                                    </div>
+                                    <div class="flex-1 relative overflow-hidden">
+                                        <img src="/static/images/auto_field.jpg"
+                                            class="absolute inset-0 w-full h-full object-cover opacity-30 select-none pointer-events-none" />
+                                        <canvas id="trajectoryCanvas"
+                                            class="absolute inset-0 w-full h-full z-10"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </aside>
+    </div>
+    <script>
+        let radarChart = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            let eventId = urlParams.get('event_id');
+            const eventSelector = document.getElementById("eventSelector");
+            const teamsContainer = document.getElementById("teams-container");
+            const teamsLoader = document.getElementById("teams-loader");
+            const teamCountHeader = document.getElementById("teamCountHeader");
+
+            // Handle event selection
+            eventSelector.addEventListener('change', (e) => {
+                eventId = e.target.value;
+                if (eventId) {
+                    fetchTeams(eventId);
+                    // Update URL without reload
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('event_id', eventId);
+                    window.history.pushState({}, '', newUrl);
+                }
+            });
+
+            // Initialize from URL or first option
+            if (eventId) {
+                eventSelector.value = eventId;
+                // Event title now shown in the header via Jinja2
+                fetchTeams(eventId);
+            } else if (eventSelector.options.length > 1) {
+                eventSelector.selectedIndex = 1;
+                eventSelector.dispatchEvent(new Event('change'));
+            }
+
+            async function fetchTeams(evId) {
+                teamsContainer.innerHTML = '';
+                teamsLoader.classList.remove('hidden');
+
+                try {
+                    const response = await fetch(`/events/${evId}/teams`);
+                    const teams = await response.json();
+
+                    teamsLoader.classList.add('hidden');
+                    if (teamCountHeader) teamCountHeader.textContent = `Teams (${teams.length})`;
+
+                    if (teams.length === 0) {
+                        teamsContainer.innerHTML = '<p class="text-slate-400 p-4 text-center">No teams found for this event.</p>';
+                    } else {
+                        teams.forEach(team => {
+                            const teamCard = `
+                            <article onclick="selectTeam(${team.id}, ${team.team_number}, '${(team.nickname || team.team_name).replace(/'/g, "\\'")}')" class="group bg-surface-dark border border-border-dark hover:border-slate-600 rounded-lg p-4 cursor-pointer transition-all hover:bg-surface-lighter">
+                                <div class="flex justify-between items-start mb-2">
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="text-2xl font-bold text-slate-200 group-hover:text-white tracking-tight">${team.team_number}</h3>
+                                        </div>
+                                        <p class="text-slate-400 text-sm truncate font-medium">${team.nickname || team.team_name}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-slate-200 font-bold text-lg">--</div>
+                                        <div class="text-slate-500 text-[10px] uppercase">Avg Pts</div>
+                                    </div>
+                                </div>
+                            </article>
+                        `;
+                            teamsContainer.insertAdjacentHTML('beforeend', teamCard);
+                        });
+                    }
+                } catch (error) {
+                    console.error(error);
+                    teamsLoader.classList.add('hidden');
+                    teamsContainer.innerHTML = '<p class="text-red-400 p-4">Error loading teams.</p>';
+                }
+            }
+        });
+
+        async function selectTeam(id, teamNumber, nickname) {
+            const emptyView = document.getElementById('empty-detail-view');
+            const detailView = document.getElementById('team-detail-view');
+            const statsView = document.getElementById('team-stats-container');
+            const title = document.getElementById('detail-team-number');
+            const name = document.getElementById('detail-team-name');
+
+            emptyView.classList.add('hidden');
+            detailView.classList.remove('hidden');
+            statsView.classList.remove('hidden');
+            statsView.classList.add('flex');
+
+            if (title) title.textContent = teamNumber;
+            if (name) name.textContent = nickname;
+
+            try {
+                const response = await fetch(`/teams/${id}`);
+                const data = await response.json();
+
+                const locationEl = document.getElementById('detail-team-location');
+                if (locationEl) {
+                    locationEl.innerHTML = `<span class="material-symbols-outlined text-[14px]">location_on</span> ${data.location || 'Location Unknown'}`;
+                }
+
+                // Stats
+                if (data.stats) {
+                    document.getElementById('stat-auto').textContent = data.stats.avg_auto_points || '0';
+                    document.getElementById('stat-teleop').textContent = data.stats.avg_teleop_points || '0';
+                    document.getElementById('stat-matches').textContent = data.stats.matches_played || '0';
+                    document.getElementById('stat-total').textContent = ((data.stats.avg_auto_points || 0) + (data.stats.avg_teleop_points || 0)).toFixed(1);
+                } else {
+                    document.getElementById('stat-auto').textContent = '--';
+                    document.getElementById('stat-teleop').textContent = '--';
+                    document.getElementById('stat-matches').textContent = '--';
+                    document.getElementById('stat-total').textContent = '--';
+                }
+
+                // Pit Info
+                if (data.pit_info) {
+                    document.getElementById('pit-drive').textContent = data.pit_info.drivetrain_type || 'Unknown';
+                    document.getElementById('pit-weight').textContent = data.pit_info.weight ? `${data.pit_info.weight} lbs` : 'Unknown';
+                    document.getElementById('pit-shooter').textContent = data.pit_info.motor_type || 'Unknown';
+                    document.getElementById('pit-notes').textContent = data.pit_info.notes || 'No notes available.';
+                } else {
+                    ['pit-drive', 'pit-weight', 'pit-shooter'].forEach(id => document.getElementById(id).textContent = '--');
+                    document.getElementById('pit-notes').textContent = 'No pit scout data available yet.';
+                }
+
+                // Radar Chart
+                updateRadarChart(data.performance_profile);
+
+                // Match History
+                const tbody = document.getElementById('match-history-body');
+                tbody.innerHTML = '';
+                if (data.matches && data.matches.length > 0) {
+                    data.matches.forEach(match => {
+                        const row = `<tr class="hover:bg-surface-dark/50 transition-colors">
+                            <td class="px-6 py-4 font-medium text-white"># ${match.match_number}</td>
+                            <td class="px-6 py-4 text-right">${match.auto_balls_scored || 0}</td>
+                            <td class="px-6 py-4 text-right">${match.teleop_balls_shot || 0}</td>
+                            <td class="px-6 py-4 text-right font-bold text-white">${match.total_pts || 0}</td>
+                            <td class="px-6 py-4 text-xs truncate max-w-[150px]" title="${match.notes || ''}">${match.notes || '--'}</td>
+                        </tr>`;
+                        tbody.insertAdjacentHTML('beforeend', row);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-slate-500 italic">No matches scouted yet.</td></tr>';
+                }
+
+                // Gallery & Trajectory
+                const photoImg = document.getElementById('pit-photo-img');
+                const photoPlaceholder = document.getElementById('pit-photo-placeholder');
+                if (data.pit_info && data.pit_info.photo_path) {
+                    const pp = data.pit_info.photo_path.startsWith('/') ? data.pit_info.photo_path : `/${data.pit_info.photo_path}`;
+                    photoImg.src = pp;
+                    photoImg.classList.remove('hidden');
+                    photoPlaceholder.classList.add('hidden');
+                } else {
+                    photoImg.src = '';
+                    photoImg.classList.add('hidden');
+                    photoPlaceholder.classList.remove('hidden');
+                }
+
+                // Store matches for tab-switch redraw
+                const trajCanvas = document.getElementById('trajectoryCanvas');
+                if (trajCanvas) trajCanvas._lastMatches = data.matches;
+                drawTrajectory(data.matches);
+
+            } catch (error) {
+                console.error("Failed to load team details:", error);
+            }
+        }
+
+        function drawTrajectory(matches) {
+            const canvas = document.getElementById('trajectoryCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            // Adjust canvas resolution
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!matches || matches.length === 0) return;
+
+            let startXSum = 0, startYSum = 0, startCount = 0;
+            const allMatchPaths = [];
+
+            matches.forEach(match => {
+                // 1. Starting Position
+                if (match.starting_position && match.starting_position !== 'None') {
+                    try {
+                        const pos = typeof match.starting_position === 'string' ? JSON.parse(match.starting_position) : match.starting_position;
+                        startXSum += pos.x;
+                        startYSum += pos.y;
+                        startCount++;
+                    } catch (e) { console.warn('Bad starting_position:', match.starting_position); }
+                }
+
+                // 2. Heatmap Paths (Faint Blue)
+                // DB format: [{color: "#3b82f6", points: [{x, y}, ...]}, ...]
+                if (match.auto_trajectory) {
+                    try {
+                        const strokes = typeof match.auto_trajectory === 'string' ? JSON.parse(match.auto_trajectory) : match.auto_trajectory;
+                        // Flatten all stroke points into one path per match
+                        const flatPoints = [];
+                        strokes.forEach(stroke => {
+                            if (stroke.points && stroke.points.length > 0) {
+                                flatPoints.push(...stroke.points);
+                            }
+                        });
+
+                        if (flatPoints.length > 0) {
+                            allMatchPaths.push(flatPoints);
+
+                            // Draw each stroke with its own color
+                            strokes.forEach(stroke => {
+                                if (stroke.points && stroke.points.length > 1) {
+                                    ctx.beginPath();
+                                    ctx.strokeStyle = (stroke.color || 'rgba(13, 108, 242, 0.3)').replace(')', ', 0.25)').replace('rgb(', 'rgba(');
+                                    // If it's a hex color, use it with low alpha
+                                    if (stroke.color && stroke.color.startsWith('#')) {
+                                        ctx.strokeStyle = stroke.color;
+                                        ctx.globalAlpha = 0.2;
+                                    }
+                                    ctx.lineWidth = 3;
+                                    ctx.lineCap = 'round';
+                                    ctx.lineJoin = 'round';
+
+                                    stroke.points.forEach((p, idx) => {
+                                        if (idx === 0) ctx.moveTo(p.x * canvas.width, p.y * canvas.height);
+                                        else ctx.lineTo(p.x * canvas.width, p.y * canvas.height);
+                                    });
+                                    ctx.stroke();
+                                    ctx.globalAlpha = 1.0;
+                                }
+                            });
+                        }
+                    } catch (e) { console.warn('Bad auto_trajectory:', match.auto_trajectory, e); }
+                }
+            });
+
+            // 3. Average Path (Bold Orange)
+            if (allMatchPaths.length > 0) {
+                const n = allMatchPaths[0].length;
+                const minLen = Math.min(...allMatchPaths.map(p => p.length));
+                const avgPath = [];
+                for (let i = 0; i < minLen; i++) {
+                    let xSum = 0, ySum = 0;
+                    allMatchPaths.forEach(p => { xSum += p[i].x; ySum += p[i].y; });
+                    avgPath.push({ x: xSum / allMatchPaths.length, y: ySum / allMatchPaths.length });
+                }
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(245, 158, 11, 0.4)';
+
+                avgPath.forEach((p, idx) => {
+                    if (idx === 0) ctx.moveTo(p.x * canvas.width, p.y * canvas.height);
+                    else ctx.lineTo(p.x * canvas.width, p.y * canvas.height);
+                });
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // 4. Average Start Position (Orange Box)
+            if (startCount > 0) {
+                const avgX = (startXSum / startCount) * canvas.width;
+                const avgY = (startYSum / startCount) * canvas.height;
+
+                ctx.fillStyle = '#f59e0b';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(245, 158, 11, 0.6)';
+
+                ctx.fillRect(avgX - 10, avgY - 10, 20, 20);
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(avgX - 10, avgY - 10, 20, 20);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function updateRadarChart(profile) {
+            const ctx = document.getElementById('performanceRadarChart').getContext('2d');
+            const data = {
+                labels: ['Auto', 'Teleop', 'Speed', 'Accuracy', 'Climb'],
+                datasets: [{
+                    label: 'Team Performance',
+                    data: [
+                        profile?.auto || 0,
+                        profile?.teleop || 0,
+                        profile?.speed || 0,
+                        profile?.accuracy || 0,
+                        profile?.climb || 0
+                    ],
+                    fill: true,
+                    backgroundColor: 'rgba(13, 108, 242, 0.2)',
+                    borderColor: '#0d6cf2',
+                    pointBackgroundColor: '#0d6cf2',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#0d6cf2'
+                }]
+            };
+
+            const options = {
+                scales: {
+                    r: {
+                        angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                        grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                        pointLabels: { color: '#94a3b8', font: { size: 10 } },
+                        ticks: { display: false },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                },
+                maintainAspectRatio: false
+            };
+
+            if (radarChart) {
+                radarChart.data = data;
+                radarChart.update();
+            } else {
+                radarChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: data,
+                    options: options
+                });
+            }
+        }
+
+        // Redraw trajectory when Robot Gallery tab becomes visible
+        const tab2Radio = document.getElementById('tab2');
+        if (tab2Radio) {
+            tab2Radio.addEventListener('change', () => {
+                if (tab2Radio.checked) {
+                    // Small delay to let the tab content become visible and get proper dimensions
+                    setTimeout(() => {
+                        const canvas = document.getElementById('trajectoryCanvas');
+                        if (canvas && canvas._lastMatches) {
+                            drawTrajectory(canvas._lastMatches);
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        // Search Bar functionality
+        const searchInput = document.getElementById('teamSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const term = e.target.value.toLowerCase();
+                const teamCards = document.querySelectorAll('#teams-container > article');
+                teamCards.forEach(card => {
+                    const text = card.textContent.toLowerCase();
+                    card.style.display = text.includes(term) ? '' : 'none';
+                });
+            });
+        }
+
+        // View Toggling logic (List vs Grid)
+        const viewToggleBtn = document.getElementById('viewToggleBtn');
+        const viewIcon = viewToggleBtn ? viewToggleBtn.querySelector('span') : null;
+        let isGridView = false;
+
+        if (viewToggleBtn && viewIcon) {
+            viewToggleBtn.addEventListener('click', () => {
+                isGridView = !isGridView;
+                const container = document.getElementById("teams-container");
+                if (isGridView) {
+                    viewIcon.textContent = 'view_list';
+                    container.className = "overflow-y-auto flex-1 p-4 grid grid-cols-2 gap-4 content-start";
+                } else {
+                    viewIcon.textContent = 'grid_view';
+                    container.className = "overflow-y-auto flex-1 p-4 flex flex-col gap-3 content-start";
+                }
+            });
+        }
+    </script>
+
+    <footer
+        class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix</p>
+    </footer>
+
+</body>
+
+</html>

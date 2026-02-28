@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Drive Team Briefing</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        dark: '#0f172a',
+                        'card-dark': '#1e293b',
+                        primary: '#3b82f6',
+                        'alliance-red': '#ef4444',
+                        'alliance-blue': '#3b82f6',
+                        'alliance-neutral': '#8b5cf6'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scroll {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Mobile Specific Adjustments */
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        .glass-header {
+            background: rgba(30, 41, 59, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Header / Sticky Top -->
+    <div class="glass-header sticky top-0 z-50 px-4 py-3 shadow-lg">
+        <div class="flex items-center justify-between mb-3">
+            <button onclick="window.history.back()" class="p-2 -ml-2 text-slate-400 hover:text-white rounded-full">
+                <span class="material-symbols-outlined text-2xl">arrow_back</span>
+            </button>
+            <h1 class="text-xl font-bold tracking-tight">Drive Team Briefing</h1>
+            <div class="w-10"></div> <!-- spacer -->
+        </div>
+
+        <div class="flex gap-2">
+            <!-- Event Picker -->
+            <select id="event-select"
+                class="flex-1 bg-slate-800/50 border border-slate-700 text-white text-sm rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary appearance-none font-semibold">
+                {% for event in events %}
+                <option value="{{ event.id }}" data-tba="{{ event.tba_key }}">{{ event.name }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Match Dropdown -->
+            <div class="relative flex-[0.7] sm:w-32">
+                <select id="match-select"
+                    class="w-full bg-slate-800/50 border border-slate-700 text-white text-sm rounded-xl pl-3 pr-8 py-2.5 outline-none focus:ring-2 focus:ring-primary appearance-none font-semibold truncate disabled:opacity-50">
+                    <option value="" disabled selected>Match...</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-400">
+                    <span class="material-symbols-outlined text-[20px]">expand_more</span>
+                </div>
+            </div>
+
+            <!-- Go Button -->
+            <button id="btn-fetch" onclick="fetchBriefing()"
+                class="bg-primary hover:bg-blue-600 text-white rounded-xl px-4 py-2.5 font-bold transition-transform active:scale-95 shadow-lg shadow-primary/30 flex items-center justify-center min-w-[3rem]">
+                <span id="btn-icon" class="material-symbols-outlined">search</span>
+                <svg id="btn-spinner" class="animate-spin h-5 w-5 hidden" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-y-auto px-4 py-6 safe-pb space-y-6" id="briefing-container">
+
+        <!-- Empty State -->
+        <div id="empty-state" class="flex flex-col items-center justify-center py-20 text-center opacity-60">
+            <div class="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-4">
+                <span class="material-symbols-outlined text-4xl text-slate-500">sports_esports</span>
+            </div>
+            <h2 class="text-xl font-bold mb-2">Prêts pour le match ?</h2>
+            <p class="text-sm text-slate-400 max-w-xs">Sélectionne un match dans le menu déroulant en haut pour générer
+                le briefing de l'alliance de ton équipe.</p>
+        </div>
+
+        <!-- Logic will inject HTML here -->
+        <div id="briefing-content" class="hidden space-y-6">
+            <!-- Our Alliance Section -->
+            <section id="our-alliance-section"></section>
+
+            <!-- VS Divider -->
+            <div class="flex items-center justify-center py-2">
+                <div class="h-px bg-slate-800 flex-1"></div>
+                <div
+                    class="bg-slate-800 text-xs font-bold px-3 py-1 rounded-full text-slate-400 tracking-widest uppercase mx-4">
+                    VS</div>
+                <div class="h-px bg-slate-800 flex-1"></div>
+            </div>
+
+            <!-- Opposing Alliance Section -->
+            <section id="opp-alliance-section"></section>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMatches();
+
+            // Reload matches when event changes
+            document.getElementById('event-select').addEventListener('change', loadMatches);
+        });
+
+        async function loadMatches() {
+            const eventId = document.getElementById('event-select').value;
+            const matchSelect = document.getElementById('match-select');
+
+            if (!eventId) return;
+
+            matchSelect.innerHTML = '<option value="" disabled selected>Loading...</option>';
+            matchSelect.disabled = true;
+
+            try {
+                const res = await fetch(`/api/team_matches/${eventId}`);
+                const matches = await res.json();
+
+                if (!res.ok) throw new Error(matches.error || 'Erreur serveur');
+
+                if (matches.length === 0) {
+                    matchSelect.innerHTML = '<option value="" disabled selected>Aucun match</option>';
+                    return;
+                }
+
+                matchSelect.innerHTML = '<option value="" disabled selected>Match...</option>';
+                matches.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.key; // e.g., 'qm12'
+                    opt.textContent = m.name; // e.g., 'QM 12'
+                    matchSelect.appendChild(opt);
+                });
+
+                matchSelect.disabled = false;
+            } catch (err) {
+                console.error("Erreur chargement des matchs:", err);
+                matchSelect.innerHTML = '<option value="" disabled selected>Erreur</option>';
+            }
+        }
+
+        async function fetchBriefing() {
+            const eventId = document.getElementById('event-select').value;
+            const matchKey = document.getElementById('match-select').value;
+            const btnIcon = document.getElementById('btn-icon');
+            const btnSpinner = document.getElementById('btn-spinner');
+            const btn = document.getElementById('btn-fetch');
+            const container = document.getElementById('briefing-content');
+            const emptyState = document.getElementById('empty-state');
+
+            if (!eventId || !matchKey) {
+                alert("Sélectionne un événement et un match.");
+                return;
+            }
+
+            // UI Loading state
+            btnIcon.classList.add('hidden');
+            btnSpinner.classList.remove('hidden');
+            btn.disabled = true;
+            emptyState.classList.add('hidden');
+            container.classList.add('hidden');
+
+            try {
+                // Fetch Data
+                const res = await fetch(`/api/briefing/${eventId}/${matchKey}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Erreur serveur');
+                }
+
+                // Render Data
+                renderAlliances(data);
+                container.classList.remove('hidden');
+            } catch (err) {
+                alert("Erreur: " + err.message);
+                emptyState.classList.remove('hidden');
+            } finally {
+                // Reset UI
+                btnIcon.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+                btn.disabled = false;
+            }
+        }
+
+        function renderAlliances(data) {
+            const ourSec = document.getElementById('our-alliance-section');
+            const oppSec = document.getElementById('opp-alliance-section');
+
+            ourSec.innerHTML = buildAllianceHTML(data.our_alliance, "Notre Alliance");
+            oppSec.innerHTML = buildAllianceHTML(data.opp_alliance, "Alliance Adverse");
+        }
+
+        function buildAllianceHTML(alliance, title) {
+            const isRed = alliance.color === 'red';
+            const colorClass = isRed ? 'text-red-400' : (alliance.color === 'blue' ? 'text-blue-400' : 'text-purple-400');
+            const bgClass = isRed ? 'bg-red-500/10 border-red-500/20' : (alliance.color === 'blue' ? 'bg-blue-500/10 border-blue-500/20' : 'bg-purple-500/10 border-purple-500/20');
+            const badgeBg = isRed ? 'bg-red-500' : (alliance.color === 'blue' ? 'bg-blue-500' : 'bg-purple-500');
+
+            let html = `
+                <div class="rounded-2xl border ${bgClass} p-4 relative overflow-hidden">
+                    <!-- Background Glow -->
+                    <div class="absolute -top-10 -right-10 w-32 h-32 ${badgeBg} rounded-full opacity-10 blur-2xl"></div>
+                    
+                    <div class="flex items-center justify-between mb-4 relative z-10">
+                        <h2 class="text-xl font-extrabold tracking-tight ${colorClass}">${title}</h2>
+                        <span class="px-2.5 py-1 rounded border border-white/10 ${badgeBg} text-white font-bold text-xs uppercase tracking-wider">${alliance.color}</span>
+                    </div>
+
+                    <!-- Alliance Totals (Rollup) -->
+                    <div class="grid grid-cols-3 gap-2 mb-5">
+                        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-white/5">
+                            <div class="text-xs text-slate-400 font-medium mb-0.5">Auto</div>
+                            <div class="text-lg font-black text-white">${alliance.totals.auto}</div>
+                        </div>
+                        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-white/5">
+                            <div class="text-xs text-slate-400 font-medium mb-0.5">Teleop</div>
+                            <div class="text-lg font-black text-white">${alliance.totals.teleop}</div>
+                        </div>
+                        <div class="bg-black/30 rounded-xl p-2.5 text-center border border-white/5">
+                            <div class="text-xs text-slate-400 font-medium mb-0.5">Climb %</div>
+                            <div class="text-lg font-black text-white">${alliance.totals.climb_avg}%</div>
+                        </div>
+                    </div>
+
+                    <!-- Teams List -->
+                    <div class="space-y-3">
+            `;
+
+            alliance.teams.forEach(team => {
+                if (!team.has_data) {
+                    html += `
+                        <div class="bg-card-dark rounded-xl p-3 border border-slate-700/50 flex items-center justify-between opacity-70">
+                            <div class="font-black text-lg w-16">${team.team}</div>
+                            <div class="text-xs text-slate-400 italic">Aucune donnée trouvée</div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                html += `
+                    <div class="bg-card-dark rounded-xl p-3 border border-slate-700/50 relative overflow-hidden">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="font-black text-xl">${team.team}</div>
+                            <div class="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded border border-slate-700">
+                                ${team.drivetrain}
+                            </div>
+                        </div>
+
+                        ${team.pit_only ? `
+                            <div class="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded inline-block">
+                                <span class="material-symbols-outlined text-[12px] align-middle mr-1">warning</span>
+                                Données de pit uniquement
+                            </div>
+                        ` : `
+                            <div class="flex gap-4 text-sm mb-3">
+                                <div><span class="text-slate-400 text-xs">A:</span> <span class="font-bold text-emerald-400">${team.auto_avg}</span></div>
+                                <div><span class="text-slate-400 text-xs">T:</span> <span class="font-bold text-amber-400">${team.teleop_avg}</span></div>
+                                <div><span class="text-slate-400 text-xs">C:</span> <span class="font-bold text-blue-400">${team.climb_rate}%</span></div>
+                            </div>
+                            
+                            <div class="space-y-1.5">
+                                ${team.strengths.map(s => `
+                                    <div class="flex items-start gap-1.5">
+                                        <span class="material-symbols-outlined text-green-500 text-[16px] mt-0.5">check_circle</span>
+                                        <span class="text-sm text-slate-200">${s}</span>
+                                    </div>
+                                `).join('')}
+                                ${team.weaknesses.map(w => `
+                                    <div class="flex items-start gap-1.5">
+                                        <span class="material-symbols-outlined text-red-500 text-[16px] mt-0.5">error</span>
+                                        <span class="text-sm text-slate-300">${w}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                `;
+            });
+
+            html += `</div></div>`;
+            return html;
+        }
+
+        // Handle Enter key in input
+        document.getElementById('match-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') fetchBriefing();
+        });
+    </script>
+</body>
+
+</html>

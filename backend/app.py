@@ -10,6 +10,8 @@ from sqlalchemy import func, desc
 from models import db, Event, Team, PitScoutData, MatchScoutData, User, ScoutAssignment
 import frc_api
 from frc_api import TBAHandler
+import requests
+
 # Initialize the Flask application
 app = Flask(__name__)
 
@@ -70,10 +72,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['PITS_UPLOAD_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'pit_photos')
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024 # 16 MB max upload size
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-HOME_TEAM_NUMBER = 'frc6622' # Example, replace with actual home team number
 
 # Ensure upload directory exists
 os.makedirs(app.config['PITS_UPLOAD_FOLDER'], exist_ok=True)
+app.config['STRATEGY_UPLOAD_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'strategies')
+os.makedirs(app.config['STRATEGY_UPLOAD_FOLDER'], exist_ok=True)
 
 # Route to serve uploaded files
 @app.route('/uploads/<path:filename>')
@@ -83,7 +86,7 @@ def serve_uploads(filename):
 # Route to serve unified shared assets (e.g. translation scripts)
 @app.route('/shared_assets/<path:filename>')
 def serve_shared_assets(filename):
-    shared_dir = os.path.join(basedir, '..', 'frontend', 'shared_assets')
+    shared_dir = os.path.join(basedir, '..', 'frontend', 'shared')
     return send_from_directory(shared_dir, filename)
 
 # Initialize the database with the app
@@ -395,34 +398,66 @@ def get_team_details(team_id):
         # Aggregate match data
         match_stats = db.session.query(
             func.count(MatchScoutData.id).label('matches_played'),
-            func.avg(MatchScoutData.auto_points).label('avg_auto_points'),
-            func.avg(MatchScoutData.teleop_points).label('avg_teleop_points')
+            func.avg(MatchScoutData.auto_balls_scored).label('avg_auto'),
+            func.avg(MatchScoutData.teleop_balls_shot).label('avg_teleop'),
+            func.avg(MatchScoutData.teleop_intake_speed).label('avg_speed'),
+            func.avg(MatchScoutData.teleop_shooter_accuracy).label('avg_accuracy')
         ).filter(MatchScoutData.team_id == team_id).first()
 
         team_dict = team.to_dict()
         
+        # Location from TBA
         if team.tba_key:
-            tba_info = frc_api.get_team_info(team.tba_key)
-            if tba_info:
-                city = tba_info.get('city', '')
-                state = tba_info.get('state_prov', '')
-                country = tba_info.get('country', '')
-                location_parts = [p for p in [city, state, country] if p]
-                team_dict['location'] = ", ".join(location_parts) if location_parts else "Location Unknown"
+            try:
+                tba_info = frc_api.get_team_info(team.tba_key)
+                if tba_info:
+                    city = tba_info.get('city', '')
+                    state = tba_info.get('state_prov', '')
+                    country = tba_info.get('country', '')
+                    location_parts = [p for p in [city, state, country] if p]
+                    team_dict['location'] = ", ".join(location_parts) if location_parts else "Location Unknown"
+            except: pass
+
+        # Calculate Climb Rate
+        climb_matches = MatchScoutData.query.filter(
+            MatchScoutData.team_id == team_id,
+            MatchScoutData.endgame_climb != 'None'
+        ).count()
+        total_matches = MatchScoutData.query.filter_by(team_id=team_id).count()
+        climb_rate = (climb_matches / total_matches * 100) if total_matches > 0 else 0
+
         team_dict['stats'] = {
             'matches_played': match_stats.matches_played or 0,
-            'avg_auto_points': round(match_stats.avg_auto_points or 0, 2) if match_stats.avg_auto_points is not None else 0,
-            'avg_teleop_points': round(match_stats.teleop_points or 0, 2) if match_stats.teleop_points is not None else 0
+            'avg_auto_points': round(match_stats.avg_auto or 0, 2),
+            'avg_teleop_points': round(match_stats.avg_teleop or 0, 2),
+            'avg_speed': round(match_stats.avg_speed or 0, 1),
+            'avg_accuracy': round(match_stats.avg_accuracy or 0, 1),
+            'climb_rate': round(climb_rate, 1)
+        }
+
+        # Normalize performance profile (0-100 scale for radar chart)
+        # Max values for normalization: Auto: 10, Teleop: 20, Speed: 5, Accuracy: 5, Climb: 100%
+        team_dict['performance_profile'] = {
+            'auto': min(100, (match_stats.avg_auto or 0) / 10 * 100),
+            'teleop': min(100, (match_stats.avg_teleop or 0) / 20 * 100),
+            'speed': min(100, (match_stats.avg_speed or 0) / 5 * 100),
+            'accuracy': min(100, (match_stats.avg_accuracy or 0) / 5 * 100),
+            'climb': climb_rate
         }
         
-        # Include pit data if available
+        # Include pit data
         pit_data = PitScoutData.query.filter_by(team_id=team_id).first()
         if pit_data:
             team_dict['pit_info'] = pit_data.to_dict()
 
-        # Include match history
-        matches = MatchScoutData.query.filter_by(team_id=team_id).order_by(MatchScoutData.match_number).all()
-        team_dict['matches'] = [match.to_dict() for match in matches]
+        # Match history
+        matches = MatchScoutData.query.filter_by(team_id=team_id).order_by(desc(MatchScoutData.match_number)).all()
+        team_dict['matches'] = []
+        for m in matches:
+            m_dict = m.to_dict()
+            # Calculate total for summary
+            m_dict['total_pts'] = (m.auto_balls_scored or 0) + (m.teleop_balls_shot or 0)
+            team_dict['matches'].append(m_dict)
 
         return jsonify(team_dict), 200
     except Exception as e:
@@ -513,6 +548,47 @@ def submit_match_data():
         if "UNIQUE constraint failed" in str(e):
              abort(400, description="Match scout data for this team, event, and match number already exists.")
         abort(500, description=str(e))
+
+@app.route('/api/match-scout/upload-strategy', methods=['POST'])
+def upload_strategy():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    data = request.json
+    match_id = data.get('match_id')
+    image_data_b64 = data.get('image_data')
+    
+    if not match_id or not image_data_b64:
+        return jsonify({'error': 'Missing match_id or image_data'}), 400
+        
+    match_data = MatchScoutData.query.get(match_id)
+    if not match_data:
+        return jsonify({'error': 'Match not found'}), 404
+        
+    try:
+        import base64
+        import uuid
+        
+        # Remove data URI schema prefix if present
+        if ',' in image_data_b64:
+            image_data_b64 = image_data_b64.split(',')[1]
+            
+        img_bytes = base64.b64decode(image_data_b64)
+        
+        filename = f"strategy_match_{match_id}_{uuid.uuid4().hex[:6]}.png"
+        filepath = os.path.join(app.config['STRATEGY_UPLOAD_FOLDER'], filename)
+        
+        with open(filepath, 'wb') as f:
+            f.write(img_bytes)
+            
+        match_data.strategy_image_url = f"/uploads/strategies/{filename}"
+        db.session.commit()
+        
+        return jsonify({'message': 'Strategy saved successfully', 'url': match_data.strategy_image_url}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to process strategy image: {str(e)}'}), 500
 
 # 6. GET /api/headscout/rankings: Return ranked JSON list.
 @app.route('/api/headscout/rankings', methods=['GET'])
@@ -605,7 +681,7 @@ def login_page():
         if user and not user.team_id:
             return redirect(url_for('onboarding_page'))
         return redirect(url_for('home'))
-    return send_from_directory(os.path.join(basedir, '../frontend/user_login_&_registration_flow'), 'code.html')
+    return send_from_directory(os.path.join(basedir, '../frontend/pages/auth'), 'code.html')
 
 @app.route('/register')
 def register_page():
@@ -614,20 +690,20 @@ def register_page():
         if user and not user.team_id:
             return redirect(url_for('onboarding_page'))
         return redirect(url_for('home'))
-    return send_from_directory(os.path.join(basedir, '../frontend/user_login_&_registration_flow'), 'code.html')
+    return send_from_directory(os.path.join(basedir, '../frontend/pages/auth'), 'code.html')
 
 @app.route('/onboarding')
 def onboarding_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
-    return send_from_directory(os.path.join(basedir, '../frontend/team_onboarding_&_access'), 'code.html')
+    return send_from_directory(os.path.join(basedir, '../frontend/pages/onboarding'), 'code.html')
 
 @app.route('/profile')
 def profile_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     user = User.query.get(session['user_id'])
-    template_path = os.path.join(basedir, '../frontend/user_profile_&_settings_hub/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/profile/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user)
 
@@ -678,7 +754,7 @@ def admin_page():
     # but the frontend JS needs a clean array without Jinja string corruption.
     # We will fetch this data via a separated endpoint below.
     import json
-    template_path = os.path.join(basedir, '../frontend/admin_scout_management_hub/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/admin/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(
             f.read(), 
@@ -1094,7 +1170,10 @@ def scout_dashboard():
         
     # 2. Fetch Team Status using TBA API
     tba = TBAHandler()
-    team_status = tba.get_team_status(HOME_TEAM_NUMBER)
+    team_status = None
+    if user.team and user.team.team_number:
+        home_team_tba_key = f"frc{user.team.team_number}"
+        team_status = tba.get_team_status(home_team_tba_key)
     
     # 3. Dynamic Performance Calculation
     if is_admin:
@@ -1131,8 +1210,8 @@ def scout_dashboard():
     
     # 5. Read template and render with Jinja
     is_pit_scout = user.role == 'Pit Scout'
-    template_name = 'desktop_pit_scout_dashboard_hub' if is_pit_scout else 'desktop_scout_dashboard_hub'
-    template_path = os.path.join(basedir, f'../frontend/{template_name}/code.html')
+    template_name = 'dashboard_pit' if is_pit_scout else 'dashboard'
+    template_path = os.path.join(basedir, f'../frontend/pages/{template_name}/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         template_content = f.read()
         
@@ -1153,7 +1232,7 @@ def profile_edit_page():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     user = User.query.get(session['user_id'])
-    template_path = os.path.join(basedir, '../frontend/profile_&_settings_edit/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/profile_edit/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user)
 
@@ -1163,7 +1242,7 @@ def home():
         return redirect(url_for('login_page'))
     
     user = User.query.get(session['user_id'])
-    template_path = os.path.join(basedir, '../frontend/frc_events_&_dashboard/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/events/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user)
 
@@ -1173,18 +1252,13 @@ def dashboard():
         return redirect(url_for('login_page'))
         
     user = User.query.get(session['user_id'])
-    template_path = os.path.join(basedir, '../frontend/frc_events_&_dashboard/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/events/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user)
 
 @app.route('/analytics')
 def analytics():
-    if 'user_id' not in session:
-        return redirect(url_for('login_page'))
-    user = User.query.get(session['user_id'])
-    template_path = os.path.join(basedir, '../frontend/head_scout_analytics_hub/code.html')
-    with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+    return redirect(url_for('head_scout_analytics_hub'))
 
 @app.route('/match-scout/<int:assignment_id>')
 def match_scout(assignment_id):
@@ -1198,7 +1272,7 @@ def match_scout(assignment_id):
     if assignment.user_id != user.id and user.role != 'Admin':
         return "Not authorized to scout this match", 403
         
-    template_path = os.path.join(basedir, '../frontend/match_scouting_entry/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/match_scout/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user, assignment=assignment)
 
@@ -1225,10 +1299,27 @@ def submit_match_scout():
         match_number = int(''.join(filter(str.isdigit, match_num_str))) # e.g. qm42 -> 42
         
         # Extract 2026 Fiche Scout data
+        import json
+        
+        # safely parse starting position and trajectory, defaulting to stringified 'None' or empty array if missing.
+        try:
+            start_pos_raw = data.get('starting_position')
+            starting_pos_str = json.dumps(start_pos_raw) if isinstance(start_pos_raw, dict) else str(start_pos_raw)
+        except:
+            starting_pos_str = "None"
+            
+        try:
+            traj_raw = data.get('auto_trajectory')
+            auto_traj_str = json.dumps(traj_raw) if isinstance(traj_raw, list) else str(traj_raw or "[]")
+        except:
+            auto_traj_str = "[]"
+            
         match_data = MatchScoutData(
             team_id=team.id,
             event_id=event.id,
             match_number=match_number,
+            starting_position=starting_pos_str,
+            auto_trajectory=auto_traj_str,
             auto_start_balls=int(data.get('auto_start_balls', 0)),
             auto_balls_shot=int(data.get('auto_balls_shot', 0)),
             auto_balls_scored=int(data.get('auto_balls_scored', 0)),
@@ -1249,7 +1340,7 @@ def submit_match_scout():
         db.session.delete(assignment)
         
         db.session.commit()
-        return jsonify({'success': True, 'message': 'Match data saved'})
+        return jsonify({'success': True, 'message': 'Match data saved', 'match_id': match_data.id})
     except Exception as e:
         print("Error saving match data:", e)
         db.session.rollback()
@@ -1281,7 +1372,9 @@ def submit_pit_scout():
             
     if not event_id:
         tba = TBAHandler()
-        status = tba.get_team_status(HOME_TEAM_NUMBER)
+        status = None
+        if user.team and user.team.team_number:
+            status = tba.get_team_status(f"frc{user.team.team_number}")
         if status and status.get('event_key'):
             event_obj = Event.query.filter_by(tba_key=status['event_key']).first()
             if event_obj:
@@ -1363,24 +1456,27 @@ def pit_scout(assignment_id):
     if assignment.user_id != user.id:
         return "Unauthorized", 403
         
-    template_path = os.path.join(basedir, '../frontend/pit_scouting_form/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/pit_scout/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user, assignment=assignment)
 
 @app.route('/head-scout-stats')
+@app.route('/head-scout-analytics')
 def head_scout_analytics_hub():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     user = User.query.get(session['user_id'])
-    # Strictly Head Scout only, Admins are blocked from stats as requested
-    if not user or user.role != 'Head Scout':
-        return "Unauthorized: High-level analytics are reserved for Head Scouts.", 403
+    # Allow both Admin and Head Scout roles
+    if not user or user.role not in ['Head Scout', 'Admin']:
+        return "Unauthorized: High-level analytics are reserved for Head Scouts and Admins.", 403
         
-    # Get all events for season filtering
-    events = Event.query.all()
     # Get all pit data and match data
     pit_data = PitScoutData.query.all()
     match_data = MatchScoutData.query.all()
+    
+    # Get only events that have actual data (pit or match records)
+    event_ids_with_data = set(p.event_id for p in pit_data) | set(m.event_id for m in match_data)
+    events = Event.query.filter(Event.id.in_(event_ids_with_data)).all() if event_ids_with_data else []
     
     # Calculate Team Performance Averages
     import typing
@@ -1435,9 +1531,12 @@ def head_scout_analytics_hub():
         
         stats['matches'].append({
             'number': m.match_number,
+            'starting_position': m.starting_position,
             'auto': to_num(m.auto_balls_scored, 0),
             'tele': to_num(m.teleop_balls_shot, 0),
-            'climb': m.endgame_climb or 'None'
+            'climb': m.endgame_climb or 'None',
+            'strategy_url': m.strategy_image_url,
+            'auto_trajectory': m.auto_trajectory
         })
         
         c_status = str(m.endgame_climb).strip() if m.endgame_climb else 'None'
@@ -1448,13 +1547,15 @@ def head_scout_analytics_hub():
 
     # Link Pit Data
     for p in pit_data:
-        t_id = f"frc{p.team_id}"
+        t_num = p.team.team_number if p.team else p.team_id
+        t_id = f"frc{t_num}"
         if t_id in team_averages:
             team_averages[t_id]['pit'] = {
                 'drivetrain': p.drivetrain_type,
                 'motors': f"{p.motor_type} ({p.motor_count})",
                 'weight': p.weight,
-                'climb_level': p.climb_level
+                'climb_level': p.climb_level,
+                'photo_path': p.photo_path or ''
             }
 
     import math
@@ -1486,7 +1587,7 @@ def head_scout_analytics_hub():
 
     # We'll pass the data as JSON to the template for Chart.js
     import json
-    template_path = os.path.join(basedir, '../frontend/head_scout_analytics_hub/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/analytics/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(
             f.read(),
@@ -1513,6 +1614,12 @@ def pick_list_hub():
 
     team_averages: Dict[str, Any] = {}
     accuracy_lists: Dict[str, list] = {}
+
+    def to_num(val, default):
+        try:
+            return float(val) if val is not None else default
+        except (ValueError, TypeError):
+            return default
 
     for m in match_data:
         t_id = f"frc{m.team_id}"
@@ -1617,13 +1724,265 @@ def pick_list_hub():
         sorted_teams.sort(key=lambda x: x.get('power_score', 0), reverse=True)
 
     import json
-    template_path = os.path.join(basedir, '../frontend/head_scout_pick_list/code.html')
+    template_path = os.path.join(basedir, '../frontend/pages/picklist/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(
             f.read(),
             user=user,
             sorted_teams_json=json.dumps(sorted_teams)
         )
+
+        count = int(stats['match_count'])
+        if count > 0:
+            stats['auto_balls_avg'] = round(float(stats['auto_balls_scored']) / count, 2)
+            stats['teleop_balls_avg'] = round(float(stats['teleop_balls_shot']) / count, 2)
+            stats['accuracy_avg'] = round(float(stats['teleop_shooter_accuracy']) / count, 2)
+            stats['climb_rate'] = round((float(stats['climb_count']) / count) * 100, 1)
+            
+            power_score = (stats['auto_balls_avg'] * 2) + (stats['teleop_balls_avg'] * (stats['accuracy_avg'] / 100)) + (stats['climb_rate'] / 20)
+            stats['power_score'] = round(power_score, 2)
+        else:
+            stats['power_score'] = 0.0
+        
+        sorted_teams.append(stats)
+
+    # Sorting Logic: Official TBA Rank (ascending) if fallback, else Power Score (descending)
+    if is_tba_fallback:
+        sorted_teams.sort(key=lambda x: x.get('tba_rank', 999))
+    else:
+        sorted_teams.sort(key=lambda x: x.get('power_score', 0), reverse=True)
+
+    import json
+    template_path = os.path.join(basedir, '../frontend/pages/picklist/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(),
+            user=user,
+            sorted_teams_json=json.dumps(sorted_teams)
+        )
+
+# --- Drive Team Briefing ---
+
+@app.route('/drive-team-briefing')
+def drive_team_briefing():
+    """Serves the mobile-friendly Drive Team Briefing UI."""
+    if 'user_id' not in session:
+        return redirect(url_for('login_page'))
+    user = User.query.get(session['user_id'])
+    
+    # Needs a list of active events to choose from
+    pit_data = PitScoutData.query.all()
+    match_data = MatchScoutData.query.all()
+    event_ids_with_data = set(p.event_id for p in pit_data) | set(m.event_id for m in match_data)
+    events = Event.query.filter(Event.id.in_(event_ids_with_data)).all() if event_ids_with_data else []
+    
+    import json
+    template_path = os.path.join(basedir, '../frontend/pages/briefing/code.html')
+    # If the file doesn't exist yet, we'll create it later
+    if not os.path.exists(template_path):
+        return "Frontend file not created yet", 404
+        
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(),
+            user=user,
+            events=events
+        )
+
+@app.route('/api/team_matches/<int:event_id>')
+def api_team_matches(event_id):
+    """
+    Fetches all matches for the home team at a specific event from TBA.
+    Returns a sorted list of matches to populate a dropdown.
+    """
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    event = Event.query.get_or_404(event_id)
+    if not event.tba_key:
+        return jsonify({'error': 'Event has no TBA key'}), 400
+        
+    # fetch matches from TBA
+    matches = frc_api.get_event_matches(event.tba_key)
+    if not matches:
+        return jsonify([])
+        
+    user = User.query.get(session['user_id'])
+    home_team_tba_key = f"frc{user.team.team_number}" if user.team and user.team.team_number else None
+    
+    team_matches = []
+    for m in matches:
+        # Check if home team is in this match
+        red_teams = m.get('alliances', {}).get('red', {}).get('team_keys', [])
+        blue_teams = m.get('alliances', {}).get('blue', {}).get('team_keys', [])
+        
+        if home_team_tba_key and (home_team_tba_key in red_teams or home_team_tba_key in blue_teams):
+            comp_level = m.get('comp_level', '').upper()
+            match_num = m.get('match_number', 0)
+            set_num = m.get('set_number', 1)
+            
+            if comp_level == 'QM':
+                name = f"QM {match_num}"
+            else:
+                name = f"{comp_level} {set_num}-{match_num}"
+                
+            short_key = m['key'].split('_')[-1]
+            
+            team_matches.append({
+                'key': short_key,
+                'name': name,
+                'time': m.get('time', 0) or 0
+            })
+            
+    # Sort by time, if time is None, fallback to 0
+    team_matches.sort(key=lambda x: x['time'] if x['time'] is not None else 0)
+    return jsonify(team_matches)
+
+@app.route('/api/briefing/<int:event_id>/<match_key>')
+def api_briefing(event_id, match_key):
+    """
+    Fetches TBA data for a specific match and computes strengths/weaknesses 
+    for Notre Alliance vs Alliance Adverse based on our local DB.
+    """
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    event = Event.query.get_or_404(event_id)
+    if not event.tba_key:
+        return jsonify({'error': 'Event has no TBA key'}), 400
+        
+    # 1. Fetch match from TBA
+    tba = TBAHandler()
+    match_url = f"{frc_api.BASE_URL}/match/{event.tba_key}_{match_key}"
+    res = requests.get(match_url, headers=tba.headers, timeout=5)
+    
+    if res.status_code != 200:
+        return jsonify({'error': f'Match not found on TBA (Code {res.status_code})'}), 404
+        
+    match_data_tba = res.json()
+    alliances = match_data_tba.get('alliances', {})
+    if not alliances:
+        return jsonify({'error': 'No alliance data found for this match'}), 404
+        
+    user = User.query.get(session['user_id'])
+    if not user.team or not user.team.team_number:
+        return jsonify({'error': 'No team assigned to user'}), 400
+
+    red_teams = [t.replace('frc','') for t in alliances.get('red', {}).get('team_keys', [])]
+    blue_teams = [t.replace('frc','') for t in alliances.get('blue', {}).get('team_keys', [])]
+    
+    home_team = str(user.team.team_number)
+    
+    # Determine our alliance
+    if home_team in red_teams:
+        our_alliance_color = 'red'
+        our_teams = red_teams
+        opp_teams = blue_teams
+    elif home_team in blue_teams:
+        our_alliance_color = 'blue'
+        our_teams = blue_teams
+        opp_teams = red_teams
+    else:
+        # If we are not playing in this match, default to Red vs Blue
+        our_alliance_color = 'neutral'
+        our_teams = red_teams
+        opp_teams = blue_teams
+
+    # 2. Compute intelligence for a team
+    def get_team_intel(team_num):
+        # Attempt to get local data for this event first, or overall if not enough
+        matches = MatchScoutData.query.filter_by(event_id=event.id).join(Team).filter(Team.team_number == int(team_num)).all()
+        # Fallback to all data if none for this event
+        if not matches:
+            matches = MatchScoutData.query.join(Team).filter(Team.team_number == int(team_num)).all()
+            
+        pit = PitScoutData.query.filter_by(event_id=event.id).join(Team).filter(Team.team_number == int(team_num)).first()
+        if not pit:
+            pit = PitScoutData.query.join(Team).filter(Team.team_number == int(team_num)).first()
+            
+        if not matches and not pit:
+            return {'team': team_num, 'has_data': False}
+            
+        # Averages calculation (similar to analytics hub)
+        VAL_MAP = {'Very Slow': 1.0, 'Slow': 2.0, 'Medium': 3.0, 'Fast': 4.0, 'Very Fast': 5.0, 'None': 0.0, 'N/A': 0.0}
+        def to_num(v, d):
+            if v is None: return d
+            if isinstance(v, (int, float)): return v
+            s = str(v).strip()
+            if not s: return d
+            if s in VAL_MAP: return VAL_MAP[s]
+            try: return float(s)
+            except: return d
+
+        mc = len(matches)
+        if mc == 0:
+            return {'team': team_num, 'has_data': True, 'pit_only': True, 'drivetrain': pit.drivetrain_type if pit else 'Unknown'}
+
+        auto_scoring = sum(to_num(m.auto_balls_scored, 0) for m in matches) / mc
+        teleop_scoring = sum(to_num(m.teleop_balls_shot, 0) for m in matches) / mc
+        intake_speed = sum(to_num(m.teleop_intake_speed, 3) for m in matches) / mc
+        accuracy = sum(to_num(m.teleop_shooter_accuracy, 3) for m in matches) / mc
+        
+        climbs = sum(1 for m in matches if str(m.endgame_climb).strip() not in ['None', ''])
+        climb_rate = (climbs / mc) * 100
+        
+        # Determine strengths & weaknesses
+        strengths = []
+        weaknesses = []
+        
+        if auto_scoring > 2: strengths.append("Excellent score en Auto")
+        elif auto_scoring < 0.5: weaknesses.append("Auto faible ou inexistante")
+        
+        if teleop_scoring > 10: strengths.append("Gros tireur en Teleop")
+        elif teleop_scoring < 3: weaknesses.append("Peu de balles en Teleop")
+        
+        if climb_rate > 70: strengths.append("Grimpe très fiable")
+        elif climb_rate < 20: weaknesses.append("Grimpe rarement/échoue souvent")
+        
+        if accuracy > 4: strengths.append("Très précis aux tirs")
+        elif accuracy < 2.5: weaknesses.append("Manque de précision")
+        
+        if intake_speed < 2.5: weaknesses.append("Intake lent/difficile")
+
+        return {
+            'team': team_num,
+            'has_data': True,
+            'auto_avg': round(auto_scoring, 1),
+            'teleop_avg': round(teleop_scoring, 1),
+            'climb_rate': round(climb_rate, 1),
+            'strengths': strengths[:2], # max 2
+            'weaknesses': weaknesses[:2], # max 2
+            'drivetrain': pit.drivetrain_type if pit else 'Inconnu'
+        }
+
+    # 3. Compile report
+    our_intel = [get_team_intel(t) for t in our_teams]
+    opp_intel = [get_team_intel(t) for t in opp_teams]
+    
+    # Alliance Rollups
+    def rollup(intel_list):
+        valid = [i for i in intel_list if i.get('has_data') and not i.get('pit_only')]
+        if not valid: return {'auto': 0, 'teleop': 0, 'climb_avg': 0}
+        return {
+            'auto': round(sum(i['auto_avg'] for i in valid), 1),
+            'teleop': round(sum(i['teleop_avg'] for i in valid), 1),
+            'climb_avg': round(sum(i['climb_rate'] for i in valid) / len(valid), 1)
+        }
+        
+    return jsonify({
+        'match_key': match_key,
+        'our_alliance': {
+            'color': our_alliance_color,
+            'teams': our_intel,
+            'totals': rollup(our_intel)
+        },
+        'opp_alliance': {
+            'color': 'blue' if our_alliance_color == 'red' else 'red',
+            'teams': opp_intel,
+            'totals': rollup(opp_intel)
+        },
+        'status': 'success'
+    })
 
 @app.route('/api/import/scout-data', methods=['POST'])
 def import_scout_data():
@@ -1659,7 +2018,10 @@ def import_scout_data():
 
         # Assume current event if not specified
         tba = TBAHandler()
-        team_status = tba.get_team_status(HOME_TEAM_NUMBER)
+        team_status = None
+        user = User.query.get(session['user_id'])
+        if user.team and user.team.team_number:
+            team_status = tba.get_team_status(f"frc{user.team.team_number}")
         event_key = metadata.get('event_key') or (team_status.get('event_key') if team_status else None)
         
         if not event_key:
@@ -1737,9 +2099,24 @@ def teams_dir():
     if 'user_id' not in session:
         return redirect(url_for('login_page'))
     user = User.query.get(session['user_id'])
-    template_path = os.path.join(basedir, '../frontend/teams_directory_&_profile/code.html')
+    events = Event.query.order_by(desc(Event.date)).all()
+    
+    # Get live match info for header
+    live_match = "Practice Match"
+    if events:
+        latest_event = events[0]
+        try:
+            from backend.frc_api import frc_api
+            matches = frc_api.get_event_matches(latest_event.tba_key)
+            if matches:
+                 upcoming = [m for m in matches if m.get('actual_time') is None]
+                 if upcoming:
+                     live_match = f"Next: {upcoming[0].get('key').split('_')[-1].upper()}"
+        except: pass
+
+    template_path = os.path.join(basedir, '../frontend/pages/teams/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+        return render_template_string(f.read(), user=user, events=events, live_match=live_match)
 
 if __name__ == '__main__':
     with app.app_context():

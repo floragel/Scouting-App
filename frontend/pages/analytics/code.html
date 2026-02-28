@@ -108,38 +108,45 @@
             </div>
 
             <div class="flex flex-wrap gap-4 items-center w-full lg:w-auto">
-                <select id="season-filter"
+                <select id="season-filter" onchange="applySeasonFilter()"
                     class="bg-white dark:bg-card-dark border-slate-200 dark:border-slate-800 rounded-lg h-12 px-4 font-bold outline-none focus:ring-2 focus:ring-primary w-full sm:w-48">
                     <option value="all">All Seasons</option>
                     {% for event in events %}
-                    <option value="{{ event.tba_key }}">{{ event.name }} ({{ event.tba_key[:4] }})</option>
+                    <option value="{{ event.id }}">{{ event.name }}</option>
                     {% endfor %}
                 </select>
 
                 <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <div id="queue-actions" class="hidden flex items-center gap-2 mr-2">
                         <button onclick="syncOfflineQueue()" id="sync-queue-btn"
-                            class="h-12 rounded-xl bg-emerald-500 text-white font-bold hover:bg-emerald-600 transition-all flex items-center justify-center px-4 shadow-lg shadow-emerald-500/20 whitespace-nowrap">
+                            class="h-10 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-600 transition-all flex items-center justify-center px-4 shadow-lg shadow-emerald-500/20 whitespace-nowrap">
                             Sync Queue (0)
                         </button>
                         <button onclick="clearOfflineQueue()"
-                            class="h-12 w-12 flex-shrink-0 rounded-xl border border-red-500/20 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center text-xl group">
+                            class="h-10 w-10 flex-shrink-0 rounded-xl border border-red-500/20 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center text-xl group">
                             <span
-                                class="material-symbols-outlined group-hover:scale-110 transition-transform">delete_sweep</span>
+                                class="material-symbols-outlined group-hover:scale-110 transition-transform text-[18px]">delete_sweep</span>
                         </button>
                     </div>
                     <div class="relative group flex-1 sm:flex-none">
                         <input type="file" id="json-import" accept=".json" class="hidden" multiple
                             onchange="handleImport(event)" />
                         <button onclick="document.getElementById('json-import').click()"
-                            class="w-full h-12 rounded-xl border border-dashed border-primary/50 bg-primary/5 text-primary font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 px-6 whitespace-nowrap">
-                            <span class="material-symbols-outlined text-[20px]">upload_file</span>
+                            class="w-full h-10 rounded-xl border border-dashed border-primary/50 bg-primary/5 text-primary text-sm font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2 px-4 whitespace-nowrap">
+                            <span class="material-symbols-outlined text-[18px]">upload_file</span>
                             Import JSON
                         </button>
                     </div>
+
+                    <a href="/drive-team-briefing"
+                        class="h-10 w-full sm:w-auto rounded-xl bg-emerald-500/10 text-emerald-500 text-sm font-bold hover:bg-emerald-500/20 transition-all flex items-center justify-center gap-2 px-4 shadow-sm border border-emerald-500/20 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[18px]">sports_esports</span>
+                        Drive Team Briefing
+                    </a>
+
                     <button onclick="openQRScanner()"
-                        class="h-12 w-full sm:w-auto rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-all flex items-center justify-center gap-2 px-6 shadow-lg shadow-primary/20 whitespace-nowrap">
-                        <span class="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+                        class="h-10 w-full sm:w-auto rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary-hover transition-all flex items-center justify-center gap-2 px-4 shadow-lg shadow-primary/20 whitespace-nowrap">
+                        <span class="material-symbols-outlined text-[18px]">qr_code_scanner</span>
                         Scan QR Code
                     </button>
                 </div>
@@ -157,6 +164,7 @@
             <button onclick="switchTab('teams')" id="tab-teams"
                 class="nav-tab pb-4 text-sm font-bold transition-all border-b-2 border-transparent">Team
                 Leaderboard</button>
+
         </div>
 
         <!-- content: Pit Data -->
@@ -185,12 +193,24 @@
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
                         <tr>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase">Team</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase">Drivetrain</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase">Motors</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase">Weight</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase">Fuel Cap</th>
-                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase">Climb</th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase cursor-pointer hover:text-primary transition-colors select-none"
+                                onclick="sortPitTable('team_number')">Team <span id="pit-sort-team_number"
+                                    class="text-[10px]"></span></th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase cursor-pointer hover:text-primary transition-colors select-none"
+                                onclick="sortPitTable('drivetrain_type')">Drivetrain <span id="pit-sort-drivetrain_type"
+                                    class="text-[10px]"></span></th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase cursor-pointer hover:text-primary transition-colors select-none"
+                                onclick="sortPitTable('motor_type')">Motors <span id="pit-sort-motor_type"
+                                    class="text-[10px]"></span></th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase cursor-pointer hover:text-primary transition-colors select-none"
+                                onclick="sortPitTable('weight')">Weight <span id="pit-sort-weight"
+                                    class="text-[10px]"></span></th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase cursor-pointer hover:text-primary transition-colors select-none"
+                                onclick="sortPitTable('max_fuel_capacity')">Fuel Cap <span
+                                    id="pit-sort-max_fuel_capacity" class="text-[10px]"></span></th>
+                            <th class="px-6 py-4 text-xs font-bold text-slate-400 uppercase cursor-pointer hover:text-primary transition-colors select-none"
+                                onclick="sortPitTable('climb_level')">Climb <span id="pit-sort-climb_level"
+                                    class="text-[10px]"></span></th>
                         </tr>
                     </thead>
                     <tbody id="pit-table-body">
@@ -201,7 +221,7 @@
         </div>
 
         <!-- content: Match Data -->
-        <div id="content-match" class="hidden space-y-8">
+        <div id="content-match" class="space-y-8" style="display: none;">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div
                     class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -237,7 +257,7 @@
         </div>
 
         <!-- content: Teams -->
-        <div id="content-teams" class="hidden space-y-8">
+        <div id="content-teams" class="space-y-8" style="display: none;">
             <div
                 class="bg-white dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div class="flex justify-between items-center mb-6">
@@ -271,8 +291,7 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
+
     </main>
 
     <!-- Team Detail Modal -->
@@ -304,6 +323,14 @@
 
             <!-- Modal Content -->
             <div class="flex-1 overflow-y-auto p-8 space-y-8">
+                <!-- Robot Photo -->
+                <div id="modal-robot-photo-container" style="display: none;">
+                    <div
+                        class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                        <img id="modal-robot-photo" src="" alt="Robot Photo"
+                            style="width: 100%; max-height: 350px; object-fit: contain;" class="bg-black/5" />
+                    </div>
+                </div>
                 <!-- Pit Specs & Reliability -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div
@@ -324,6 +351,22 @@
                     </div>
                 </div>
 
+                <!-- Auto Trajectory Heatmap -->
+                <div>
+                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider">Average Auto Trajectory
+                    </h4>
+                    <div class="relative w-full aspect-[2/1] bg-slate-100 dark:bg-[#101823] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800"
+                        style="touch-action: none;">
+                        <img src="/static/images/auto_field.jpg"
+                            class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-80 dark:opacity-70"
+                            alt="Auto Field Map" />
+                        <div id="modal-auto-paths-container" class="absolute inset-0 w-full h-full pointer-events-none">
+                        </div>
+                        <canvas id="modal-heatmap-canvas"
+                            class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+                    </div>
+                </div>
+
                 <!-- Match History List -->
                 <div>
                     <h4 class="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider">Recorded Match Entries
@@ -334,10 +377,12 @@
                             <thead
                                 class="bg-slate-50 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 text-slate-500">
                                 <tr>
-                                    <th class="px-6 py-3 font-bold">Match</th>
-                                    <th class="px-6 py-3 font-bold text-center">Auto Balls</th>
-                                    <th class="px-6 py-3 font-bold text-center">Teleop Balls</th>
-                                    <th class="px-6 py-3 font-bold text-center">Climb Status</th>
+                                    <th class="px-4 py-3 font-bold">Match</th>
+                                    <th class="px-3 py-3 font-bold text-center cursor-help" title="Starting Position">
+                                        Start</th>
+                                    <th class="px-3 py-3 font-bold text-center">Auto Balls</th>
+                                    <th class="px-3 py-3 font-bold text-center">Teleop Balls</th>
+                                    <th class="px-3 py-3 font-bold text-center">Climb</th>
                                 </tr>
                             </thead>
                             <tbody id="modal-match-list">
@@ -359,10 +404,13 @@
     </div>
 
     <script>
-        const pitDataRaw = JSON.parse('{{ pit_data_json | safe }}');
-        const matchDataRaw = JSON.parse('{{ match_data_json | safe }}');
-        const teamPerformance = JSON.parse('{{ team_averages_json | safe }}');
-        let currentTab = 'teams';
+        const pitDataAll = {{ pit_data_json | safe if pit_data_json else '[]' }};
+        const matchDataAll = {{ match_data_json | safe if match_data_json else '[]' }};
+        const teamPerformanceAll = {{ team_averages_json | safe if team_averages_json else '{}' }};
+        let pitDataRaw = [...pitDataAll];
+        let matchDataRaw = [...matchDataAll];
+        let teamPerformance = { ...teamPerformanceAll };
+        let currentTab = 'pit';
         let offlineQueue = JSON.parse(localStorage.getItem('scoutOfflineQueue') || '[]');
 
         function showStatus(text, type = 'success') {
@@ -393,12 +441,14 @@
 
         function switchTab(tabId) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('[id^="content-"]').forEach(c => c.classList.add('hidden'));
+            // Use inline display style instead of Tailwind hidden class
+            document.querySelectorAll('[id^="content-"]').forEach(c => c.style.display = 'none');
 
             document.getElementById(`tab-${tabId}`).classList.add('active');
-            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            document.getElementById(`content-${tabId}`).style.display = 'block';
             currentTab = tabId;
-            updateUI();
+            // Defer rendering to allow browser to reflow
+            setTimeout(updateUI, 100);
         }
 
         async function handleImport(event) {
@@ -579,11 +629,113 @@
             }
         }
 
-        function updateUI() {
-            if (currentTab === 'pit') renderPitUI();
-            if (currentTab === 'match') renderMatchUI();
-            if (currentTab === 'teams') renderTeamsUI();
+        let pitSortState = { key: 'team_number', asc: true };
+
+        function sortPitTable(key) {
+            if (pitSortState.key === key) {
+                pitSortState.asc = !pitSortState.asc;
+            } else {
+                pitSortState.key = key;
+                pitSortState.asc = true;
+            }
+            renderPitUI();
         }
+
+        function updateUI() {
+            try {
+                if (currentTab === 'pit') renderPitUI();
+                if (currentTab === 'match') renderMatchUI();
+                if (currentTab === 'teams') renderTeamsUI();
+            } catch (err) {
+                console.error('updateUI error:', err);
+            }
+        }
+
+        // Season Filter
+        function applySeasonFilter() {
+            const sel = document.getElementById('season-filter');
+            const val = sel.value;
+
+            if (val === 'all') {
+                pitDataRaw = [...pitDataAll];
+                matchDataRaw = [...matchDataAll];
+                teamPerformance = { ...teamPerformanceAll };
+            } else {
+                const eventId = parseInt(val);
+                pitDataRaw = pitDataAll.filter(p => p.event_id === eventId);
+                matchDataRaw = matchDataAll.filter(m => m.event_id === eventId);
+
+                // Rebuild teamPerformance from filtered match data
+                teamPerformance = {};
+                const VAL_MAP = { 'Very Slow': 1.0, 'Slow': 2.0, 'Medium': 3.0, 'Fast': 4.0, 'Very Fast': 5.0, 'None': 0.0, 'N/A': 0.0 };
+                const toNum = (v, d) => { if (v == null) return d; if (typeof v === 'number') return v; const s = String(v).trim(); if (!s) return d; if (s in VAL_MAP) return VAL_MAP[s]; const n = parseFloat(s); return isNaN(n) ? d : n; };
+                const accLists = {};
+
+                matchDataRaw.forEach(m => {
+                    const tId = `frc${m.team_number}`;
+                    if (!teamPerformance[tId]) {
+                        teamPerformance[tId] = {
+                            team_number: m.team_number, match_count: 0,
+                            auto_balls_scored: 0, teleop_balls_shot: 0,
+                            teleop_intake_speed: 0, teleop_shooter_accuracy: 0,
+                            climb_count: 0, l3_climb_count: 0, matches: []
+                        };
+                        accLists[tId] = [];
+                    }
+                    const s = teamPerformance[tId];
+                    s.match_count++;
+                    const acc = toNum(m.teleop_shooter_accuracy, 3.0);
+                    accLists[tId].push(acc);
+                    s.auto_balls_scored += toNum(m.auto_balls_scored, 0);
+                    s.teleop_balls_shot += toNum(m.teleop_balls_shot, 0);
+                    s.teleop_intake_speed += toNum(m.teleop_intake_speed, 3.0);
+                    s.teleop_shooter_accuracy += acc;
+                    s.matches.push({ number: m.match_number, auto: toNum(m.auto_balls_scored, 0), tele: toNum(m.teleop_balls_shot, 0), climb: m.endgame_climb || 'None' });
+                    const cs = String(m.endgame_climb || '').trim();
+                    if (cs && cs !== 'None') { s.climb_count++; if (cs === 'L3') s.l3_climb_count++; }
+                });
+
+                // Compute averages
+                for (const [tId, s] of Object.entries(teamPerformance)) {
+                    if (s.match_count > 0) {
+                        s.auto_balls_avg = Math.round((s.auto_balls_scored / s.match_count) * 100) / 100;
+                        s.teleop_balls_avg = Math.round((s.teleop_balls_shot / s.match_count) * 100) / 100;
+                        s.intake_speed_avg = Math.round((s.teleop_intake_speed / s.match_count) * 100) / 100;
+                        s.accuracy_avg = Math.round((s.teleop_shooter_accuracy / s.match_count) * 100) / 100;
+                        s.climb_rate = Math.round((s.climb_count / s.match_count) * 1000) / 10;
+                        s.l3_rate = Math.round((s.l3_climb_count / s.match_count) * 1000) / 10;
+                        // Std dev
+                        const arr = accLists[tId];
+                        if (arr.length >= 2) {
+                            const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+                            const variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (arr.length - 1);
+                            s.accuracy_sd = Math.round(Math.sqrt(variance) * 100) / 100;
+                        } else { s.accuracy_sd = 0; }
+                    }
+                }
+
+                // Link pit data
+                pitDataRaw.forEach(p => {
+                    const tId = `frc${p.team_number}`;
+                    if (teamPerformance[tId]) {
+                        teamPerformance[tId].pit = {
+                            drivetrain: p.drivetrain_type,
+                            motors: `${p.motor_type} (${p.motor_count})`,
+                            weight: p.weight,
+                            climb_level: p.climb_level,
+                            photo_path: p.photo_path || ''
+                        };
+                    }
+                });
+            }
+
+            updateUI();
+            const eventName = sel.options[sel.selectedIndex].text;
+            showStatus(`Filtered: ${eventName} (${Object.keys(teamPerformance).length} teams, ${matchDataRaw.length} matches)`);
+        }
+
+
+
 
         const getHeatmapColor = (val, max) => {
             const ratio = val / max;
@@ -637,6 +789,22 @@
             document.getElementById('modal-team-name').textContent = `Team ${stats.team_number}`;
             document.getElementById('modal-team-icon').textContent = stats.team_number.toString().charAt(0);
 
+            // Robot Photo
+            const photoContainer = document.getElementById('modal-robot-photo-container');
+            const photoImg = document.getElementById('modal-robot-photo');
+            if (stats.pit && stats.pit.photo_path) {
+                photoImg.src = stats.pit.photo_path;
+                photoContainer.style.display = 'block';
+            } else {
+                const pitEntry = pitDataRaw.find(p => p.team_number == stats.team_number);
+                if (pitEntry && pitEntry.photo_path) {
+                    photoImg.src = pitEntry.photo_path;
+                    photoContainer.style.display = 'block';
+                } else {
+                    photoContainer.style.display = 'none';
+                }
+            }
+
             // Pit Data
             const pitHtml = stats.pit ? `
                 <div class="flex justify-between py-2 border-b border-slate-100 dark:border-slate-800/50">
@@ -663,12 +831,39 @@
             const reliabilityLabel = sd < 0.5 ? 'Extremely Stable' : (sd < 1.0 ? 'Consistent' : 'Volatile / Unreliable');
             const reliabilityColor = sd < 0.5 ? 'bg-emerald-500' : (sd < 1.0 ? 'bg-amber-500' : 'bg-rose-500');
 
+            // Calculate most common start position
+            const startCounts = {};
+            (stats.matches || []).forEach(m => {
+                let pos = m.starting_position || 'Center';
+                try {
+                    const parsed = JSON.parse(pos);
+                    if (parsed.x < 0.33) pos = 'Left';
+                    else if (parsed.x < 0.66) pos = 'Center';
+                    else pos = 'Right';
+                } catch (e) { }
+                startCounts[pos] = (startCounts[pos] || 0) + 1;
+            });
+            let mostCommonStart = 'N/A';
+            let maxCount = 0;
+            for (const [pos, count] of Object.entries(startCounts)) {
+                if (count > maxCount) {
+                    maxCount = count;
+                    mostCommonStart = pos;
+                }
+            }
+
             document.getElementById('modal-stats-data').innerHTML = `
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-500">Shooter Consistency</span>
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-slate-500 text-sm font-bold">Shooter Consistency</span>
                     <span class="px-3 py-1 rounded-full ${reliabilityColor} text-white text-[10px] font-black uppercase tracking-tighter">${reliabilityLabel}</span>
                 </div>
-                <div class="grid grid-cols-2 gap-4 pt-2">
+                
+                <div class="p-3 mb-4 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between">
+                    <span class="text-[10px] font-bold text-primary uppercase">Favored Start Pos</span>
+                    <span class="text-sm font-black text-primary">${mostCommonStart}</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                     <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700">
                         <p class="text-[10px] font-bold text-slate-400 uppercase">Avg Accuracy</p>
                         <p class="text-xl font-black text-primary">${stats.accuracy_avg}</p>
@@ -684,25 +879,172 @@
                 </div>
             `;
 
-            // Match List
+            // Match List and Auto Paths Map
             const matchListBody = document.getElementById('modal-match-list');
             matchListBody.innerHTML = '';
+
+            const pathsContainer = document.getElementById('modal-auto-paths-container');
+            pathsContainer.innerHTML = '';
+
             (stats.matches || []).forEach(m => {
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors';
+
+                const strategyIcon = m.strategy_url
+                    ? `<a href="${m.strategy_url}" target="_blank" class="ml-2 inline-flex items-center justify-center size-6 rounded-md bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:text-blue-400 transition-colors" title="View Auto Path"><span class="material-symbols-outlined text-[14px]">route</span></a>`
+                    : '';
+
+                if (m.strategy_url) {
+                    const pathImg = document.createElement('img');
+                    pathImg.src = m.strategy_url;
+                    pathImg.className = 'absolute inset-0 w-full h-full object-contain opacity-40 mix-blend-multiply dark:mix-blend-screen';
+                    pathsContainer.appendChild(pathImg);
+                }
+
+                let displayPos = m.starting_position || 'C';
+                try {
+                    const parsed = JSON.parse(displayPos);
+                    displayPos = `${parsed.x.toFixed(2)}, ${parsed.y.toFixed(2)}`;
+                } catch (e) {
+                    displayPos = displayPos[0] || 'C';
+                }
+
                 tr.innerHTML = `
-                    <td class="px-6 py-4 font-bold text-slate-700 dark:text-slate-300">QM ${m.number}</td>
-                    <td class="px-6 py-4 text-center font-medium">${m.auto}</td>
-                    <td class="px-6 py-4 text-center font-bold text-primary">${m.tele}</td>
-                    <td class="px-6 py-4 text-center">
+                    <td class="px-4 py-4 font-bold text-slate-700 dark:text-slate-300 flex items-center">
+                        QM ${m.number} ${strategyIcon}
+                    </td>
+                    <td class="px-3 py-4 text-center font-bold text-slate-500 dark:text-slate-400 text-[10px]">${displayPos}</td>
+                    <td class="px-3 py-4 text-center font-medium">${m.auto}</td>
+                    <td class="px-3 py-4 text-center font-bold text-primary">${m.tele}</td>
+                    <td class="px-3 py-4 text-center">
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${m.climb === 'None' ? 'bg-slate-100 text-slate-400' : 'bg-emerald-100 text-emerald-600'}">${m.climb}</span>
                     </td>
                 `;
                 matchListBody.appendChild(tr);
             });
 
+            // Draw JSON Heatmap
+            const canvas = document.getElementById('modal-heatmap-canvas');
+            const ctx = canvas.getContext('2d');
             document.getElementById('team-modal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+
+            // Draw JSON Heatmap (after showing modal so dimensions are valid)
+            setTimeout(() => {
+                const canvas = document.getElementById('modal-heatmap-canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = canvas.clientWidth * window.devicePixelRatio;
+                canvas.height = canvas.clientHeight * window.devicePixelRatio;
+                ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                let startXSum = 0, startYSum = 0, startCount = 0;
+                let allMatchPaths = [];
+
+                // Helper: Resample a path to exactly N points for averaging
+                const resamplePath = (points, n = 50) => {
+                    if (!points || points.length < 2) return null;
+                    const resampled = [];
+                    for (let i = 0; i < n; i++) {
+                        const t = i / (n - 1);
+                        const pos = t * (points.length - 1);
+                        const idx1 = Math.floor(pos);
+                        const idx2 = Math.min(idx1 + 1, points.length - 1);
+                        const weight = pos - idx1;
+                        resampled.push({
+                            x: points[idx1].x * (1 - weight) + points[idx2].x * weight,
+                            y: points[idx1].y * (1 - weight) + points[idx2].y * weight
+                        });
+                    }
+                    return resampled;
+                };
+
+                (stats.matches || []).forEach(m => {
+                    // 1. Draw Match Trajectories (HeatmapGhosting)
+                    if (m.auto_trajectory) {
+                        try {
+                            const traj = typeof m.auto_trajectory === 'string' ? JSON.parse(m.auto_trajectory) : m.auto_trajectory;
+                            if (Array.isArray(traj)) {
+                                traj.forEach(path => {
+                                    if (path.points && path.points.length > 1) {
+                                        ctx.beginPath();
+                                        ctx.strokeStyle = '#3b82f6';
+                                        ctx.lineWidth = 2;
+                                        ctx.globalAlpha = 0.15;
+                                        ctx.lineCap = 'round';
+                                        ctx.lineJoin = 'round';
+                                        ctx.moveTo(path.points[0].x * canvas.clientWidth, path.points[0].y * canvas.clientHeight);
+                                        for (let i = 1; i < path.points.length; i++) {
+                                            ctx.lineTo(path.points[i].x * canvas.clientWidth, path.points[i].y * canvas.clientHeight);
+                                        }
+                                        ctx.stroke();
+
+                                        const resampled = resamplePath(path.points);
+                                        if (resampled) allMatchPaths.push(resampled);
+                                    }
+                                });
+                            }
+                        } catch (e) { }
+                    }
+
+                    // 2. Aggregate Starting Positions
+                    if (m.starting_position) {
+                        try {
+                            const start = typeof m.starting_position === 'string' ? JSON.parse(m.starting_position) : m.starting_position;
+                            if (start.x !== undefined && start.y !== undefined) {
+                                startXSum += start.x;
+                                startYSum += start.y;
+                                startCount++;
+                            }
+                        } catch (e) { }
+                    }
+                });
+
+                // 3. Draw Average Path (Orange)
+                if (allMatchPaths.length > 0) {
+                    const n = allMatchPaths[0].length;
+                    const avgPath = [];
+                    for (let i = 0; i < n; i++) {
+                        let xSum = 0, ySum = 0;
+                        allMatchPaths.forEach(p => { xSum += p[i].x; ySum += p[i].y; });
+                        avgPath.push({ x: xSum / allMatchPaths.length, y: ySum / allMatchPaths.length });
+                    }
+
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#f59e0b'; // Orange/Amber-500
+                    ctx.lineWidth = 4;
+                    ctx.globalAlpha = 1.0;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = 'rgba(245, 158, 11, 0.4)';
+
+                    ctx.moveTo(avgPath[0].x * canvas.clientWidth, avgPath[0].y * canvas.clientHeight);
+                    for (let i = 1; i < avgPath.length; i++) {
+                        ctx.lineTo(avgPath[i].x * canvas.clientWidth, avgPath[i].y * canvas.clientHeight);
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+
+                // 4. Draw Average Start Position (Orange Square)
+                if (startCount > 0) {
+                    const avgX = (startXSum / startCount) * canvas.clientWidth;
+                    const avgY = (startYSum / startCount) * canvas.clientHeight;
+
+                    ctx.globalAlpha = 1.0;
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = 'rgba(245, 158, 11, 0.5)';
+
+                    ctx.fillRect(avgX - 12, avgY - 12, 24, 24);
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(avgX - 12, avgY - 12, 24, 24);
+
+                    ctx.shadowBlur = 0;
+                }
+            }, 50);
         }
 
         function closeTeamModal() {
@@ -714,17 +1056,44 @@
             const table = document.getElementById('pit-table-body');
             table.innerHTML = '';
 
+            // Update sort indicators
+            ['team_number', 'drivetrain_type', 'motor_type', 'weight', 'max_fuel_capacity', 'climb_level'].forEach(k => {
+                const el = document.getElementById('pit-sort-' + k);
+                if (el) el.textContent = pitSortState.key === k ? (pitSortState.asc ? '▲' : '▼') : '';
+            });
+
+            // Sort pit data
+            const numericKeys = ['team_number', 'weight', 'max_fuel_capacity', 'motor_count'];
+            const climbOrder = { 'None': 0, 'L1': 1, 'L2': 2, 'L3': 3 };
+            const sorted = [...pitDataRaw].sort((a, b) => {
+                const key = pitSortState.key;
+                let valA = a[key], valB = b[key];
+
+                if (key === 'climb_level') {
+                    valA = climbOrder[valA] ?? 0;
+                    valB = climbOrder[valB] ?? 0;
+                }
+
+                let cmp;
+                if (numericKeys.includes(key) || key === 'climb_level') {
+                    cmp = (parseFloat(valA) || 0) - (parseFloat(valB) || 0);
+                } else {
+                    cmp = String(valA || '').localeCompare(String(valB || ''));
+                }
+                return pitSortState.asc ? cmp : -cmp;
+            });
+
             const drivetrainCounts = {};
             const motorCounts = {};
             const weights = [];
 
-            pitDataRaw.forEach(p => {
+            sorted.forEach(p => {
                 drivetrainCounts[p.drivetrain_type] = (drivetrainCounts[p.drivetrain_type] || 0) + 1;
                 motorCounts[p.motor_type] = (motorCounts[p.motor_type] || 0) + 1;
                 weights.push(p.weight);
 
                 const row = `
-                    <tr class="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+                    <tr class="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors cursor-pointer" onclick="openTeamModal('frc${p.team_number}')">
                         <td class="px-6 py-4 font-bold text-primary">frc${p.team_number}</td>
                         <td class="px-6 py-4 text-sm">${p.drivetrain_type}</td>
                         <td class="px-6 py-4 text-sm">${p.motor_type} (${p.motor_count})</td>
@@ -818,9 +1187,9 @@
                 if (chart) chart.destroy();
             });
 
-            const teams = Object.keys(teamAverages);
-            const autoAvgs = teams.map(t => teamAverages[t].auto_balls_avg);
-            const teleAvgs = teams.map(t => teamAverages[t].teleop_balls_avg);
+            const teams = Object.keys(teamPerformance);
+            const autoAvgs = teams.map(t => teamPerformance[t].auto_balls_avg);
+            const teleAvgs = teams.map(t => teamPerformance[t].teleop_balls_avg);
 
             new Chart(document.getElementById('ballsChart'), {
                 type: 'bar',
@@ -842,9 +1211,9 @@
             });
 
             const correlationData = teams.map(t => ({
-                x: teamAverages[t].accuracy_avg,
-                y: teamAverages[t].intake_speed_avg,
-                r: Math.max(5, teamAverages[t].climb_rate / 5),
+                x: teamPerformance[t].accuracy_avg,
+                y: teamPerformance[t].intake_speed_avg,
+                r: Math.max(5, teamPerformance[t].climb_rate / 5),
                 t: t
             }));
 

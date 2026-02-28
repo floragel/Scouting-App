@@ -159,6 +159,8 @@ class MatchScoutData(db.Model):
     match_number = db.Column(db.Integer, nullable=False)
     
     # Auto
+    starting_position = db.Column(db.String(255), default='None') # JSON coordinates {x: int, y: int}
+    auto_trajectory = db.Column(db.Text, nullable=True)     # JSON array of drawing paths
     auto_start_balls = db.Column(db.Integer, default=0)     # balles internes au debut
     auto_balls_shot = db.Column(db.Integer, default=0)      # balles total shootées (auto)
     auto_balls_scored = db.Column(db.Integer, default=0)    # balles qui rentrent (auto)
@@ -176,6 +178,7 @@ class MatchScoutData(db.Model):
     
     # General
     notes = db.Column(db.Text)
+    strategy_image_url = db.Column(db.String(255), nullable=True)
     
     # Scouter Tracking
     scouter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -195,6 +198,8 @@ class MatchScoutData(db.Model):
             'team_number': self.team.team_number if self.team else self.team_id,
             'event_id': self.event_id,
             'match_number': self.match_number,
+            'starting_position': self.starting_position,
+            'auto_trajectory': self.auto_trajectory,
             'auto_start_balls': self.auto_start_balls,
             'auto_balls_shot': self.auto_balls_shot,
             'auto_balls_scored': self.auto_balls_scored,
@@ -206,6 +211,7 @@ class MatchScoutData(db.Model):
             'passes_trench': self.passes_trench,
             'endgame_climb': self.endgame_climb,
             'notes': self.notes,
+            'strategy_image_url': self.strategy_image_url,
             'scouter_id': self.scouter_id
         }
 
