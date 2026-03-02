@@ -11,10 +11,11 @@ Built by **Team 6622 — StanRobotix**.
 | Feature | Description |
 |---|---|
 | 🔒 **Authentication & Roles** | Login/register with role-based access control (Scout, Pit Scout, Head Scout, Admin) |
-| 📊 **Scout Dashboard** | Real-time overview with live match status, assignments, and Statbotics performance data |
+| 📊 **Scout Dashboard** | Real-time overview with live match status, assignments, and Regional/Final Season rankings |
 | 🏟️ **Match Scouting** | In-match data entry form for tracking auto, teleop, and endgame performance |
 | 🔧 **Pit Scouting** | Pre-match robot inspection with photo uploads and mechanical spec documentation |
 | 📋 **Team Directory** | Browse all teams with detailed profiles, radar charts, and autonomous trajectory heatmaps |
+| 📱 **Mobile Native UI** | Premium mobile experience with bottom navigation and responsive glassmorphism design |
 | 📈 **Analytics Hub** | Advanced performance analysis with standard deviations, consistency badges, and exportable data |
 | 🎯 **Pick List Generator** | Drag-and-drop alliance selection board with power score rankings and PDF export |
 | 🗺️ **Drive Team Briefing** | Pre-match strategy briefings with opponent analysis and field positioning |
@@ -47,7 +48,7 @@ The main landing page for scouts after login. Displays:
 
 - **Live Match Status** — Shows the current or next match happening on the field, pulled from The Blue Alliance API.
 - **Scouting Assignments** — Lists the user's upcoming match scouting tasks with team numbers, match numbers, and completion status.
-- **Team Status Overview** — How many teams have been scouted vs. total teams at the event.
+- **Regional Rank & Final Standing** — Context-specific ranking that automatically identifies the team's final season standing (Day 3 or Championship).
 - **Personal Performance Stats** — How many matches and pits the logged-in user has scouted.
 - **Dashboard Notes** — Admin-posted announcements visible to all scouts.
 
@@ -310,10 +311,10 @@ The SQLite database contains the following tables:
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
+| **Tech** | Descriptions |
 |---|---|
 | **Backend** | Python 3, Flask, SQLAlchemy |
-| **Frontend** | HTML5, Vanilla JavaScript, TailwindCSS (CDN) |
+| **Frontend** | HTML5, Vanilla JavaScript, TailwindCSS (CDN), Mobile-Native Navigation |
 | **Database** | SQLite |
 | **APIs** | The Blue Alliance (TBA) REST API, Statbotics API (v3) |
 | **AI/ML** | OpenAI Whisper (voice transcription) |
