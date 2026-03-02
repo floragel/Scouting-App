@@ -113,17 +113,17 @@ db.init_app(app)
 # ─── PWA & Mobile UI Injection Middleware ───
 # Automatically inject PWA tags and Mobile UI assets into all HTML responses
 PWA_HEAD_TAGS = '''
-    <link rel="manifest" href="/manifest.json?v=3">
+    <link rel="manifest" href="/manifest.json?v=4">
     <meta name="theme-color" content="#0d6cf2">
-    <link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png?v=3">
+    <link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png?v=4">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FRC Scout">
-    <link rel="stylesheet" href="/shared_assets/mobile.css?v=3">
+    <link rel="stylesheet" href="/shared_assets/mobile.css?v=4">
 '''
 PWA_BODY_SCRIPT = '''
-    <script src="/static/pwa-register.js?v=3" defer></script>
-    <script src="/shared_assets/mobile-nav.js?v=3" defer></script>
+    <script src="/static/pwa-register.js?v=4" defer></script>
+    <script src="/shared_assets/mobile-nav.js?v=4" defer></script>
 '''
 
 @app.after_request

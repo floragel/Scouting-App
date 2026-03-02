@@ -16,18 +16,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const possibleRoleSelectors = [
         'p.text-\\[10px\\].text-slate-500',
         'p.text-\\[10px\\]',
-        '.uppercase.font-bold.tracking-tighter'
+        '.uppercase.font-bold.tracking-tighter',
+        'h1',
+        'h2'
     ];
 
     for (const selector of possibleRoleSelectors) {
-        const el = document.querySelector(selector);
-        if (el && el.textContent) {
-            const text = el.textContent.trim();
-            if (['Admin', 'Head Scout', 'Scout', 'Pit Scout', 'Drive Team'].includes(text)) {
-                userRole = text;
-                break;
+        const elements = document.querySelectorAll(selector);
+        for (const el of elements) {
+            if (el && el.textContent) {
+                const text = el.textContent.trim();
+                // Direct match
+                if (['Admin', 'Head Scout', 'Scout', 'Pit Scout', 'Drive Team'].includes(text)) {
+                    userRole = text;
+                    break;
+                }
+                // Partial match for Admin/Head Scout in headers
+                if (text.includes('Admin') || text.includes('Head Scout')) {
+                    userRole = text.includes('Admin') ? 'Admin' : 'Head Scout';
+                    break;
+                }
             }
         }
+        if (userRole !== 'Scout') break;
     }
 
     console.log('Detected user role:', userRole);
@@ -42,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Add role-specific items
     if (userRole === 'Admin' || userRole === 'Head Scout') {
+        navItems.push({ name: 'Management', icon: 'manage_accounts', path: '/admin-hub', regex: /^\/admin-hub/ });
         navItems.push({ name: 'Pick List', icon: 'drag_indicator', path: '/picklist', regex: /^\/picklist/ });
         navItems.push({ name: 'Analytics', icon: 'analytics', path: '/head-scout-stats', regex: /^\/(head-scout-stats|head-scout-analytics)/ });
     } else {
