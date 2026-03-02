@@ -893,6 +893,75 @@ def get_team_next_matches():
         'team_key': team_key
     })
 
+@app.route('/api/team/regional-status', methods=['GET'])
+def get_team_regional_status():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user = User.query.get(session['user_id'])
+    team_key = user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622'
+    team_number = team_key.replace('frc', '')
+    year = request.args.get('year', 2024)
+    
+    tba = TBAHandler()
+    team_events_url = f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{year}/simple"
+    res = requests.get(team_events_url, headers=tba.headers, timeout=5)
+    
+    if res.status_code != 200:
+        return jsonify({'error': 'TBA Unavailable', 'rank': 'N/A', 'win_rate': '0%', 'event_name': 'Error'}), 200
+
+    events = res.json()
+    if not events:
+        return jsonify({'error': 'No events found', 'rank': 'N/A', 'win_rate': '0%', 'event_name': 'No Event'}), 200
+
+    # Sort by end_date DESC, and prioritize higher event types (Championships)
+    # Event types: 3 (CMP Division), 4 (CMP Finals), 2 (District CMP), 1 (District), 0 (Regional)
+    def event_sort_key(e):
+        return (e.get('end_date', ''), e.get('event_type', 0))
+
+    events.sort(key=event_sort_key, reverse=True)
+
+    selected_event = None
+    rank = 'N/A'
+
+    # Iterate through events to find the latest one that has a rank for this team
+    for e in events:
+        event_key = e['key']
+        rankings_url = f"https://www.thebluealliance.com/api/v3/event/{event_key}/rankings"
+        rank_res = requests.get(rankings_url, headers=tba.headers, timeout=5)
+        
+        if rank_res.status_code == 200:
+            rank_data = rank_res.json()
+            if rank_data and 'rankings' in rank_data:
+                for r in rank_data['rankings']:
+                    if r.get('team_key') == team_key:
+                        rank = f"#{r['rank']}"
+                        selected_event = e
+                        break
+        
+        if selected_event:
+            break
+
+    # If no event with rank was found, default to the latest event info even if rank is N/A
+    if not selected_event:
+        selected_event = events[0]
+
+    # Get win rate/record for the team in that year
+    statbotics_url = f"https://api.statbotics.io/v3/team_year/{team_number}/{year}"
+    sb_res = requests.get(statbotics_url, timeout=5)
+    win_rate = "0%"
+    if sb_res.status_code == 200:
+        sb_data = sb_res.json()
+        wr = sb_data.get('record', {}).get('winrate', 0)
+        win_rate = f"{int(wr * 100)}%"
+
+    return jsonify({
+        'rank': rank,
+        'win_rate': win_rate,
+        'event_key': selected_event['key'],
+        'event_name': selected_event['name']
+    })
+
 @app.route('/api/user/next-assignment', methods=['GET'])
 def get_next_assignment():
     if 'user_id' not in session:
