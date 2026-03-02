@@ -89,8 +89,54 @@ def serve_shared_assets(filename):
     shared_dir = os.path.join(basedir, '..', 'frontend', 'shared')
     return send_from_directory(shared_dir, filename)
 
+# ─── PWA Routes ───
+# Service worker must be served from root '/' for proper scope
+@app.route('/service-worker.js')
+def serve_service_worker():
+    return send_from_directory(os.path.join(basedir, 'static'), 'service-worker.js',
+                               mimetype='application/javascript')
+
+@app.route('/manifest.json')
+def serve_manifest():
+    return send_from_directory(os.path.join(basedir, 'static'), 'manifest.json',
+                               mimetype='application/manifest+json')
+
+@app.route('/offline')
+def offline_page():
+    template_path = os.path.join(basedir, '../frontend/pages/offline/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return f.read()
+
 # Initialize the database with the app
 db.init_app(app)
+
+# ─── PWA Injection Middleware ───
+# Automatically inject PWA tags into all HTML responses
+PWA_HEAD_TAGS = '''
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0d6cf2">
+    <link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FRC Scout">
+'''
+PWA_BODY_SCRIPT = '\n    <script src="/static/pwa-register.js" defer></script>\n'
+
+@app.after_request
+def inject_pwa_tags(response):
+    if response.content_type and 'text/html' in response.content_type:
+        try:
+            html = response.get_data(as_text=True)
+            # Inject PWA head tags before </head>
+            if '</head>' in html and 'manifest' not in html:
+                html = html.replace('</head>', PWA_HEAD_TAGS + '</head>', 1)
+            # Inject PWA script before </body>
+            if '</body>' in html and 'pwa-register' not in html:
+                html = html.replace('</body>', PWA_BODY_SCRIPT + '</body>', 1)
+            response.set_data(html)
+        except Exception:
+            pass  # Don't break responses if injection fails
+    return response
 
 # Helper function to check allowed file extensions
 def allowed_file(filename):
