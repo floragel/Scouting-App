@@ -1,0 +1,112 @@
+/* Mobile-specific styles for FRC Scouting App */
+
+/* Hidden by default on desktop */
+.mobile-nav {
+    display: none;
+}
+
+@media (max-width: 768px) {
+
+    /* Adjust header to save space */
+    header {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    header h1 {
+        font-size: 1.1rem !important;
+    }
+
+    /* Hide the 'Live on Field' badge if it takes too much space */
+    header div.absolute.left-1\/2 {
+        display: none !important;
+    }
+
+    /* Add padding to body for the bottom nav */
+    body {
+        padding-bottom: 80px !important;
+    }
+
+    /* Show mobile-nav on mobile */
+    .mobile-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 65px;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        justify-content: space-around;
+        align-items: center;
+        z-index: 9999;
+        padding-bottom: env(safe-area-inset-bottom);
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        text-decoration: none;
+        font-size: 0.75rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        flex: 1;
+        padding: 8px 0;
+    }
+
+    .mobile-nav-item.active {
+        color: #0d6cf2;
+    }
+
+    .mobile-nav-item span.material-symbols-outlined {
+        font-size: 24px;
+        margin-bottom: 2px;
+    }
+
+    /* Responsive tweaks for Dashboard & Main content */
+    main {
+        padding: 1rem !important;
+        gap: 1rem !important;
+    }
+
+    .w-\[380px\],
+    .w-\[420px\],
+    .w-\[350px\] {
+        width: 100% !important;
+        flex-basis: auto !important;
+    }
+
+    /* Teams Directory Stacked Layout */
+    .flex-1.flex.overflow-hidden.w-full {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+    }
+
+    aside {
+        border-left: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+        min-height: 50vh !important;
+    }
+
+    /* Move bottom-fixed utility buttons up to avoid overlap with nav bar */
+    #custom-language-selector,
+    #pwa-install-btn,
+    #pwa-offline-banner,
+    #pwa-sync-banner {
+        bottom: 95px !important;
+    }
+}
+
+/* Glassmorphism utility */
+.glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}

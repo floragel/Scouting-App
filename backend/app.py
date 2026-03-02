@@ -110,27 +110,31 @@ def offline_page():
 # Initialize the database with the app
 db.init_app(app)
 
-# ─── PWA Injection Middleware ───
-# Automatically inject PWA tags into all HTML responses
+# ─── PWA & Mobile UI Injection Middleware ───
+# Automatically inject PWA tags and Mobile UI assets into all HTML responses
 PWA_HEAD_TAGS = '''
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="/manifest.json?v=3">
     <meta name="theme-color" content="#0d6cf2">
-    <link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="/static/pwa/apple-touch-icon.png?v=3">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="FRC Scout">
+    <link rel="stylesheet" href="/shared_assets/mobile.css?v=3">
 '''
-PWA_BODY_SCRIPT = '\n    <script src="/static/pwa-register.js" defer></script>\n'
+PWA_BODY_SCRIPT = '''
+    <script src="/static/pwa-register.js?v=3" defer></script>
+    <script src="/shared_assets/mobile-nav.js?v=3" defer></script>
+'''
 
 @app.after_request
-def inject_pwa_tags(response):
+def inject_mobile_and_pwa_assets(response):
     if response.content_type and 'text/html' in response.content_type:
         try:
             html = response.get_data(as_text=True)
-            # Inject PWA head tags before </head>
+            # Inject PWA/Mobile head tags before </head>
             if '</head>' in html and 'manifest' not in html:
                 html = html.replace('</head>', PWA_HEAD_TAGS + '</head>', 1)
-            # Inject PWA script before </body>
+            # Inject PWA/Mobile scripts before </body>
             if '</body>' in html and 'pwa-register' not in html:
                 html = html.replace('</body>', PWA_BODY_SCRIPT + '</body>', 1)
             response.set_data(html)
