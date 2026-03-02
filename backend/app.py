@@ -791,7 +791,8 @@ def admin_page():
     # 3. Fetch Matches
     event_matches = []
     tba = TBAHandler()
-    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    team_key = user.team.tba_key if user.team else 'frc6622'
+    team_status = tba.get_team_status(team_key)
     if team_status and team_status.get('event_key'):
         em = frc_api.get_event_matches(team_status['event_key'])
         if em:
@@ -826,7 +827,8 @@ def get_event_matches_api():
         return jsonify({'error': 'User not found'}), 404
         
     tba = TBAHandler()
-    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    team_key = user.team.tba_key if user.team else 'frc6622'
+    team_status = tba.get_team_status(team_key)
     
     if not team_status or not team_status.get('event_key'):
         return jsonify([])
@@ -863,7 +865,7 @@ def get_team_next_matches():
         return jsonify({'error': 'Unauthorized'}), 401
     
     user = User.query.get(session['user_id'])
-    team_key = user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622'
+    team_key = user.team.tba_key if user.team else 'frc6622'
     
     tba = TBAHandler()
     team_status = tba.get_team_status(team_key)
@@ -899,7 +901,7 @@ def get_team_regional_status():
         return jsonify({'error': 'Unauthorized'}), 401
     
     user = User.query.get(session['user_id'])
-    team_key = user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622'
+    team_key = user.team.tba_key if user.team else 'frc6622'
     team_number = team_key.replace('frc', '')
     year = request.args.get('year', 2024)
     
@@ -1005,7 +1007,8 @@ def auto_assign():
         
     # Get upcoming matches
     tba = TBAHandler()
-    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    team_key = user.team.tba_key if user.team else 'frc6622'
+    team_status = tba.get_team_status(team_key)
     if not team_status or not team_status.get('event_key'):
         return jsonify({'error': 'Team not registered for an active event.'}), 400
         
@@ -1185,7 +1188,8 @@ def auto_assign_pit():
         return jsonify({'error': 'No active Pit Scouts found.'}), 400
         
     tba = TBAHandler()
-    team_status = tba.get_team_status(user.affiliation if hasattr(user, 'affiliation') and user.affiliation else 'frc6622')
+    team_key = user.team.tba_key if user.team else 'frc6622'
+    team_status = tba.get_team_status(team_key)
     if not team_status or not team_status.get('event_key'):
         return jsonify({'error': 'Team not registered for an active event.'}), 400
         
@@ -1774,8 +1778,8 @@ def pick_list_hub():
     is_tba_fallback = False
     if not match_data:
         tba = TBAHandler()
-        # Default to frc6622 if affiliation not set
-        team_key = getattr(user, 'affiliation', 'frc6622')
+        # Default to frc6622 if team not set
+        team_key = user.team.tba_key if user.team else 'frc6622'
         if not team_key: 
             team_key = 'frc6622'
             
