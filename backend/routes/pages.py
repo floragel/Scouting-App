@@ -1,0 +1,491 @@
+import os
+import json
+from flask import Blueprint, session, redirect, url_for, send_from_directory, render_template_string
+from models import User, ScoutAssignment, MatchScoutData, PitScoutData, Event, Team
+import frc_api
+from frc_api import TBAHandler
+from .admin import check_admin
+
+pages_bp = Blueprint('pages', __name__)
+basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+@pages_bp.route('/login')
+def login_page():
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user and not user.team_id:
+            return redirect(url_for('pages.onboarding_page'))
+        return redirect(url_for('pages.home'))
+    return send_from_directory(os.path.join(basedir, '../frontend/pages/auth'), 'code.html')
+
+@pages_bp.route('/register')
+def register_page():
+    if 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user and not user.team_id:
+            return redirect(url_for('pages.onboarding_page'))
+        return redirect(url_for('pages.home'))
+    return send_from_directory(os.path.join(basedir, '../frontend/pages/auth'), 'code.html')
+
+@pages_bp.route('/onboarding')
+def onboarding_page():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    return send_from_directory(os.path.join(basedir, '../frontend/pages/onboarding'), 'code.html')
+
+@pages_bp.route('/profile')
+def profile_page():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/pages/profile/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
+
+@pages_bp.route('/admin-hub')
+def admin_page():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    user = User.query.get(session['user_id'])
+    if not user or user.role not in ['Admin', 'Head Scout']:
+        return redirect(url_for('pages.scout_dashboard'))
+    
+    team_members = []
+    if user.team_id:
+        if hasattr(user, 'team_id') and user.team_id is not None:
+            team_members = User.query.filter_by(team_id=user.team_id).all()
+        else:
+            team_members = User.query.filter_by(team_access_code=user.team_access_code).all()
+            
+    if not team_members:
+        team_members = User.query.all()
+        
+    members_data = []
+    for m in team_members:
+        m_dict = m.to_dict()
+        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        members_data.append(m_dict)
+    
+    assignments = ScoutAssignment.query.all()
+    assignments_data = [a.to_dict() for a in assignments]
+    
+    event_matches = []
+    tba = TBAHandler()
+    team_key = user.team.tba_key if user.team else 'frc6622'
+    team_status = tba.get_team_status(team_key)
+    if team_status and team_status.get('event_key'):
+        em = frc_api.get_event_matches(team_status['event_key'])
+        if em:
+            valid_matches = [m for m in em if m.get('time')]
+            valid_matches.sort(key=lambda x: x['time'])
+            event_matches = valid_matches
+
+    template_path = os.path.join(basedir, '../frontend/pages/admin/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(), 
+            user=user,
+            team_members=members_data, 
+            users_json=json.dumps(members_data),
+            assignments=assignments_data, 
+            assignments_json=json.dumps(assignments_data),
+            event_matches=event_matches
+        )
+
+@pages_bp.route('/scout-dashboard')
+def scout_dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    
+    user = User.query.get(session['user_id'])
+    is_admin = user.role in ['Admin', 'Head Scout']
+    
+    assignments = []
+    matches_scouted = 0
+    if not is_admin:
+        assignment_type_filter = 'Pit' if user.role == 'Pit Scout' else 'Match'
+        assign_records = ScoutAssignment.query.filter_by(user_id=user.id, status='Pending', assignment_type=assignment_type_filter).all()
+        assignments = [a.to_dict() for a in assign_records]
+        
+        if user.role == 'Pit Scout':
+            matches_scouted = PitScoutData.query.filter_by(scouter_id=user.id).count() if hasattr(PitScoutData, 'scouter_id') else 0
+        else:
+            matches_scouted = MatchScoutData.query.filter_by(scouter_id=user.id).count()
+        
+    tba = TBAHandler()
+    team_status = None
+    if user.team and user.team.team_number:
+        home_team_tba_key = f"frc{user.team.team_number}"
+        team_status = tba.get_team_status(home_team_tba_key)
+    
+    if is_admin:
+        user_performance = {'matches_scouted': '-', 'accuracy': 'Admin'}
+    else:
+        accuracy = 'High' if matches_scouted > 20 else 'Medium' if matches_scouted > 5 else 'Low'
+        user_performance = {'matches_scouted': matches_scouted, 'accuracy': accuracy}
+        
+    event_matches = []
+    live_match = "TBD"
+    dashboard_note = f"Welcome to the FRC Scouting App. Have a great event, {user.name.split()[0] if user.name else 'Scout'}!"
+    
+    if team_status and team_status.get('event_key'):
+        em = frc_api.get_event_matches(team_status['event_key'])
+        if em:
+            valid_matches = [m for m in em if m.get('time')]
+            valid_matches.sort(key=lambda x: x['time'])
+            
+            import time
+            current_unix = int(time.time())
+            future_matches = [m for m in valid_matches if m['time'] > (current_unix - 600)]
+            event_matches = future_matches
+            
+            if future_matches:
+                live_m = future_matches[0]
+                live_match = f"{live_m.get('comp_level', '').upper()} {live_m.get('match_number', '')}"
+            elif valid_matches:
+                live_m = valid_matches[-1]
+                live_match = f"{live_m.get('comp_level', '').upper()} {live_m.get('match_number', '')} (Done)"
+
+    is_pit_scout = user.role == 'Pit Scout'
+    template_name = 'dashboard_pit' if is_pit_scout else 'dashboard'
+    template_path = os.path.join(basedir, f'../frontend/pages/{template_name}/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        template_content = f.read()
+        
+    return render_template_string(
+        template_content, 
+        is_admin=is_admin,
+        assignments=assignments,
+        team_status=team_status,
+        user=user,
+        user_performance=user_performance,
+        dashboard_note=dashboard_note,
+        event_matches=event_matches,
+        live_match=live_match
+    )
+
+@pages_bp.route('/profile/edit')
+def profile_edit_page():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/pages/profile_edit/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
+
+@pages_bp.route('/')
+def home():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/pages/events/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
+
+@pages_bp.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+        
+    user = User.query.get(session['user_id'])
+    template_path = os.path.join(basedir, '../frontend/pages/events/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user)
+
+@pages_bp.route('/analytics')
+def analytics():
+    return redirect(url_for('pages.head_scout_analytics_hub'))
+
+@pages_bp.route('/match-scout/<int:assignment_id>')
+def match_scout(assignment_id):
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    
+    user = User.query.get(session['user_id'])
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    
+    if assignment.user_id != user.id and user.role != 'Admin':
+        return "Not authorized to scout this match", 403
+        
+    template_path = os.path.join(basedir, '../frontend/pages/match_scout/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user, assignment=assignment)
+
+@pages_bp.route('/pit-scout/<int:assignment_id>')
+def pit_scout(assignment_id):
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    user = User.query.get(session['user_id'])
+    
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    if assignment.user_id != user.id:
+        return "Unauthorized", 403
+        
+    template_path = os.path.join(basedir, '../frontend/pages/pit_scout/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(f.read(), user=user, assignment=assignment)
+
+@pages_bp.route('/head-scout-stats')
+@pages_bp.route('/head-scout-analytics')
+def head_scout_analytics_hub():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    user = User.query.get(session['user_id'])
+    if not user or user.role not in ['Head Scout', 'Admin']:
+        return "Unauthorized: High-level analytics are reserved for Head Scouts and Admins.", 403
+        
+    pit_data = PitScoutData.query.all()
+    match_data = MatchScoutData.query.all()
+    
+    event_ids_with_data = set(p.event_id for p in pit_data) | set(m.event_id for m in match_data)
+    events = Event.query.filter(Event.id.in_(event_ids_with_data)).all() if event_ids_with_data else []
+    
+    import typing
+    team_averages: typing.Dict[str, typing.Any] = {}
+    
+    VAL_MAP = {
+        'Very Slow': 1.0, 'Slow': 2.0, 'Medium': 3.0, 'Fast': 4.0, 'Very Fast': 5.0,
+        'None': 0.0, 'N/A': 0.0
+    }
+
+    def to_num(val, default):
+        if val is None: return float(default)
+        if isinstance(val, (int, float)): return float(val)
+        s = str(val).strip()
+        if not s: return float(default)
+        if s in VAL_MAP: return float(VAL_MAP[s])
+        try: return float(s)
+        except (ValueError, TypeError): return float(default)
+
+    accuracy_lists = {}
+
+    for m in match_data:
+        t_num = m.team.team_number if (m.team and m.team.team_number) else (m.team_id if m.team_id else '?')
+        t_id = f"frc{t_num}" if str(t_num).isdigit() else f"team_{t_num}"
+        
+        if t_id not in team_averages:
+            team_averages[t_id] = {
+                'team_number': t_num,
+                'match_count': 0,
+                'auto_balls_scored': 0.0,
+                'teleop_balls_shot': 0.0,
+                'teleop_intake_speed': 0.0,
+                'teleop_shooter_accuracy': 0.0,
+                'climb_count': 0,
+                'l3_climb_count': 0,
+                'matches': []
+            }
+            accuracy_lists[t_id] = []
+        
+        stats = team_averages[t_id]
+        stats['match_count'] += 1
+        
+        acc = to_num(m.teleop_shooter_accuracy, 3.0)
+        accuracy_lists[t_id].append(acc)
+        
+        stats['auto_balls_scored'] += to_num(m.auto_balls_scored, 0.0)
+        stats['teleop_balls_shot'] += to_num(m.teleop_balls_shot, 0.0)
+        stats['teleop_intake_speed'] += to_num(m.teleop_intake_speed, 3.0)
+        stats['teleop_shooter_accuracy'] += acc
+        
+        stats['matches'].append({
+            'number': m.match_number,
+            'starting_position': m.starting_position,
+            'auto': to_num(m.auto_balls_scored, 0),
+            'tele': to_num(m.teleop_balls_shot, 0),
+            'climb': m.endgame_climb or 'None',
+            'strategy_url': m.strategy_image_url,
+            'auto_trajectory': m.auto_trajectory
+        })
+        
+        c_status = str(m.endgame_climb).strip() if m.endgame_climb else 'None'
+        if c_status != 'None':
+            stats['climb_count'] += 1
+            if c_status == 'L3':
+                stats['l3_climb_count'] += 1
+
+    for p in pit_data:
+        t_num = p.team.team_number if p.team else p.team_id
+        t_id = f"frc{t_num}"
+        if t_id in team_averages:
+            team_averages[t_id]['pit'] = {
+                'drivetrain': p.drivetrain_type,
+                'motors': f"{p.motor_type} ({p.motor_count})",
+                'weight': p.weight,
+                'climb_level': p.climb_level,
+                'photo_path': p.photo_path or ''
+            }
+
+    import math
+    def calculate_sd(data):
+        if len(data) < 2: return 0.0
+        mean = sum(data) / len(data)
+        variance = sum((x - mean) ** 2 for x in data) / (len(data) - 1)
+        return round(float(math.sqrt(float(variance))), 2)
+
+    for t_id, stats in team_averages.items():
+        count = int(stats['match_count'])
+        if count > 0:
+            stats['auto_balls_avg'] = round(float(stats['auto_balls_scored']) / count, 2)
+            stats['teleop_balls_avg'] = round(float(stats['teleop_balls_shot']) / count, 2)
+            stats['intake_speed_avg'] = round(float(stats['teleop_intake_speed']) / count, 2)
+            stats['accuracy_avg'] = round(float(stats['teleop_shooter_accuracy']) / count, 2)
+            stats['accuracy_sd'] = calculate_sd(accuracy_lists[t_id])
+            stats['climb_rate'] = round((float(stats['climb_count']) / count) * 100, 1)
+            stats['l3_rate'] = round((float(stats['l3_climb_count']) / count) * 100, 1)
+        else:
+            stats['auto_balls_avg'] = 0.0
+            stats['teleop_balls_avg'] = 0.0
+            stats['intake_speed_avg'] = 0.0
+            stats['accuracy_avg'] = 0.0
+            stats['accuracy_sd'] = 0.0
+            stats['climb_rate'] = 0.0
+            stats['l3_rate'] = 0.0
+
+    template_path = os.path.join(basedir, '../frontend/pages/analytics/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(),
+            user=user,
+            events=events,
+            pit_data_json=json.dumps([p.to_dict() for p in pit_data]),
+            match_data_json=json.dumps([m.to_dict() for m in match_data]),
+            team_averages_json=json.dumps(team_averages)
+        )
+
+@pages_bp.route('/picklist')
+def pick_list_hub():
+    user, err_resp, err_code = check_admin()
+    if err_resp: return err_resp, err_code
+
+    events = Event.query.all()
+    match_data = MatchScoutData.query.all()
+    pit_data = PitScoutData.query.all()
+
+    import typing
+    team_averages: typing.Dict[str, typing.Any] = {}
+    accuracy_lists: typing.Dict[str, list] = {}
+
+    def to_num(val, default):
+        try:
+            return float(val) if val is not None else default
+        except (ValueError, TypeError):
+            return default
+
+    for m in match_data:
+        t_id = f"frc{m.team_id}"
+        if t_id not in team_averages:
+            team_averages[t_id] = {
+                'team_id': m.team_id, 'match_count': 0, 'auto_balls_scored': 0.0,
+                'teleop_balls_shot': 0.0, 'teleop_intake_speed': 0.0,
+                'teleop_shooter_accuracy': 0.0, 'climb_count': 0, 'l3_climb_count': 0,
+                'matches': [], 'pit': None
+            }
+            accuracy_lists[t_id] = []
+
+        stats = team_averages[t_id]
+        stats['match_count'] += 1
+        
+        acc = to_num(m.teleop_shooter_accuracy, 0.0)
+        accuracy_lists[t_id].append(acc)
+        
+        stats['auto_balls_scored'] += to_num(m.auto_balls_scored, 0.0)
+        stats['teleop_balls_shot'] += to_num(m.teleop_balls_shot, 0.0)
+        stats['teleop_intake_speed'] += to_num(m.teleop_intake_speed, 3.0)
+        stats['teleop_shooter_accuracy'] += acc
+        
+        c_status = str(m.endgame_climb).strip() if m.endgame_climb else 'None'
+        if c_status != 'None':
+            stats['climb_count'] += 1
+            if c_status == 'L3':
+                stats['l3_climb_count'] += 1
+
+    is_tba_fallback = False
+    if not match_data:
+        tba = TBAHandler()
+        team_key = user.team.tba_key if user.team else 'frc6622'
+        if not team_key: 
+            team_key = 'frc6622'
+            
+        event_key = tba.get_team_latest_event(team_key)
+        if event_key:
+            event_teams = frc_api.get_teams_for_event(event_key)
+            event_rankings = frc_api.get_event_rankings(event_key)
+            
+            rankings_dict = {}
+            if event_rankings and 'rankings' in event_rankings:
+                for rank_data in event_rankings['rankings']:
+                    rankings_dict[rank_data['team_key']] = rank_data['rank']
+                    
+            if event_teams:
+                is_tba_fallback = True
+                for t in event_teams:
+                    tk = t['key']
+                    t_num = t['team_number']
+                    team_averages[tk] = {
+                        'team_id': t_num, 'match_count': 0, 'auto_balls_scored': 0.0,
+                        'teleop_balls_shot': 0.0, 'teleop_intake_speed': 0.0,
+                        'teleop_shooter_accuracy': 0.0, 'climb_count': 0, 'l3_climb_count': 0,
+                        'matches': [], 'pit': None,
+                        'tba_rank': rankings_dict.get(tk, 999)
+                    }
+
+    for p in pit_data:
+        t_id = f"frc{p.team_id}"
+        if t_id in team_averages:
+            team_averages[t_id]['pit'] = {
+                'drivetrain': p.drivetrain_type,
+                'motors': f"{p.motor_type} ({p.motor_count})"
+            }
+
+    sorted_teams = []
+    for t_id, stats in team_averages.items():
+        count = int(stats['match_count'])
+        if count > 0:
+            stats['auto_balls_avg'] = round(float(stats['auto_balls_scored']) / count, 2)
+            stats['teleop_balls_avg'] = round(float(stats['teleop_balls_shot']) / count, 2)
+            stats['accuracy_avg'] = round(float(stats['teleop_shooter_accuracy']) / count, 2)
+            stats['climb_rate'] = round((float(stats['climb_count']) / count) * 100, 1)
+            
+            power_score = (stats['auto_balls_avg'] * 2) + (stats['teleop_balls_avg'] * (stats['accuracy_avg'] / 100)) + (stats['climb_rate'] / 20)
+            stats['power_score'] = round(power_score, 2)
+        else:
+            stats['power_score'] = 0.0
+        
+        sorted_teams.append(stats)
+
+    if is_tba_fallback:
+        sorted_teams.sort(key=lambda x: x.get('tba_rank', 999))
+    else:
+        sorted_teams.sort(key=lambda x: x.get('power_score', 0), reverse=True)
+
+    template_path = os.path.join(basedir, '../frontend/pages/picklist/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(),
+            user=user,
+            sorted_teams_json=json.dumps(sorted_teams)
+        )
+
+@pages_bp.route('/drive-team-briefing')
+def drive_team_briefing():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    user = User.query.get(session['user_id'])
+    
+    pit_data = PitScoutData.query.all()
+    match_data = MatchScoutData.query.all()
+    event_ids_with_data = set(p.event_id for p in pit_data) | set(m.event_id for m in match_data)
+    events = Event.query.filter(Event.id.in_(event_ids_with_data)).all() if event_ids_with_data else []
+    
+    template_path = os.path.join(basedir, '../frontend/pages/briefing/code.html')
+    if not os.path.exists(template_path):
+        return "Frontend file not created yet", 404
+        
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(),
+            user=user,
+            events=events
+        )

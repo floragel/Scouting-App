@@ -9,8 +9,22 @@
 
     /* Adjust header to save space */
     header {
+        padding-top: calc(env(safe-area-inset-top) + 0.75rem) !important;
+        padding-bottom: 0.75rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
+        height: auto !important;
+        min-height: calc(env(safe-area-inset-top) + 4rem) !important;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    header>div {
+        height: auto !important;
+        display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
     }
 
     header h1 {

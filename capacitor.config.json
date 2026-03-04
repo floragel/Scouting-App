@@ -1,0 +1,9 @@
+{
+  "appId": "com.stanrobotix.scouting",
+  "appName": "FRC Scouting App",
+  "webDir": "www",
+  "server": {
+    "url": "http://192.168.0.85:5002",
+    "cleartext": true
+  }
+}

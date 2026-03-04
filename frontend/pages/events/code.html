@@ -5,7 +5,7 @@
 <head>
     <script src="/shared_assets/translator.js"></script>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
     <title>FRC Scouting App - FRC Scouting Dashboard</title>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com" rel="preconnect" />
@@ -44,7 +44,7 @@
     </script>
 </head>
 
-<body
+<body data-user-role="{{ user.role }}"
     class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col antialiased">
     <!-- Top Navigation -->
     <header
@@ -80,6 +80,14 @@
                         class="block w-full rounded-lg border-0 bg-slate-100 dark:bg-card-dark py-2 pl-10 pr-3 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
                         placeholder="Search events, teams..." type="text" />
                 </div>
+                <!-- Scout Management Mobile Button -->
+                {% if user.role == 'Admin' or user.role == 'Head Scout' %}
+                <a href="/admin-hub"
+                    class="md:hidden flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-card-dark text-slate-600 dark:text-slate-400 hover:text-primary transition-colors glass">
+                    <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
+                </a>
+                {% endif %}
+
                 <button
                     class="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary whitespace-nowrap gap-2">
                     <span class="material-symbols-outlined text-[20px]">add</span>

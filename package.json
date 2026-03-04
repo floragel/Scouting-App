@@ -1,0 +1,27 @@
+{
+  "name": "scouting-app",
+  "version": "1.0.0",
+  "description": "A **full-stack web application** built for **FIRST Robotics Competition (FRC)** teams to streamline match scouting, pit scouting, team analytics, and alliance selection — all from a single, centralized platform.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/floragel/Scouting-App.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/floragel/Scouting-App/issues"
+  },
+  "homepage": "https://github.com/floragel/Scouting-App#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/ios": "^8.1.0"
+  }
+}

@@ -22,6 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     for (const selector of possibleRoleSelectors) {
+        // Try attribute first (most reliable)
+        const roleFromAttr = document.body.getAttribute('data-user-role');
+        if (roleFromAttr) {
+            userRole = roleFromAttr;
+            break;
+        }
+
         const elements = document.querySelectorAll(selector);
         for (const el of elements) {
             if (el && el.textContent) {
@@ -100,5 +107,29 @@ document.addEventListener('DOMContentLoaded', () => {
         shiftButtons();
         // Periodically check as some buttons (like install) are injected late
         setInterval(shiftButtons, 2000);
+
+        // --- NEW: Header Hub Injection ---
+        const injectHeaderHub = () => {
+            const headerActions = document.querySelector('header .flex.items-center.gap-4.flex-1.justify-end');
+            if (!headerActions || document.getElementById('mobile-header-hub')) return;
+
+            const hubBtn = document.createElement('a');
+            hubBtn.id = 'mobile-header-hub';
+            // Route based on role
+            const hubPath = (userRole === 'Admin' || userRole === 'Head Scout') ? '/admin-hub' : '/scout-dashboard';
+            hubBtn.href = hubPath;
+            hubBtn.className = 'md:hidden flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-card-dark text-slate-600 dark:text-slate-400 hover:text-primary transition-colors glass mr-2';
+
+            const icon = document.createElement('span');
+            icon.className = 'material-symbols-outlined text-[24px]';
+            icon.textContent = (userRole === 'Admin' || userRole === 'Head Scout') ? 'manage_accounts' : 'dashboard_customize';
+
+            hubBtn.appendChild(icon);
+            // Insert before the "New Report" button (+) or profile
+            headerActions.insertBefore(hubBtn, headerActions.firstChild);
+        };
+
+        injectHeaderHub();
+        setInterval(injectHeaderHub, 2000);
     }
 });

@@ -293,6 +293,36 @@ python3 scripts/promote_admin.py
 
 ---
 
+## ☁️ Deploying to Render
+
+This application is ready to be deployed to [Render.com](https://render.com/) with a production PostgreSQL database. 
+
+### Quick Deployment via `render.yaml`
+
+1. Fork this repository to your GitHub account.
+2. Log into Render and click **Blueprints > New Blueprint Instance**.
+3. Connect your repository.
+4. Render will automatically detect the `render.yaml` file and create two services:
+   - A **PostgreSQL Database**
+   - A **Web Service** running the app via Gunicorn.
+5. In your Render Dashboard, go to your new Web Service > **Environment**. Add a missing environment variable:
+   - `TBA_API_KEY`: Your Blue Alliance API Key.
+6. Once deployed, the app will automatically run `db.create_all()` and connect to the PostgreSQL database!
+
+### Manual Deployment
+
+1. Create a **PostgreSQL** database on Render and copy the "Internal Database URL".
+2. Create a **Web Service** using this repository.
+   - Build Command: `pip install -r backend/requirements.txt`
+   - Start Command: `gunicorn --chdir backend app:app`
+   - Framework: `Python`
+3. Set the following **Environment Variables**:
+   - `DATABASE_URL`: Add your PostgreSQL Internal Database URL here.
+   - `TBA_API_KEY`: Your Blue Alliance API Key.
+   - `FLASK_ENV`: `production`
+
+---
+
 ## 🗄️ Database Schema
 
 The SQLite database contains the following tables:
