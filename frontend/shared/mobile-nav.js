@@ -53,18 +53,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentPath = window.location.pathname;
 
     const navItems = [
-        { name: 'Home', icon: 'home', path: '/dashboard', regex: /^\/(dashboard|scout-dashboard|$)/ },
-        { name: 'Teams', icon: 'groups', path: '/teams-dir', regex: /^\/teams-dir/ },
-        { name: 'Schedule', icon: 'calendar_month', path: '/dashboard', regex: /^\/$/ }
+        { name: 'Home', icon: 'home', path: '/', regex: /^\/(dashboard|scout-dashboard|$)/ },
+        { name: 'Teams', icon: 'groups', path: '/teams', regex: /^\/teams/ },
+        { name: 'Schedule', icon: 'calendar_month', path: '/events', regex: /^\/events/ }
     ];
 
     // Add role-specific items
     if (userRole === 'Admin' || userRole === 'Head Scout') {
-        navItems.push({ name: 'Management', icon: 'manage_accounts', path: '/admin-hub', regex: /^\/admin-hub/ });
+        // Only keep functional pages for admins
+        navItems.push({ name: 'Admin', icon: 'manage_accounts', path: '/admin', regex: /^\/admin/ });
         navItems.push({ name: 'Pick List', icon: 'drag_indicator', path: '/picklist', regex: /^\/picklist/ });
-        navItems.push({ name: 'Analytics', icon: 'analytics', path: '/head-scout-stats', regex: /^\/(head-scout-stats|head-scout-analytics)/ });
+        navItems.push({ name: 'Analytics', icon: 'analytics', path: '/analytics', regex: /^\/analytics/ });
     } else {
-        navItems.push({ name: 'Profile', icon: 'person', path: '/profile/edit', regex: /^\/profile/ });
+        navItems.push({ name: 'Profile', icon: 'person', path: '/profile', regex: /^\/profile/ });
     }
 
     navItems.forEach(item => {
@@ -116,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hubBtn = document.createElement('a');
             hubBtn.id = 'mobile-header-hub';
             // Route based on role
-            const hubPath = (userRole === 'Admin' || userRole === 'Head Scout') ? '/admin-hub' : '/scout-dashboard';
+            const hubPath = (userRole === 'Admin' || userRole === 'Head Scout') ? '/admin' : '/';
             hubBtn.href = hubPath;
             hubBtn.className = 'md:hidden flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-card-dark text-slate-600 dark:text-slate-400 hover:text-primary transition-colors glass mr-2';
 
