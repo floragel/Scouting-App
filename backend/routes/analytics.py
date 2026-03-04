@@ -7,12 +7,12 @@ analytics_bp = Blueprint('analytics', __name__)
 @analytics_bp.route('/api/headscout/rankings', methods=['GET'])
 def get_rankings():
     try:
-        total_points = func.avg(MatchScoutData.auto_points) + func.avg(MatchScoutData.teleop_points)
+        total_points = func.avg(MatchScoutData.auto_balls_scored) + func.avg(MatchScoutData.teleop_balls_shot)
         rankings = db.session.query(
             Team.team_number,
             Team.nickname,
-            func.avg(MatchScoutData.auto_points).label('avg_auto'),
-            func.avg(MatchScoutData.teleop_points).label('avg_teleop'),
+            func.avg(MatchScoutData.auto_balls_scored).label('avg_auto'),
+            func.avg(MatchScoutData.teleop_balls_shot).label('avg_teleop'),
             total_points.label('avg_total_points')
         ).select_from(Team).join(MatchScoutData, Team.id == MatchScoutData.team_id).group_by(Team.id).order_by(
             desc('avg_total_points')
@@ -62,8 +62,8 @@ def get_match_report():
                  
              stats = db.session.query(
                  func.count(MatchScoutData.id).label('matches'),
-                 func.avg(MatchScoutData.auto_points).label('avg_auto_points'),
-                 func.avg(MatchScoutData.teleop_points).label('avg_teleop_points')
+                 func.avg(MatchScoutData.auto_balls_scored).label('avg_auto_points'),
+                 func.avg(MatchScoutData.teleop_balls_shot).label('avg_teleop_points')
              ).filter(MatchScoutData.team_id == team.id).first()
              
              report.append({
@@ -72,7 +72,7 @@ def get_match_report():
                  'nickname': team.nickname,
                  'matches_played': stats.matches or 0,
                  'avg_auto_points': round(stats.avg_auto_points or 0, 2) if stats.avg_auto_points is not None else 0,
-                 'avg_teleop_points': round(stats.teleop_points or 0, 2) if stats.teleop_points is not None else 0
+                 'avg_teleop_points': round(stats.avg_teleop_points or 0, 2) if stats.avg_teleop_points is not None else 0
              })
              
         return jsonify(report), 200

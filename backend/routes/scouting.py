@@ -3,7 +3,7 @@ import uuid
 import base64
 from flask import Blueprint, request, jsonify, session, abort
 from werkzeug.utils import secure_filename
-from models import db, Team, Event, PitScoutData, MatchScoutData, ScoutAssignment
+from models import db, Team, Event, PitScoutData, MatchScoutData, ScoutAssignment, User
 from frc_api import TBAHandler
 
 scouting_bp = Blueprint('scouting', __name__)
@@ -76,11 +76,9 @@ def submit_match_data():
             team_id=data['team_id'],
             event_id=data['event_id'],
             match_number=data['match_number'],
-            auto_points=data.get('auto_points', 0),
-            auto_tasks=data.get('auto_tasks', 0),
-            teleop_points=data.get('teleop_points', 0),
-            teleop_tasks=data.get('teleop_tasks', 0),
-            climb_status=data.get('climb_status'),
+            auto_balls_scored=data.get('auto_points', 0),
+            teleop_balls_shot=data.get('teleop_points', 0),
+            endgame_climb=data.get('climb_status', 'None'),
             notes=data.get('notes')
         )
 
