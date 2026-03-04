@@ -87,6 +87,45 @@ def login():
     session['user_id'] = user.id
     return jsonify({'message': 'Logged in successfully', 'user': user.to_dict()}), 200
 
+@auth_bp.route('/api/auth/setup-admin', methods=['POST'])
+def setup_admin():
+    # Only allow if SETUP_SECRET is defined in environment to prevent abuse
+    expected_secret = os.environ.get('SETUP_SECRET')
+    if not expected_secret:
+        return jsonify({'error': 'Setup endpoint is disabled. Contact server administrator.'}), 403
+        
+    data = request.json
+    provided_secret = data.get('setup_secret')
+    email = data.get('email')
+    team_number = data.get('team_number')
+    
+    if int(provided_secret) != int(expected_secret):
+        return jsonify({'error': 'Invalid setup secret'}), 401
+        
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': 'User not found. Register an account first.'}), 404
+        
+    from models import Team
+    import secrets, string
+    
+    team = Team.query.filter_by(team_number=team_number).first()
+    if not team:
+        new_code = f"{''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(4))}{team_number}"
+        team = Team(team_number=team_number, name=f"Team {team_number}", location="Unknown", access_code=new_code)
+        db.session.add(team)
+        db.session.commit()
+        
+    user.role = 'Admin'
+    user.status = 'active'
+    user.team_id = team.id
+    db.session.commit()
+    
+    return jsonify({
+        'message': f"Success! {email} is now an Admin.",
+        'team_access_code': team.access_code
+    }), 200
+
 @auth_bp.route('/api/auth/logout', methods=['POST'])
 def logout():
     session.pop('user_id', None)

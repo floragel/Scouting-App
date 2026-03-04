@@ -292,8 +292,19 @@ The app runs on **http://localhost:5002**.
 
 ### 7. Create an Admin User
 
-After registering your first user, promote them to Admin:
+After registering your first user account on the website, you need to promote it to **Admin**.
 
+**If deploying on Render:**
+1. In your Render Dashboard > Environment, add a new Secret: `SETUP_SECRET` with a secure PIN (e.g., `123456`).
+2. Send a `POST` request to `/api/auth/setup-admin` with a JSON body containing your `email`, your `team_number`, and the `setup_secret`.
+   ```bash
+   curl -X POST https://your-render-url.onrender.com/api/auth/setup-admin \
+     -H "Content-Type: application/json" \
+     -d '{"email": "your_email@example.com", "team_number": 6622, "setup_secret": "123456"}'
+   ```
+3. Refresh the page and you will have Admin access!
+
+**If running locally:**
 ```bash
 source venv/bin/activate
 python3 scripts/promote_admin.py
