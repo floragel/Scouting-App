@@ -7,6 +7,8 @@ services:
     buildCommand: pip install -r backend/requirements.txt
     startCommand: gunicorn --chdir backend app:app -b 0.0.0.0:$PORT
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.13
       - key: FLASK_ENV
         value: production
       - key: DATABASE_URL
