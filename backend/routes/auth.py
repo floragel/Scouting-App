@@ -99,7 +99,7 @@ def setup_admin():
     email = data.get('email')
     team_number = data.get('team_number')
     
-    if int(provided_secret) != int(expected_secret):
+    if not provided_secret or str(provided_secret).strip() != str(expected_secret).strip():
         return jsonify({'error': 'Invalid setup secret'}), 401
         
     user = User.query.filter_by(email=email).first()
