@@ -94,8 +94,11 @@ def internal_server_error(error):
 # Register all routes from blueprints
 register_blueprints(app)
 
+# Ensure database tables are created before handling requests
+# Gunicorn imports `app` directly, so it skips the __main__ block below.
+with app.app_context():
+    db.create_all()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     # In production, use Gunicorn or Waitress.
     app.run(debug=True, host='0.0.0.0', port=5002)
