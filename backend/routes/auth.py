@@ -106,7 +106,7 @@ def setup_admin():
     if not user:
         return jsonify({'error': 'User not found. Register an account first.'}), 404
         
-    from models import Team
+    from models import Team, db
     import secrets, string
     
     team = Team.query.filter_by(team_number=team_number).first()
