@@ -112,7 +112,7 @@ def setup_admin():
     team = Team.query.filter_by(team_number=team_number).first()
     if not team:
         new_code = f"{''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(4))}{team_number}"
-        team = Team(team_number=team_number, name=f"Team {team_number}", location="Unknown", access_code=new_code)
+        team = Team(team_number=team_number, team_name=f"Team {team_number}", nickname=f"Team {team_number}", access_code=new_code)
         db.session.add(team)
         db.session.commit()
         
