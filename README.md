@@ -174,11 +174,14 @@ The translation system dynamically replaces visible text while preserving Materi
 
 ```
 Scouting App/
+├── docs/                            # Documentation and manuals
 ├── backend/                         # Flask API & server
-│   ├── app.py                       # Main application & all routes (~2100 lines)
+│   ├── app.py                       # Main application & routing setup (~150 lines)
 │   ├── models.py                    # SQLAlchemy database models
 │   ├── frc_api.py                   # The Blue Alliance API integration
 │   ├── requirements.txt             # Python dependencies
+│   ├── routes/                      # Flask Blueprints (Modularized routes)
+│   │   ├── auth.py, admin.py, teams.py, etc.
 │   └── static/                      # Static assets (images, uploads)
 │       ├── images/                  # Field images, logos
 │       └── uploads/                 # User-uploaded files
@@ -261,11 +264,16 @@ TBA_API_KEY=your_tba_api_key_here
 
 ### 5. Set Up the Database
 
+For **local development** (SQLite):
 ```bash
 cp data/scouting_empty.db data/scouting.db
 ```
-
 > `scouting_empty.db` contains all tables with zero data. Your `scouting.db` is gitignored to protect user data.
+
+For **production** (PostgreSQL), provide the connection string in your `.env` file:
+```env
+DATABASE_URL=postgresql://user:password@localhost/scouting
+```
 
 ### 6. Run the App
 
@@ -293,39 +301,11 @@ python3 scripts/promote_admin.py
 
 ---
 
-## ☁️ Deploying to Render
 
-This application is ready to be deployed to [Render.com](https://render.com/) with a production PostgreSQL database. 
-
-### Quick Deployment via `render.yaml`
-
-1. Fork this repository to your GitHub account.
-2. Log into Render and click **Blueprints > New Blueprint Instance**.
-3. Connect your repository.
-4. Render will automatically detect the `render.yaml` file and create two services:
-   - A **PostgreSQL Database**
-   - A **Web Service** running the app via Gunicorn.
-5. In your Render Dashboard, go to your new Web Service > **Environment**. Add a missing environment variable:
-   - `TBA_API_KEY`: Your Blue Alliance API Key.
-6. Once deployed, the app will automatically run `db.create_all()` and connect to the PostgreSQL database!
-
-### Manual Deployment
-
-1. Create a **PostgreSQL** database on Render and copy the "Internal Database URL".
-2. Create a **Web Service** using this repository.
-   - Build Command: `pip install -r backend/requirements.txt`
-   - Start Command: `gunicorn --chdir backend app:app`
-   - Framework: `Python`
-3. Set the following **Environment Variables**:
-   - `DATABASE_URL`: Add your PostgreSQL Internal Database URL here.
-   - `TBA_API_KEY`: Your Blue Alliance API Key.
-   - `FLASK_ENV`: `production`
-
----
 
 ## 🗄️ Database Schema
 
-The SQLite database contains the following tables:
+The application supports both **SQLite** and **PostgreSQL**. The database contains the following tables:
 
 | Table | Purpose |
 |---|---|
@@ -345,7 +325,7 @@ The SQLite database contains the following tables:
 |---|---|
 | **Backend** | Python 3, Flask, SQLAlchemy |
 | **Frontend** | HTML5, Vanilla JavaScript, TailwindCSS (CDN), Mobile-Native Navigation |
-| **Database** | SQLite |
+| **Database** | SQLite (Local) / PostgreSQL (Production) |
 | **APIs** | The Blue Alliance (TBA) REST API, Statbotics API (v3) |
 | **AI/ML** | OpenAI Whisper (voice transcription) |
 | **Charts** | Chart.js (radar charts, performance graphs) |
