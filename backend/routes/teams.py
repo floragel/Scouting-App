@@ -86,7 +86,9 @@ def get_team_next_matches():
         return jsonify({'error': 'Unauthorized'}), 401
 
     user = User.query.get(session['user_id'])
-    team_key = user.team.tba_key if user.team else 'frc6622'
+    team_key = user.team.tba_key if (user.team and user.team.tba_key) else None
+    if not team_key:
+        team_key = f"frc{user.team.team_number}" if user.team else 'frc6622'
 
     tba = TBAHandler()
     team_status = tba.get_team_status(team_key)
@@ -297,3 +299,18 @@ def debug_tba():
         results['checks']['statbotics'] = {'error': str(e)}
     
     return jsonify(results), 200
+
+
+@teams_bp.route('/api/fix-teams', methods=['POST'])
+def fix_teams_tba_key():
+    """One-shot endpoint to patch all teams with null tba_key."""
+    try:
+        teams = Team.query.filter(Team.tba_key.is_(None)).all()
+        fixed = []
+        for t in teams:
+            t.tba_key = f"frc{t.team_number}"
+            fixed.append({'id': t.id, 'number': t.team_number, 'new_tba_key': t.tba_key})
+        db.session.commit()
+        return jsonify({'fixed_count': len(fixed), 'teams': fixed}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
