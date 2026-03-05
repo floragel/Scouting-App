@@ -74,7 +74,7 @@ class TBAHandler:
             status_res = requests.get(f"{BASE_URL}/status", headers=self.headers, timeout=5)
             if status_res.status_code != 200:
                 return {"text": "TBA Status Unavailable", "color": "grey", "type": "error"}
-            current_year = status_res.json().get('current_season', 2024)
+            current_year = status_res.json().get('current_season', 2025)
 
             # Get the years the team participated to find the most recent year with matches
             years_url = f"{BASE_URL}/team/{team_key}/years_participated"
@@ -145,9 +145,9 @@ class TBAHandler:
         """
         try:
             status_res = requests.get(f"{BASE_URL}/status", headers=self.headers, timeout=5)
-            current_year = 2024
+            current_year = 2025
             if status_res.status_code == 200:
-                current_year = status_res.json().get('current_season', 2024)
+                current_year = status_res.json().get('current_season', 2025)
             
             events_url = f"{BASE_URL}/team/{team_key}/events/{current_year}/simple"
             res = requests.get(events_url, headers=self.headers, timeout=5)

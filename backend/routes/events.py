@@ -25,8 +25,9 @@ def get_seasons():
 @events_bp.route('/events', methods=['GET'])
 def get_events():
     try:
+        import datetime
         year_param = request.args.get('year')
-        current_year = int(year_param) if year_param else 2024
+        current_year = int(year_param) if year_param else datetime.datetime.now().year
 
         api_events = frc_api.get_events_for_year(current_year)
 

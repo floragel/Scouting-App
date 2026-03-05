@@ -120,9 +120,10 @@ def get_team_regional_status():
         return jsonify({'error': 'Unauthorized'}), 401
 
     user = User.query.get(session['user_id'])
+    import datetime
     team_key = user.team.tba_key if user.team else 'frc6622'
     team_number = team_key.replace('frc', '')
-    year = request.args.get('year', 2024)
+    year = request.args.get('year', datetime.datetime.now().year)
 
     tba = TBAHandler()
     team_events_url = f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{year}/simple"
