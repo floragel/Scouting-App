@@ -119,65 +119,76 @@ def get_team_regional_status():
     if 'user_id' not in session:
         return jsonify({'error': 'Unauthorized'}), 401
 
-    user = User.query.get(session['user_id'])
-    import datetime
-    team_key = user.team.tba_key if user.team else 'frc6622'
-    team_number = team_key.replace('frc', '')
-    year = request.args.get('year', datetime.datetime.now().year)
+    try:
+        user = User.query.get(session['user_id'])
+        import datetime
+        team_key = user.team.tba_key if user.team else 'frc6622'
+        if not team_key:
+            team_key = f"frc{user.team.team_number}" if user.team else 'frc6622'
+        team_number = team_key.replace('frc', '')
+        year = request.args.get('year', datetime.datetime.now().year)
 
-    tba = TBAHandler()
-    team_events_url = f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{year}/simple"
-    res = requests.get(team_events_url, headers=tba.headers, timeout=5)
+        tba = TBAHandler()
+        team_events_url = f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{year}/simple"
+        res = requests.get(team_events_url, headers=tba.headers, timeout=10)
 
-    if res.status_code != 200:
-        return jsonify({'error': 'TBA Unavailable', 'rank': 'N/A', 'win_rate': '0%', 'event_name': 'Error'}), 200
+        if res.status_code != 200:
+            return jsonify({'error': f'TBA returned {res.status_code}', 'rank': 'N/A', 'win_rate': '0%', 'event_name': 'TBA Error'}), 200
 
-    events = res.json()
-    if not events:
-        return jsonify({'error': 'No events found', 'rank': 'N/A', 'win_rate': '0%', 'event_name': 'No Event'}), 200
+        events = res.json()
+        if not events:
+            return jsonify({'error': 'No events found', 'rank': 'N/A', 'win_rate': '0%', 'event_name': f'No Event for {team_key} in {year}'}), 200
 
-    def event_sort_key(e):
-        return (e.get('end_date', ''), e.get('event_type', 0))
+        def event_sort_key(e):
+            return (e.get('end_date', ''), e.get('event_type', 0))
 
-    events.sort(key=event_sort_key, reverse=True)
+        events.sort(key=event_sort_key, reverse=True)
 
-    selected_event = None
-    rank = 'N/A'
+        selected_event = None
+        rank = 'N/A'
 
-    for e in events:
-        event_key = e['key']
-        rankings_url = f"https://www.thebluealliance.com/api/v3/event/{event_key}/rankings"
-        rank_res = requests.get(rankings_url, headers=tba.headers, timeout=5)
+        for e in events:
+            event_key = e['key']
+            rankings_url = f"https://www.thebluealliance.com/api/v3/event/{event_key}/rankings"
+            try:
+                rank_res = requests.get(rankings_url, headers=tba.headers, timeout=10)
+                if rank_res.status_code == 200:
+                    rank_data = rank_res.json()
+                    if rank_data and 'rankings' in rank_data:
+                        for r in rank_data['rankings']:
+                            if r.get('team_key') == team_key:
+                                rank = f"#{r['rank']}"
+                                selected_event = e
+                                break
+            except Exception:
+                pass
 
-        if rank_res.status_code == 200:
-            rank_data = rank_res.json()
-            if rank_data and 'rankings' in rank_data:
-                for r in rank_data['rankings']:
-                    if r.get('team_key') == team_key:
-                        rank = f"#{r['rank']}"
-                        selected_event = e
-                        break
+            if selected_event:
+                break
 
-        if selected_event:
-            break
+        if not selected_event:
+            selected_event = events[0]
 
-    if not selected_event:
-        selected_event = events[0]
+        # Try Statbotics but don't fail if it's down
+        win_rate = "0%"
+        try:
+            statbotics_url = f"https://api.statbotics.io/v3/team_year/{team_number}/{year}"
+            sb_res = requests.get(statbotics_url, timeout=5)
+            if sb_res.status_code == 200:
+                sb_data = sb_res.json()
+                wr = sb_data.get('record', {}).get('winrate', 0)
+                win_rate = f"{int(wr * 100)}%"
+        except Exception:
+            pass
 
-    statbotics_url = f"https://api.statbotics.io/v3/team_year/{team_number}/{year}"
-    sb_res = requests.get(statbotics_url, timeout=5)
-    win_rate = "0%"
-    if sb_res.status_code == 200:
-        sb_data = sb_res.json()
-        wr = sb_data.get('record', {}).get('winrate', 0)
-        win_rate = f"{int(wr * 100)}%"
-
-    return jsonify({
-        'rank': rank,
-        'win_rate': win_rate,
-        'event_key': selected_event['key'],
-        'event_name': selected_event['name']
-    })
+        return jsonify({
+            'rank': rank,
+            'win_rate': win_rate,
+            'event_key': selected_event['key'],
+            'event_name': selected_event['name']
+        })
+    except Exception as e:
+        return jsonify({'error': str(e), 'rank': 'N/A', 'win_rate': '0%', 'event_name': 'Error'}), 200
 
 
 @teams_bp.route('/teams-dir')
@@ -201,3 +212,88 @@ def teams_dir():
     template_path = os.path.join(basedir, '../frontend/pages/teams/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
         return render_template_string(f.read(), user=user, events=events, live_match=live_match)
+
+
+@teams_bp.route('/api/debug/tba', methods=['GET'])
+def debug_tba():
+    """Diagnostic endpoint to test TBA connectivity and user setup. No auth required."""
+    import datetime
+    from frc_api import TBA_API_KEY, BASE_URL
+    
+    results = {
+        'timestamp': str(datetime.datetime.now()),
+        'checks': {}
+    }
+    
+    # 1. Check TBA API key
+    key_source = 'environment' if os.environ.get('TBA_API_KEY') else 'hardcoded_default'
+    masked_key = TBA_API_KEY[:8] + '...' + TBA_API_KEY[-4:] if TBA_API_KEY else 'MISSING'
+    results['checks']['tba_api_key'] = {
+        'source': key_source,
+        'masked_value': masked_key,
+        'length': len(TBA_API_KEY) if TBA_API_KEY else 0
+    }
+    
+    # 2. Test TBA connectivity
+    try:
+        tba = TBAHandler()
+        status_res = requests.get(f"{BASE_URL}/status", headers=tba.headers, timeout=5)
+        results['checks']['tba_status'] = {
+            'http_code': status_res.status_code,
+            'current_season': status_res.json().get('current_season') if status_res.status_code == 200 else None,
+            'max_season': status_res.json().get('max_season') if status_res.status_code == 200 else None
+        }
+    except Exception as e:
+        results['checks']['tba_status'] = {'error': str(e)}
+    
+    # 3. Test team 6622 lookup
+    try:
+        team_res = requests.get(f"{BASE_URL}/team/frc6622/events/2025/simple", headers=tba.headers, timeout=5)
+        events_data = team_res.json() if team_res.status_code == 200 else []
+        results['checks']['tba_team_6622_events_2025'] = {
+            'http_code': team_res.status_code,
+            'events_count': len(events_data) if isinstance(events_data, list) else 0,
+            'events': [{'key': e['key'], 'name': e['name']} for e in events_data] if isinstance(events_data, list) else [],
+            'raw_response_snippet': str(team_res.text[:200]) if team_res.status_code != 200 else 'OK'
+        }
+    except Exception as e:
+        results['checks']['tba_team_6622_events_2025'] = {'error': str(e)}
+    
+    # 4. Check database state for the logged-in user  
+    try:
+        if 'user_id' in session:
+            user = User.query.get(session['user_id'])
+            results['checks']['logged_in_user'] = {
+                'user_id': user.id,
+                'email': user.email,
+                'has_team': user.team is not None,
+                'team_id': user.team_id,
+                'team_tba_key': user.team.tba_key if user.team else None,
+                'team_number': user.team.team_number if user.team else None,
+            }
+        else:
+            results['checks']['logged_in_user'] = {'status': 'not_logged_in (no session cookie in curl)'}
+    except Exception as e:
+        results['checks']['logged_in_user'] = {'error': str(e)}
+    
+    # 5. Check all teams in DB
+    try:
+        teams = Team.query.all()
+        results['checks']['db_teams'] = [
+            {'id': t.id, 'number': t.team_number, 'tba_key': t.tba_key, 'name': t.team_name}
+            for t in teams[:10]
+        ]
+    except Exception as e:
+        results['checks']['db_teams'] = {'error': str(e)}
+    
+    # 6. Test Statbotics
+    try:
+        sb_res = requests.get("https://api.statbotics.io/v3/team_year/6622/2025", timeout=5)
+        results['checks']['statbotics'] = {
+            'http_code': sb_res.status_code,
+            'response_snippet': str(sb_res.text[:300]) if sb_res.status_code != 200 else sb_res.json()
+        }
+    except Exception as e:
+        results['checks']['statbotics'] = {'error': str(e)}
+    
+    return jsonify(results), 200
