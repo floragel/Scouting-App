@@ -93,7 +93,7 @@
         <!-- Login Form -->
         <form id="auth-form" class="space-y-5">
           <div id="name-container" class="hidden">
-            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Last Name
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Nom
               complet</label>
             <div class="relative group">
               <div
@@ -114,13 +114,13 @@
               </div>
               <input id="email-input"
                 class="w-full bg-slate-100 dark:bg-background-dark border border-slate-200 dark:border-slate-700 rounded-lg py-3 pl-11 pr-4 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                placeholder="votre@email.com" type="email" required />
+                placeholder="nom@email.com" type="email" required />
             </div>
           </div>
           <div>
             <div class="flex justify-between items-center mb-1.5 ml-1">
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-              <a class="text-xs font-medium text-primary hover:text-primary/80 transition-colors" href="#">Password
+              <a class="text-xs font-medium text-primary hover:text-primary/80 transition-colors" href="#">Mot de passe
                 oublié ?</a>
             </div>
             <div class="relative group">
@@ -153,8 +153,8 @@
           <p id="toggle-text" class="text-sm text-slate-500 dark:text-slate-400">
             Pas encore membre de l'équipe ?
             <a id="toggle-auth"
-              class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Create an
-              account</a>
+              class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Créer un
+              compte</a>
           </p>
           <p id="error-message" class="text-red-500 text-sm mt-4 hidden"></p>
         </div>
@@ -222,14 +222,14 @@
           nameContainer.classList.add('hidden');
           nameInput.removeAttribute('required');
           submitText.textContent = 'Se Connecter';
-          toggleText.innerHTML = `Pas encore membre de l'équipe ? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Create an account</a>`;
+          toggleText.innerHTML = `Pas encore membre de l'équipe ? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Créer un compte</a>`;
         } else {
           title.textContent = 'Création de compte';
           desc.textContent = "Rejoignez l'équipe pour collecter et analyser les performances FRC en temps réel.";
           nameContainer.classList.remove('hidden');
           nameInput.setAttribute('required', 'true');
           submitText.textContent = 'Créer mon compte';
-          toggleText.innerHTML = `Déjà membre ? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Log In</a>`;
+          toggleText.innerHTML = `Déjà membre ? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Se connecter</a>`;
         }
         // re-bind listener since innerHTML changed it
         document.getElementById('toggle-auth').addEventListener('click', toggleBtn.click.bind(toggleBtn));
