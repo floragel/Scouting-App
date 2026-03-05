@@ -186,7 +186,7 @@
                         // Success — show message then redirect to dashboard
                         statusMsg.classList.remove('hidden');
                         statusMsg.classList.add('flex');
-                        document.getElementById('status-desc').textContent = `Vous avez rejoint l'équipe ${teamInput.value}. Redirection vers le dashboard...`;
+                        document.getElementById('status-desc').textContent = `You have joined team ${teamInput.value}. Redirecting to dashboard...`;
                         setTimeout(() => {
                             window.location.href = '/';
                         }, 2000);
