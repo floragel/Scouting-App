@@ -114,9 +114,8 @@
             <div class="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mb-4">
                 <span class="material-symbols-outlined text-4xl text-slate-500">sports_esports</span>
             </div>
-            <h2 class="text-xl font-bold mb-2">Prêts pour le match ?</h2>
-            <p class="text-sm text-slate-400 max-w-xs">Sélectionne un match dans le menu déroulant en haut pour générer
-                le briefing de l'alliance de ton équipe.</p>
+            <h2 class="text-xl font-bold mb-2">Ready for the match?</h2>
+            <p class="text-sm text-slate-400 max-w-xs">Select a match from the dropdown above to generate the alliance briefing for your team.</p>
         </div>
 
         <!-- Logic will inject HTML here -->
@@ -160,10 +159,10 @@
                 const res = await fetch(`/api/team_matches/${eventId}`);
                 const matches = await res.json();
 
-                if (!res.ok) throw new Error(matches.error || 'Erreur serveur');
+                if (!res.ok) throw new Error(matches.error || 'Server error');
 
                 if (matches.length === 0) {
-                    matchSelect.innerHTML = '<option value="" disabled selected>Aucun match</option>';
+                    matchSelect.innerHTML = '<option value="" disabled selected>No matches</option>';
                     return;
                 }
 
@@ -177,8 +176,8 @@
 
                 matchSelect.disabled = false;
             } catch (err) {
-                console.error("Erreur chargement des matchs:", err);
-                matchSelect.innerHTML = '<option value="" disabled selected>Erreur</option>';
+                console.error("Error loading matches:", err);
+                matchSelect.innerHTML = '<option value="" disabled selected>Error</option>';
             }
         }
 
@@ -192,7 +191,7 @@
             const emptyState = document.getElementById('empty-state');
 
             if (!eventId || !matchKey) {
-                alert("Sélectionne un événement et un match.");
+                alert("Select an event and a match.");
                 return;
             }
 
@@ -209,14 +208,14 @@
                 const data = await res.json();
 
                 if (!res.ok) {
-                    throw new Error(data.error || 'Erreur serveur');
+                    throw new Error(data.error || 'Server error');
                 }
 
                 // Render Data
                 renderAlliances(data);
                 container.classList.remove('hidden');
             } catch (err) {
-                alert("Erreur: " + err.message);
+                alert("Error: " + err.message);
                 emptyState.classList.remove('hidden');
             } finally {
                 // Reset UI
@@ -230,8 +229,8 @@
             const ourSec = document.getElementById('our-alliance-section');
             const oppSec = document.getElementById('opp-alliance-section');
 
-            ourSec.innerHTML = buildAllianceHTML(data.our_alliance, "Notre Alliance");
-            oppSec.innerHTML = buildAllianceHTML(data.opp_alliance, "Alliance Adverse");
+            ourSec.innerHTML = buildAllianceHTML(data.our_alliance, "Our Alliance");
+            oppSec.innerHTML = buildAllianceHTML(data.opp_alliance, "Opposing Alliance");
         }
 
         function buildAllianceHTML(alliance, title) {
@@ -275,7 +274,7 @@
                     html += `
                         <div class="bg-card-dark rounded-xl p-3 border border-slate-700/50 flex items-center justify-between opacity-70">
                             <div class="font-black text-lg w-16">${team.team}</div>
-                            <div class="text-xs text-slate-400 italic">Aucune donnée trouvée</div>
+                            <div class="text-xs text-slate-400 italic">No data found</div>
                         </div>
                     `;
                     return;
@@ -293,7 +292,7 @@
                         ${team.pit_only ? `
                             <div class="text-xs text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded inline-block">
                                 <span class="material-symbols-outlined text-[12px] align-middle mr-1">warning</span>
-                                Données de pit uniquement
+                                Pit data only
                             </div>
                         ` : `
                             <div class="flex gap-4 text-sm mb-3">

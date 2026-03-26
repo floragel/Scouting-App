@@ -1,4 +1,5 @@
 import os
+import datetime
 import tempfile
 from flask import Blueprint, request, jsonify, session
 from werkzeug.utils import secure_filename
@@ -65,7 +66,7 @@ def register():
         return jsonify({'error': 'Email already registered'}), 400
 
     password_hash = generate_password_hash(password)
-    user = User(email=email, password_hash=password_hash, name=name)
+    user = User(email=email, password_hash=password_hash, name=name, last_login=datetime.datetime.now())
     db.session.add(user)
     db.session.commit()
 
@@ -85,6 +86,8 @@ def login():
 
     session.permanent = True
     session['user_id'] = user.id
+    user.last_login = datetime.datetime.now()
+    db.session.commit()
     return jsonify({'message': 'Logged in successfully', 'user': user.to_dict()}), 200
 
 @auth_bp.route('/api/auth/setup-admin', methods=['POST'])

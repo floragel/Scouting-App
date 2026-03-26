@@ -187,6 +187,7 @@
                         <span
                             class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
                         <input
+                            id="member-search-input"
                             class="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-full md:w-64 focus:ring-primary focus:border-primary"
                             placeholder="Filter by name or email..." type="text" />
                     </div>
@@ -209,10 +210,12 @@
                             </th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Join
                                 Date</th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Matches
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-center">Matches
                                 Scouted</th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Last
                                 Active</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Last
+                                Login</th>
                             <th
                                 class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">
                                 Actions</th>
@@ -644,7 +647,7 @@
     <footer class="mt-auto p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161e2b]">
         <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
             <span class="material-symbols-outlined text-sm">precision_manufacturing</span>
-            © Nayl Lahlou, Team 6622 StanRobotix
+            © Nayl Lahlou, Team 6622 StanRobotix • v{{ version }}
         </p>
     </footer>
     <script>
@@ -662,7 +665,8 @@
 
             const inviteBtn = document.getElementById('invite-btn');
             const inviteText = document.getElementById('invite-text');
-            const searchInput = document.getElementById('global-search');
+            const headerSearchInput = document.getElementById('global-search');
+            const memberSearchInput = document.getElementById('member-search-input');
 
             let allMembersData = [];
             let teamAccessCode = 'N/A';
@@ -791,9 +795,10 @@
                     <span class="text-xs font-medium dark:text-slate-300">Active</span>
                 </div>
             </td>
-            <td class="px-6 py-4 text-xs dark:text-slate-400">-</td>
-            <td class="px-6 py-4 text-xs font-bold text-primary">${user.matches_scouted || 0}</td>
-            <td class="px-6 py-4 text-xs dark:text-slate-400">-</td>
+            <td class="px-6 py-4 text-xs dark:text-slate-400 font-mono">${user.join_date || 'N/A'}</td>
+            <td class="px-6 py-4 text-xs font-bold text-primary text-center">${user.matches_scouted || 0}</td>
+            <td class="px-6 py-4 text-xs dark:text-slate-400 italic">${user.last_active || 'Never'}</td>
+            <td class="px-6 py-4 text-xs dark:text-slate-400 italic">${user.last_login || 'Never'}</td>
             <td class="px-6 py-4 text-right">
                 <button onclick="window.approveUser(${user.id}, 'reject')" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors" title="Revoke Access">
                     <span class="material-symbols-outlined text-lg">person_remove</span>
@@ -828,7 +833,7 @@
                 }
             }
 
-            searchInput.addEventListener('input', (e) => {
+            const filterMembers = (e) => {
                 const term = e.target.value.toLowerCase();
                 const filtered = allMembersData.filter(m =>
                     m.name.toLowerCase().includes(term) ||
@@ -836,7 +841,10 @@
                     m.role.toLowerCase().includes(term)
                 );
                 renderMembers(filtered);
-            });
+            };
+
+            if (headerSearchInput) headerSearchInput.addEventListener('input', filterMembers);
+            if (memberSearchInput) memberSearchInput.addEventListener('input', filterMembers);
 
             inviteBtn.addEventListener('click', () => {
                 navigator.clipboard.writeText(teamAccessCode).then(() => {

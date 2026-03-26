@@ -128,19 +128,19 @@ def api_briefing(event_id, match_key):
         strengths = []
         weaknesses = []
         
-        if auto_scoring > 2: strengths.append("Excellent score en Auto")
-        elif auto_scoring < 0.5: weaknesses.append("Auto faible ou inexistante")
+        if auto_scoring > 2: strengths.append("Excellent Auto score")
+        elif auto_scoring < 0.5: weaknesses.append("Weak or non-existent Auto")
         
-        if teleop_scoring > 10: strengths.append("Gros tireur en Teleop")
-        elif teleop_scoring < 3: weaknesses.append("Peu de balles en Teleop")
+        if teleop_scoring > 10: strengths.append("High Teleop scorer")
+        elif teleop_scoring < 3: weaknesses.append("Few balls in Teleop")
         
-        if climb_rate > 70: strengths.append("Grimpe très fiable")
-        elif climb_rate < 20: weaknesses.append("Grimpe rarement/échoue souvent")
+        if climb_rate > 70: strengths.append("Very reliable climb")
+        elif climb_rate < 20: weaknesses.append("Rarely climbs/often fails")
         
-        if accuracy > 4: strengths.append("Très précis aux tirs")
-        elif accuracy < 2.5: weaknesses.append("Manque de précision")
+        if accuracy > 4: strengths.append("Very precise shooter")
+        elif accuracy < 2.5: weaknesses.append("Lacks precision")
         
-        if intake_speed < 2.5: weaknesses.append("Intake lent/difficile")
+        if intake_speed < 2.5: weaknesses.append("Slow/difficult intake")
 
         return {
             'team': team_num,
@@ -150,7 +150,7 @@ def api_briefing(event_id, match_key):
             'climb_rate': round(climb_rate, 1),
             'strengths': strengths[:2],
             'weaknesses': weaknesses[:2],
-            'drivetrain': pit.drivetrain_type if pit else 'Inconnu'
+            'drivetrain': pit.drivetrain_type if pit else 'Unknown'
         }
 
     our_intel = [get_team_intel(t) for t in our_teams]

@@ -285,3 +285,112 @@ def submit_pit_scout_web():
         print("Error saving pit data:", e)
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+@scouting_bp.route('/api/import-scout-data', methods=['POST'])
+def import_scout_data():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data_list = request.json
+    if not isinstance(data_list, list):
+        data_list = [data_list]
+        
+    success_count = 0
+    errors = []
+    
+    for item in data_list:
+        try:
+            data = item.get('data')
+            if not data: continue
+            
+            metadata = data.get('metadata', {})
+            team_key = metadata.get('team_key')
+            if not team_key: continue
+            
+            team_number = int(team_key.replace('frc', ''))
+            team = Team.query.filter_by(team_number=team_number).first()
+            if not team:
+                team = Team(tba_key=team_key, team_number=team_number, team_name=f"Team {team_number}")
+                db.session.add(team)
+                db.session.flush()
+            
+            # Use event from metadata or fallback to first event
+            event_key = metadata.get('event_key')
+            if not event_key and metadata.get('match_key'):
+                event_key = metadata.get('match_key').split('_')[0]
+            
+            if event_key:
+                event = Event.query.filter_by(tba_key=event_key).first()
+            else:
+                event = Event.query.first() # Fallback
+                
+            if not event:
+                # If no event in DB, we can't really save it properly without more info
+                # But let's try to create a placeholder if it's 2026
+                if event_key:
+                    event = Event(tba_key=event_key, name=f"Event {event_key}", year=2026)
+                    db.session.add(event)
+                    db.session.flush()
+                else:
+                    errors.append(f"Could not determine event for team {team_number}")
+                    continue
+
+            if data.get('pit_data') or (data.get('technical_specs') and data.get('game_compliance')):
+                # Pit Data Import
+                p = data.get('pit_data') or data
+                tech = p.get('technical_specs', {})
+                game = p.get('game_compliance', {})
+                
+                existing = PitScoutData.query.filter_by(team_id=team.id, event_id=event.id).first()
+                if not existing:
+                    pit = PitScoutData(
+                        team_id=team.id,
+                        event_id=event.id,
+                        drivetrain_type=tech.get('drivetrain', 'Swerve'),
+                        motor_type=tech.get('motor_type', 'Kraken X60'),
+                        motor_count=int(tech.get('motor_count', 4)),
+                        weight=float(tech.get('weight_lbs', 0)),
+                        max_fuel_capacity=int(game.get('max_fuel_capacity', 50)),
+                        climb_level=game.get('climb_level', 'None'),
+                        notes=data.get('analysis', {}).get('notes', '')
+                    )
+                    db.session.add(pit)
+                    success_count += 1
+            elif data.get('match_data') or (data.get('autonomous') and data.get('teleop')):
+                # Match Data Import
+                m = data.get('match_data') or data
+                auto = m.get('autonomous', {})
+                tele = m.get('teleop', {})
+                endgame = m.get('endgame', {})
+                match_num_raw = metadata.get('match_number') or metadata.get('match_key', '0').split('_')[-1]
+                match_num = int(''.join(filter(str.isdigit, str(match_num_raw) or '0')))
+                
+                existing = MatchScoutData.query.filter_by(team_id=team.id, event_id=event.id, match_number=match_num).first()
+                if not existing:
+                    match = MatchScoutData(
+                        team_id=team.id,
+                        event_id=event.id,
+                        match_number=match_num,
+                        auto_start_balls=int(auto.get('start_balls', 0)),
+                        auto_balls_shot=int(auto.get('balls_shot', 0)),
+                        auto_balls_scored=int(auto.get('balls_scored', 0)),
+                        teleop_intake_speed=int(tele.get('intake_speed', 3)),
+                        teleop_shooter_accuracy=int(tele.get('shooter_accuracy', 3)),
+                        teleop_balls_shot=int(tele.get('balls_shot', 0)),
+                        endgame_climb=endgame.get('climb', 'None'),
+                        notes=m.get('notes', ''),
+                        scouter_id=metadata.get('scouter_id') or session['user_id']
+                    )
+                    db.session.add(match)
+                    success_count += 1
+                    
+        except Exception as e:
+            errors.append(str(e))
+            continue
+            
+    db.session.commit()
+    return jsonify({
+        'success': True, 
+        'imported_count': success_count, 
+        'errors': errors
+    })

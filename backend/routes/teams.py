@@ -10,6 +10,7 @@ from frc_api import TBAHandler
 teams_bp = Blueprint('teams', __name__)
 
 basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+APP_VERSION = "2.0.26"
 
 
 @teams_bp.route('/teams/<int:team_id>', methods=['GET'])
@@ -211,9 +212,24 @@ def teams_dir():
                     live_match = f"Next: {upcoming[0].get('key').split('_')[-1].upper()}"
         except: pass
 
+    # Handle direct team search redirect
+    search_team = request.args.get('team')
+    if search_team:
+        # Find the team and their most recent event
+        team_obj = Team.query.filter_by(team_number=int(search_team)).first() if search_team.isdigit() else None
+        if team_obj:
+            tba = TBAHandler()
+            team_key = f"frc{team_obj.team_number}"
+            latest_event_key = tba.get_team_latest_event(team_key)
+            if latest_event_key:
+                event_obj = Event.query.filter_by(tba_key=latest_event_key).first()
+                if event_obj:
+                    # Redirect to this event with the team selected
+                    return redirect(url_for('teams.teams_dir', event_id=event_obj.id, select_team=team_obj.id))
+
     template_path = os.path.join(basedir, '../frontend/pages/teams/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user, events=events, live_match=live_match)
+        return render_template_string(f.read(), user=user, events=events, live_match=live_match, version=APP_VERSION)
 
 
 @teams_bp.route('/api/debug/tba', methods=['GET'])

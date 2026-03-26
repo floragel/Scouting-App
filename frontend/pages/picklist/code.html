@@ -162,8 +162,8 @@
 
             const listContainer = document.getElementById('team-list');
             const saveStatusIndicator = document.getElementById('saved-status');
-            const STORAGE_KEY = 'scout_picklist_order_2026';
-            const NOTES_KEY = 'scout_picklist_notes_2026';
+            const STORAGE_KEY = 'scout_picklist_order_v2_2026';
+            const NOTES_KEY = 'scout_picklist_notes_v2_2026';
 
             // Load saved state or default
             let savedOrder = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -177,13 +177,13 @@
                 let teamsToRender = [];
                 if (savedOrder && savedOrder.length > 0) {
                     // Reconstruct from saved order
-                    savedOrder.forEach(teamId => {
-                        const team = preSortedTeams.find(t => t.team_id == teamId);
+                    savedOrder.forEach(teamNum => {
+                        const team = preSortedTeams.find(t => t.team_number == teamNum);
                         if (team) teamsToRender.push(team);
                     });
                     // Add any new teams that weren't saved in local storage to the bottom
                     preSortedTeams.forEach(t => {
-                        if (!savedOrder.includes(t.team_id.toString())) teamsToRender.push(t);
+                        if (!savedOrder.includes(t.team_number.toString())) teamsToRender.push(t);
                     });
                 } else {
                     teamsToRender = preSortedTeams;
@@ -192,9 +192,9 @@
                 teamsToRender.forEach((team, index) => {
                     const row = document.createElement('li');
                     row.className = "group bg-slate-800 hover:bg-slate-700/80 border border-slate-700/50 rounded-xl p-3 flex items-center gap-4 transition-colors cursor-default";
-                    row.dataset.id = team.team_id;
+                    row.dataset.id = team.team_number;
 
-                    const noteText = savedNotes[team.team_id] || '';
+                    const noteText = savedNotes[team.team_number] || '';
                     const hasNote = noteText.length > 0;
 
                     row.innerHTML = `
@@ -209,24 +209,31 @@
                         <!-- Team Number -->
                         <div class="w-[60px] sm:w-[80px]">
                             <span class="bg-blue-500/10 border border-blue-500/20 text-blue-400 px-3 py-1.5 rounded-lg font-mono font-bold text-lg block text-center">
-                                ${team.team_id}
+                                ${team.team_number}
                             </span>
                         </div>
 
                         <!-- Profile (Mobile hidden) -->
                         <div class="flex-1 hidden sm:flex flex-col justify-center">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm font-medium text-slate-300">Accuracy: ${team.accuracy_avg}%</span>
-                                <div class="h-2 w-24 bg-slate-900 rounded-full overflow-hidden">
-                                    <div class="h-full bg-blue-500 rounded-full" style="width: ${team.accuracy_avg}%"></div>
+                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-500 uppercase">Accuracy:</span>
+                                    <span class="text-sm font-bold text-slate-300">${team.accuracy_avg}/5</span>
+                                    <div class="h-1.5 w-16 bg-slate-900 rounded-full overflow-hidden">
+                                        <div class="h-full bg-blue-500 rounded-full" style="width: ${(team.accuracy_avg / 5) * 100}%"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 border-l border-slate-700/50 pl-4 text-[10px] font-bold text-slate-400">
+                                    <span class="material-symbols-outlined text-[14px]">settings</span>
+                                    ${team.pit ? `${team.pit.drivetrain} • ${team.pit.motors}` : 'No Pit Data'}
                                 </div>
                             </div>
-                            <div class="text-xs text-slate-500 mt-1 flex gap-3">
-                                <span>Climb Rate: ${team.climb_rate}%</span>
-                                <span>Matches: ${team.match_count}</span>
+                            <div class="text-[10px] font-bold text-slate-500 mt-1 flex gap-4 uppercase tracking-wider">
+                                <span>Climb Rate: <span class="${team.climb_rate > 50 ? 'text-emerald-400' : 'text-slate-400'}">${team.climb_rate}%</span></span>
+                                <span>Matches: <span class="text-slate-300">${team.match_count}</span></span>
                             </div>
                             <!-- Note Text Display -->
-                            <div class="team-note-display text-xs font-medium text-red-400 mt-1.5 ${hasNote ? 'block' : 'hidden'}">
+                            <div class="team-note-display text-xs font-bold text-rose-400 mt-1.5 px-2 py-1 bg-rose-500/10 rounded border border-rose-500/20 ${hasNote ? 'block' : 'hidden'}">
                                 ⚠️ ${noteText}
                             </div>
                         </div>
@@ -254,7 +261,7 @@
 
                         <!-- Actions -->
                         <div class="pr-2 pl-4 border-l border-slate-700/50">
-                            <button onclick="editTeamNote('${team.team_id}')" class="p-2 rounded-lg hover:bg-slate-600 transition-colors ${hasNote ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'text-slate-400 hover:text-white'}" title="Add/Edit Note">
+                            <button onclick="editTeamNote('${team.team_number}')" class="p-2 rounded-lg hover:bg-slate-600 transition-colors ${hasNote ? 'text-red-400 bg-red-500/10 hover:bg-red-500/20' : 'text-slate-400 hover:text-white'}" title="Add/Edit Note">
                                 <span class="material-symbols-outlined text-[20px]">${hasNote ? 'edit_note' : 'note_add'}</span>
                             </button>
                         </div>
@@ -293,15 +300,15 @@
             }
 
             // Global Note Edit Function
-            window.editTeamNote = function (teamId) {
-                const currentNote = savedNotes[teamId] || '';
-                const newNote = prompt(`Add a red warning note for Team ${teamId} (leave blank to remove):`, currentNote);
+            window.editTeamNote = function (teamNum) {
+                const currentNote = savedNotes[teamNum] || '';
+                const newNote = prompt(`Add a red warning note for Team ${teamNum} (leave blank to remove):`, currentNote);
 
                 if (newNote !== null) {
                     if (newNote.trim() === '') {
-                        delete savedNotes[teamId];
+                        delete savedNotes[teamNum];
                     } else {
-                        savedNotes[teamId] = newNote.trim();
+                        savedNotes[teamNum] = newNote.trim();
                     }
                     localStorage.setItem(NOTES_KEY, JSON.stringify(savedNotes));
                     renderList(); // Quickly re-render to show updated note badge

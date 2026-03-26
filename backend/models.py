@@ -19,6 +19,8 @@ class User(db.Model):
     role = db.Column(db.String(50), default='pending') # e.g. Admin, Head Scout, Pit Scout, pending
     status = db.Column(db.String(50), default='pending') # e.g. active, pending
     team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=True)
+    last_login = db.Column(db.DateTime, nullable=True)
+    last_active = db.Column(db.DateTime, nullable=True)
     
     # Relationship to ScoutAssignment
     assignments = db.relationship('ScoutAssignment', backref='user', lazy=True)
@@ -33,7 +35,9 @@ class User(db.Model):
             'status': self.status,
             'team_id': self.team_id,
             'team_number': self.team.team_number if self.team else None,
-            'team_access_code': self.team.access_code if self.team else None
+            'team_access_code': self.team.access_code if self.team else None,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
+            'last_active': self.last_active.isoformat() if self.last_active else None
         }
 
 class Event(db.Model):

@@ -477,146 +477,49 @@
             if (offlineQueue.length === 0) return;
 
             const btn = document.getElementById('sync-queue-btn');
+            const originalContent = btn.innerHTML;
             btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">sync</span> Syncing...`;
             btn.disabled = true;
 
-            let successCount = 0;
+            try {
+                const response = await fetch('/api/import-scout-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(offlineQueue)
+                });
 
-            for (let i = 0; i < offlineQueue.length; i++) {
-                const item = offlineQueue[i];
-                try {
-                    const data = item.data;
-                    const metadata = data.metadata || {};
-                    const team_key = metadata.team_key;
-                    if (!team_key) continue;
+                const result = await response.json();
 
-                    const t_num = team_key.replace('frc', '');
-                    const t_id = `frc${t_num}`;
-
-                    // Initialize team in teamPerformance if not exists
-                    if (!teamPerformance[t_id]) {
-                        teamPerformance[t_id] = {
-                            team_number: t_num, match_count: 0, auto_balls_scored: 0,
-                            teleop_balls_shot: 0, teleop_intake_speed: 0, teleop_shooter_accuracy: 0,
-                            climb_count: 0, l3_climb_count: 0, matches: [],
-                            auto_balls_avg: 0, teleop_balls_avg: 0, intake_speed_avg: 0,
-                            accuracy_avg: 0, accuracy_sd: 0, climb_rate: 0, l3_rate: 0
-                        };
+                if (result.success) {
+                    const imported = result.imported_count || 0;
+                    const errors = result.errors || [];
+                    
+                    if (imported > 0) {
+                        showStatus(`✅ Successfully synced ${imported} entries to the database!`, 'success');
+                        // Clear the local queue if at least one item succeeded
+                        offlineQueue = [];
+                        localStorage.setItem('scoutOfflineQueue', JSON.stringify(offlineQueue));
+                        updateQueueUI();
+                        
+                        // Refresh data from server to show real stats
+                        setTimeout(() => window.location.reload(), 1500);
+                    } else if (errors.length > 0) {
+                        showStatus(`❌ Sync failed: ${errors[0]}`, 'error');
+                    } else {
+                        showStatus(`ℹ️ No new data was imported (duplicates?).`, 'success');
+                        offlineQueue = [];
+                        localStorage.setItem('scoutOfflineQueue', JSON.stringify(offlineQueue));
+                        updateQueueUI();
                     }
-
-                    const stats = teamPerformance[t_id];
-
-                    if (data.pit_data || (data.technical_specs && data.game_compliance)) {
-                        // Handle Pit Data
-                        const pData = data.pit_data || data;
-                        const tech = pData.technical_specs || {};
-                        const game = pData.game_compliance || {};
-
-                        const newPit = {
-                            team_id: t_num,
-                            team_number: t_num,
-                            drivetrain_type: tech.drivetrain || 'Unknown',
-                            motor_type: tech.motor_type || 'Unknown',
-                            motor_count: tech.motor_count || 4,
-                            weight: tech.weight_lbs || 0,
-                            max_fuel_capacity: game.max_fuel_capacity || 0,
-                            climb_level: game.climb_level || 'None'
-                        };
-
-                        // Check if pit data exists for this team in pitDataRaw and replace or push
-                        const existingPitIndex = pitDataRaw.findIndex(p => p.team_id == t_num || p.team_number == t_num);
-                        if (existingPitIndex >= 0) {
-                            pitDataRaw[existingPitIndex] = newPit;
-                        } else {
-                            pitDataRaw.push(newPit);
-                        }
-
-                        // Update stats
-                        stats.pit = {
-                            drivetrain: newPit.drivetrain_type,
-                            motors: `${newPit.motor_type} (${newPit.motor_count})`,
-                            weight: newPit.weight,
-                            climb_level: newPit.climb_level
-                        };
-                        successCount++;
-
-                    } else if (data.match_data || (data.autonomous && data.teleop)) {
-                        // Handle Match Data
-                        const mData = data.match_data || data;
-                        const auto = mData.actions?.auto || mData.autonomous || {};
-                        const tele = mData.actions?.teleop || mData.teleop || {};
-                        const endgame = mData.endgame || {};
-                        const match_num = metadata.match_number || mData.metadata?.match_number || mData.match_key || '?';
-
-                        const auto_scored = parseFloat(auto.balls_scored || 0);
-                        const tele_shot = parseFloat(tele.balls_shot || 0);
-                        const intake_spd = parseFloat(tele.intake_speed || 3);
-                        // Convert string labels to numbers if necessary
-                        let accuracy = tele.shooter_accuracy;
-                        if (typeof accuracy === 'string') {
-                            const mapping = { 'Very Slow': 1, 'Slow': 2, 'Medium': 3, 'Fast': 4, 'Very Fast': 5 };
-                            accuracy = mapping[accuracy] || parseFloat(accuracy) || 3;
-                        } else {
-                            accuracy = parseFloat(accuracy || 3);
-                        }
-
-                        const climb_status = endgame.climb_level || endgame.climb || 'None';
-
-                        const newMatch = {
-                            team_id: t_num,
-                            team_number: t_num,
-                            match_number: match_num,
-                            auto_balls_scored: auto_scored,
-                            teleop_balls_shot: tele_shot,
-                            teleop_intake_speed: intake_spd,
-                            teleop_shooter_accuracy: accuracy,
-                            endgame_climb: climb_status
-                        };
-                        matchDataRaw.push(newMatch);
-
-                        // Update running aggregations
-                        stats.match_count++;
-                        stats.auto_balls_scored += auto_scored;
-                        stats.teleop_balls_shot += tele_shot;
-                        stats.teleop_intake_speed += intake_spd;
-                        stats.teleop_shooter_accuracy += accuracy;
-
-                        if (climb_status !== 'None') {
-                            stats.climb_count++;
-                            if (climb_status === 'L3') stats.l3_climb_count++;
-                        }
-
-                        stats.matches.push({
-                            number: match_num, auto: auto_scored, tele: tele_shot, climb: climb_status
-                        });
-
-                        // Recalculate Averages
-                        stats.auto_balls_avg = parseFloat((stats.auto_balls_scored / stats.match_count).toFixed(2));
-                        stats.teleop_balls_avg = parseFloat((stats.teleop_balls_shot / stats.match_count).toFixed(2));
-                        stats.intake_speed_avg = parseFloat((stats.teleop_intake_speed / stats.match_count).toFixed(2));
-                        stats.accuracy_avg = parseFloat((stats.teleop_shooter_accuracy / stats.match_count).toFixed(2));
-                        stats.climb_rate = parseFloat(((stats.climb_count / stats.match_count) * 100).toFixed(1));
-                        stats.l3_rate = parseFloat(((stats.l3_climb_count / stats.match_count) * 100).toFixed(1));
-
-                        successCount++;
-                    }
-                } catch (err) {
-                    console.error("Local sync error for item:", item, err);
+                } else {
+                    showStatus(`❌ Error: ${result.error || 'Server sync failed'}`, 'error');
                 }
-            }
-
-            offlineQueue = [];
-            localStorage.setItem('scoutOfflineQueue', JSON.stringify(offlineQueue));
-            updateQueueUI();
-            updateUI(); // Re-render everything with the injected local data
-
-            btn.disabled = false;
-            btn.innerText = `Sync Queue`;
-
-            if (successCount > 0) {
-                showStatus(`✅ Successfully loaded ${successCount} entries into current session!`, 'success');
-            } else {
-                showStatus(`❌ No valid entries to load.`, 'error');
+            } catch (err) {
+                console.error("Sync error:", err);
+                showStatus("❌ Network error during sync", 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
             }
         }
 

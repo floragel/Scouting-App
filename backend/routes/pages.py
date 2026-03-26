@@ -8,6 +8,7 @@ from .admin import check_admin
 
 pages_bp = Blueprint('pages', __name__)
 basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+APP_VERSION = "2.0.26"
 
 @pages_bp.route('/login')
 def login_page():
@@ -40,7 +41,7 @@ def profile_page():
     user = User.query.get(session['user_id'])
     template_path = os.path.join(basedir, '../frontend/pages/profile/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+        return render_template_string(f.read(), user=user, version=APP_VERSION)
 
 @pages_bp.route('/admin-hub')
 def admin_page():
@@ -71,7 +72,7 @@ def admin_page():
     
     event_matches = []
     tba = TBAHandler()
-    team_key = user.team.tba_key if user.team else 'frc6622'
+    team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
     team_status = tba.get_team_status(team_key)
     if team_status and team_status.get('event_key'):
         em = frc_api.get_event_matches(team_status['event_key'])
@@ -89,7 +90,8 @@ def admin_page():
             users_json=json.dumps(members_data),
             assignments=assignments_data, 
             assignments_json=json.dumps(assignments_data),
-            event_matches=event_matches
+            event_matches=event_matches,
+            version=APP_VERSION
         )
 
 @pages_bp.route('/scout-dashboard')
@@ -161,7 +163,8 @@ def scout_dashboard():
         user_performance=user_performance,
         dashboard_note=dashboard_note,
         event_matches=event_matches,
-        live_match=live_match
+        live_match=live_match,
+        version=APP_VERSION
     )
 
 @pages_bp.route('/profile/edit')
@@ -171,7 +174,7 @@ def profile_edit_page():
     user = User.query.get(session['user_id'])
     template_path = os.path.join(basedir, '../frontend/pages/profile_edit/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+        return render_template_string(f.read(), user=user, version=APP_VERSION)
 
 @pages_bp.route('/')
 def home():
@@ -181,7 +184,7 @@ def home():
     user = User.query.get(session['user_id'])
     template_path = os.path.join(basedir, '../frontend/pages/events/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+        return render_template_string(f.read(), user=user, version=APP_VERSION)
 
 @pages_bp.route('/dashboard')
 def dashboard():
@@ -191,7 +194,7 @@ def dashboard():
     user = User.query.get(session['user_id'])
     template_path = os.path.join(basedir, '../frontend/pages/events/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user)
+        return render_template_string(f.read(), user=user, version=APP_VERSION)
 
 @pages_bp.route('/analytics')
 def analytics():
@@ -210,7 +213,7 @@ def match_scout(assignment_id):
         
     template_path = os.path.join(basedir, '../frontend/pages/match_scout/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user, assignment=assignment)
+        return render_template_string(f.read(), user=user, assignment=assignment, version=APP_VERSION)
 
 @pages_bp.route('/pit-scout/<int:assignment_id>')
 def pit_scout(assignment_id):
@@ -224,7 +227,33 @@ def pit_scout(assignment_id):
         
     template_path = os.path.join(basedir, '../frontend/pages/pit_scout/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
-        return render_template_string(f.read(), user=user, assignment=assignment)
+        return render_template_string(f.read(), user=user, assignment=assignment, version=APP_VERSION)
+
+@pages_bp.route('/members')
+def members_directory():
+    if 'user_id' not in session:
+        return redirect(url_for('pages.login_page'))
+    user = User.query.get(session['user_id'])
+    
+    team_members = []
+    if user.team_id:
+        team_members = User.query.filter_by(team_id=user.team_id).all()
+    
+    members_data = []
+    for m in team_members:
+        m_dict = m.to_dict()
+        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        members_data.append(m_dict)
+        
+    template_path = os.path.join(basedir, '../frontend/pages/members/code.html')
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return render_template_string(
+            f.read(), 
+            user=user, 
+            team_members=members_data,
+            members_json=json.dumps(members_data),
+            version=APP_VERSION
+        )
 
 @pages_bp.route('/head-scout-stats')
 @pages_bp.route('/head-scout-analytics')
@@ -351,7 +380,8 @@ def head_scout_analytics_hub():
             events=events,
             pit_data_json=json.dumps([p.to_dict() for p in pit_data]),
             match_data_json=json.dumps([m.to_dict() for m in match_data]),
-            team_averages_json=json.dumps(team_averages)
+            team_averages_json=json.dumps(team_averages),
+            version=APP_VERSION
         )
 
 @pages_bp.route('/picklist')
@@ -374,10 +404,11 @@ def pick_list_hub():
             return default
 
     for m in match_data:
-        t_id = f"frc{m.team_id}"
+        t_id = f"frc{m.team.team_number}" if (m.team and m.team.team_number) else f"frc{m.team_id}"
         if t_id not in team_averages:
             team_averages[t_id] = {
-                'team_id': m.team_id, 'match_count': 0, 'auto_balls_scored': 0.0,
+                'team_id': m.team_id, 'team_number': (m.team.team_number if m.team else m.team_id), 
+                'match_count': 0, 'auto_balls_scored': 0.0,
                 'teleop_balls_shot': 0.0, 'teleop_intake_speed': 0.0,
                 'teleop_shooter_accuracy': 0.0, 'climb_count': 0, 'l3_climb_count': 0,
                 'matches': [], 'pit': None
@@ -404,7 +435,7 @@ def pick_list_hub():
     is_tba_fallback = False
     if not match_data:
         tba = TBAHandler()
-        team_key = user.team.tba_key if user.team else 'frc6622'
+        team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
         if not team_key: 
             team_key = 'frc6622'
             
@@ -424,7 +455,7 @@ def pick_list_hub():
                     tk = t['key']
                     t_num = t['team_number']
                     team_averages[tk] = {
-                        'team_id': t_num, 'match_count': 0, 'auto_balls_scored': 0.0,
+                        'team_id': t_num, 'team_number': t_num, 'match_count': 0, 'auto_balls_scored': 0.0,
                         'teleop_balls_shot': 0.0, 'teleop_intake_speed': 0.0,
                         'teleop_shooter_accuracy': 0.0, 'climb_count': 0, 'l3_climb_count': 0,
                         'matches': [], 'pit': None,
@@ -432,7 +463,7 @@ def pick_list_hub():
                     }
 
     for p in pit_data:
-        t_id = f"frc{p.team_id}"
+        t_id = f"frc{p.team.team_number}" if (p.team and p.team.team_number) else f"frc{p.team_id}"
         if t_id in team_averages:
             team_averages[t_id]['pit'] = {
                 'drivetrain': p.drivetrain_type,
@@ -465,7 +496,8 @@ def pick_list_hub():
         return render_template_string(
             f.read(),
             user=user,
-            sorted_teams_json=json.dumps(sorted_teams)
+            sorted_teams_json=json.dumps(sorted_teams),
+            version=APP_VERSION
         )
 
 @pages_bp.route('/drive-team-briefing')
@@ -487,5 +519,6 @@ def drive_team_briefing():
         return render_template_string(
             f.read(),
             user=user,
-            events=events
+            events=events,
+            version=APP_VERSION
         )

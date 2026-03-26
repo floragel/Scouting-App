@@ -52,6 +52,9 @@ def auto_assign():
         return jsonify({'error': 'Team not registered for an active event.'}), 400
         
     em = frc_api.get_event_matches(team_status['event_key'])
+    if not em:
+        return jsonify({'error': 'No matches found/scheduled for this event yet (Season 2026).'}), 400
+        
     upcoming_matches = [m for m in em if m.get('time')]
     upcoming_matches.sort(key=lambda x: x['time'])
     upcoming_matches = [m for m in upcoming_matches if ScoutAssignment.query.filter_by(match_key=m['key']).count() < 6]

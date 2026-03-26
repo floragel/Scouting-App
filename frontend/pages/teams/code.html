@@ -380,10 +380,18 @@
             });
 
             // Initialize from URL or first option
+            const selectId = urlParams.get('select_team');
             if (eventId) {
                 eventSelector.value = eventId;
-                // Event title now shown in the header via Jinja2
-                fetchTeams(eventId);
+                fetchTeams(eventId).then(() => {
+                    if (selectId) {
+                        // Wait a bit for teams to render then select
+                        setTimeout(() => {
+                            const btn = document.querySelector(`article[onclick*="selectTeam(${selectId},"]`);
+                            if (btn) btn.click();
+                        }, 500);
+                    }
+                });
             } else if (eventSelector.options.length > 1) {
                 eventSelector.selectedIndex = 1;
                 eventSelector.dispatchEvent(new Event('change'));
@@ -742,7 +750,7 @@
 
     <footer
         class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
-        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix</p>
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix • v{{ version }}</p>
     </footer>
 
 </body>
