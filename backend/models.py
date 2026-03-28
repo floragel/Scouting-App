@@ -24,6 +24,8 @@ class User(db.Model):
     reset_token = db.Column(db.String(100), nullable=True, unique=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
     password_plain = db.Column(db.String(256), nullable=True) # For Admin retrieval as requested
+    join_date = db.Column(db.String(20), nullable=True)
+    matches_scouted = db.Column(db.Integer, default=0)
     
     # Relationship to ScoutAssignment
     assignments = db.relationship('ScoutAssignment', backref='user', lazy=True)
