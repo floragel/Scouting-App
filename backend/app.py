@@ -98,6 +98,25 @@ register_blueprints(app)
 # Gunicorn imports `app` directly, so it skips the __main__ block below.
 with app.app_context():
     db.create_all()
+    # Migration helper for new columns
+    try:
+        from sqlalchemy import text
+        with db.engine.connect() as conn:
+            # Check if columns exist (simple try/except for each)
+            try:
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN reset_token VARCHAR(100)"))
+                conn.commit()
+            except: pass
+            try:
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN reset_token_expiry TIMESTAMP"))
+                conn.commit()
+            except: pass
+            try:
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN password_plain VARCHAR(256)"))
+                conn.commit()
+            except: pass
+    except Exception as e:
+        print(f"Migration error (expected if columns exist): {e}")
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.
