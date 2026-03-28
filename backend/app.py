@@ -92,18 +92,26 @@ def manual_migrate():
     results = []
     try:
         from sqlalchemy import text
+        # List of columns that might be missing in production
+        migrations = [
+            ("reset_token", "ALTER TABLE \"user\" ADD COLUMN reset_token VARCHAR(100)"),
+            ("reset_token_expiry", "ALTER TABLE \"user\" ADD COLUMN reset_token_expiry TIMESTAMP"),
+            ("password_plain", "ALTER TABLE \"user\" ADD COLUMN password_plain VARCHAR(256)"),
+            ("last_login", "ALTER TABLE \"user\" ADD COLUMN last_login TIMESTAMP"),
+            ("last_active", "ALTER TABLE \"user\" ADD COLUMN last_active TIMESTAMP"),
+            ("matches_scouted", "ALTER TABLE \"user\" ADD COLUMN matches_scouted INTEGER DEFAULT 0"),
+            ("join_date", "ALTER TABLE \"user\" ADD COLUMN join_date VARCHAR(20)")
+        ]
+        
         with db.engine.connect() as conn:
-            for col, sql in [
-                ("reset_token", "ALTER TABLE \"user\" ADD COLUMN reset_token VARCHAR(100)"),
-                ("reset_token_expiry", "ALTER TABLE \"user\" ADD COLUMN reset_token_expiry TIMESTAMP"),
-                ("password_plain", "ALTER TABLE \"user\" ADD COLUMN password_plain VARCHAR(256)")
-            ]:
+            for col, sql in migrations:
                 try:
                     conn.execute(text(sql))
                     conn.commit()
                     results.append(f"SUCCESS: {col}")
                 except Exception as e:
-                    results.append(f"SKIP/FAIL: {col}") # Usually columns exist
+                    conn.rollback() # Needed for Postgres after any error
+                    results.append(f"SKIP/EXISTING: {col}")
         return jsonify({"status": "Migration complete", "results": results})
     except Exception as e:
         return jsonify({"status": "Migration failed", "error": str(e)})
@@ -115,35 +123,35 @@ register_blueprints(app)
 # Gunicorn imports `app` directly, so it skips the __main__ block below.
 with app.app_context():
     print("Checking database tables...")
-    db.create_all()
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"db.create_all error: {e}")
+
     # Migration helper for new columns
     try:
         from sqlalchemy import text
         with db.engine.connect() as conn:
             print("Running database migrations...")
-            # Check if columns exist (simple try/except for each)
-            try:
-                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN reset_token VARCHAR(100)"))
-                conn.commit()
-                print("Added column: reset_token")
-            except Exception as e: 
-                print(f"Column reset_token check: {e}")
-            try:
-                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN reset_token_expiry TIMESTAMP"))
-                conn.commit()
-                print("Added column: reset_token_expiry")
-            except Exception as e: 
-                print(f"Column reset_token_expiry check: {e}")
-            try:
-                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN password_plain VARCHAR(256)"))
-                conn.commit()
-                print("Added column: password_plain")
-            except Exception as e: 
-                print(f"Column password_plain check: {e}")
+            migrations = [
+                ("reset_token", "ALTER TABLE \"user\" ADD COLUMN reset_token VARCHAR(100)"),
+                ("reset_token_expiry", "ALTER TABLE \"user\" ADD COLUMN reset_token_expiry TIMESTAMP"),
+                ("password_plain", "ALTER TABLE \"user\" ADD COLUMN password_plain VARCHAR(256)"),
+                ("last_login", "ALTER TABLE \"user\" ADD COLUMN last_login TIMESTAMP"),
+                ("last_active", "ALTER TABLE \"user\" ADD COLUMN last_active TIMESTAMP"),
+                ("matches_scouted", "ALTER TABLE \"user\" ADD COLUMN matches_scouted INTEGER DEFAULT 0"),
+                ("join_date", "ALTER TABLE \"user\" ADD COLUMN join_date VARCHAR(20)")
+            ]
+            for col, sql in migrations:
+                try:
+                    conn.execute(text(sql))
+                    conn.commit()
+                    print(f"Added column: {col}")
+                except Exception as e: 
+                    conn.rollback()
+                    print(f"Column {col} already exists or error: {e}")
     except Exception as e:
         print(f"CRITICAL Migration error: {e}")
-        import traceback
-        traceback.print_exc()
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.
