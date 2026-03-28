@@ -104,13 +104,25 @@ def internal_server_error(error):
 # Register all routes from blueprints
 register_blueprints(app)
 
-# Ensure database tables are created before handling requests
-# Gunicorn imports `app` directly, so it skips the __main__ block below.
-with app.app_context():
+@app.route('/api/admin/init-db')
+def manual_init_db():
+    # Simple security check to prevent accidental usage
+    import os
+    if os.environ.get('FLASK_ENV') == 'production':
+        # You could add a token check here if you want more security
+        pass
+    
     try:
-        db.create_all()
+        with app.app_context():
+            db.create_all()
+        return jsonify({'message': 'Database tables created successfully!'}), 200
     except Exception as e:
-        print(f"db.create_all error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'DB Init failed', 'details': str(e)}), 500
+
+# Gunicorn imports `app` directly, so it skips the __main__ block below.
+# Removed db.create_all() from global scope to prevent cold start crashes.
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.

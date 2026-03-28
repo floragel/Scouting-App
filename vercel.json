@@ -4,12 +4,68 @@
     {
       "src": "backend/app.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
+      "source": "/api/(.*)",
       "dest": "backend/app.py"
+    },
+    {
+      "source": "/login",
+      "dest": "frontend/pages/auth/code.html"
+    },
+    {
+      "source": "/dashboard",
+      "dest": "frontend/pages/dashboard/code.html"
+    },
+    {
+      "source": "/admin-hub",
+      "dest": "frontend/pages/admin/code.html"
+    },
+    {
+      "source": "/teams-dir",
+      "dest": "frontend/pages/teams/code.html"
+    },
+    {
+      "source": "/events",
+      "dest": "frontend/pages/events/code.html"
+    },
+    {
+      "source": "/pit-scout",
+      "dest": "frontend/pages/pit_scout/code.html"
+    },
+    {
+      "source": "/match-scout",
+      "dest": "frontend/pages/match_scout/code.html"
+    },
+    {
+      "source": "/analytics",
+      "dest": "frontend/pages/analytics/code.html"
+    },
+    {
+      "source": "/onboarding",
+      "dest": "frontend/pages/onboarding/code.html"
+    },
+    {
+      "source": "/profile",
+      "dest": "frontend/pages/profile/code.html"
+    },
+    {
+      "source": "/profile-edit",
+      "dest": "frontend/pages/profile_edit/code.html"
+    },
+    {
+      "source": "/shared_assets/(.*)",
+      "dest": "frontend/shared/$1"
+    },
+    {
+      "source": "/",
+      "dest": "frontend/pages/auth/code.html"
     }
   ]
 }
