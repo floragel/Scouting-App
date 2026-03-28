@@ -1,4 +1,10 @@
 import os
+import sys
+
+# Crucial for Vercel: ensure the backend directory is in sys.path
+# so that "from models import db" and other imports work correctly.
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from dotenv import load_dotenv
 from flask import Flask, jsonify
 from flask_cors import CORS
