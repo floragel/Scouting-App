@@ -196,17 +196,17 @@ def reset_and_init_team():
         created = []
         # Main Admin
         admin = User(
-            email="nayl.lahlou@nayl.ca", name="Nayl Lahlou",
+            email="admin@scout.com", name="Admin",
             password_hash=generate_password_hash(DEFAULT_PASS), password_plain=DEFAULT_PASS,
             role="Admin", status="active", team_id=team.id,
             join_date=datetime.datetime.now().strftime("%Y-%m-%d")
         )
         db.session.add(admin)
-        created.append("Admin: Nayl Lahlou")
+        created.append("Admin: admin@scout.com")
 
         for role, names in MEMBERS.items():
             for name in names:
-                email = f"{slugify(name)}@nayl.ca"
+                email = f"{slugify(name)}@scout.com"
                 if User.query.filter_by(email=email).first(): continue
                 u = User(
                     email=email, name=name,
@@ -215,7 +215,7 @@ def reset_and_init_team():
                     join_date=datetime.datetime.now().strftime("%Y-%m-%d")
                 )
                 db.session.add(u)
-                created.append(f"{role}: {name}")
+                created.append(f"{role}: {name} ({email})")
 
         db.session.commit()
         return jsonify({"status": "Success", "database": "Reset and Initialized", "members_created": created, "default_password": DEFAULT_PASS})
