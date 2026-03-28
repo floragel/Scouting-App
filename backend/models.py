@@ -63,9 +63,9 @@ class Event(db.Model):
     __tablename__ = 'event'
     id = db.Column(db.Integer, primary_key=True)
     tba_key = db.Column(db.String(50), unique=True) # The Blue Alliance key, e.g. 2024casj
-    name = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(100))
-    date = db.Column(db.String(50))
+    name = db.Column(db.Text, nullable=False)
+    location = db.Column(db.Text)
+    date = db.Column(db.String(100))
     status = db.Column(db.String(50)) # e.g., 'completed', 'ongoing', 'upcoming'
     
     # Relationship to Teams
@@ -87,8 +87,8 @@ class Team(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     tba_key = db.Column(db.String(50), unique=True) # e.g. frc254
     team_number = db.Column(db.Integer, unique=True, nullable=False)
-    team_name = db.Column(db.String(100), nullable=False)
-    nickname = db.Column(db.String(100))
+    team_name = db.Column(db.Text, nullable=False)
+    nickname = db.Column(db.Text)
     access_code = db.Column(db.String(50), nullable=True) # For onboarding
     
     # Relationship to Users

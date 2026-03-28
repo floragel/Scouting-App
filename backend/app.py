@@ -161,8 +161,11 @@ def manual_init_db():
     
     try:
         with app.app_context():
+            if request.args.get('drop') == 'true':
+                db.drop_all()
+                print("LOG: Dropped all existing tables.")
             db.create_all()
-        return jsonify({'message': 'Database tables created successfully!'}), 200
+        return jsonify({'message': 'Database tables created/updated successfully!'}), 200
     except Exception as e:
         import traceback
         traceback.print_exc()

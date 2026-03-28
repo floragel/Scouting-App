@@ -1,0 +1,39 @@
+🚀 Starting migration from sqlite:///data/scouting.db to PostgreSQL...
+🧹 Cleaning up existing data in PostgreSQL...
+📦 Migrating table: team...
+Traceback (most recent call last):
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 2112, in _exec_insertmany_context
+    dialect.do_execute(
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.StringDataRightTruncation: value too long for type character varying(100)
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/nayl/Desktop/StanRobotix/Scouting App/backend/scripts/migrate_data.py", line 95, in <module>
+    migrate()
+  File "/Users/nayl/Desktop/StanRobotix/Scouting App/backend/scripts/migrate_data.py", line 76, in migrate
+    pg_conn.execute(insert(pg_table), data)
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/sql/elements.py", line 516, in _execute_on_connection
+    return connection._execute_clauseelement(
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1639, in _execute_clauseelement
+    ret = self._execute_context(
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+    return self._exec_insertmany_context(
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 2120, in _exec_insertmany_context
+    self._handle_dbapi_exception(
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 2343, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 2112, in _exec_insertmany_context
+    dialect.do_execute(
+  File "/Users/nayl/.pyenv/versions/3.10.13/lib/python3.10/site-packages/sqlalchemy/engine/default.py", line 922, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.DataError: (psycopg2.errors.StringDataRightTruncation) value too long for type character varying(100)
+
+[SQL: INSERT INTO team (id, tba_key, team_number, team_name, nickname, access_code) VALUES (%(id__0)s, %(tba_key__0)s, %(team_number__0)s, %(team_name__0)s, %(nickname__0)s, %(access_code__0)s), (%(id__1)s, %(tba_key__1)s, %(team_number__1)s, %(team_name__ ... 17053 characters truncated ... %(tba_key__154)s, %(team_number__154)s, %(team_name__154)s, %(nickname__154)s, %(access_code__154)s)]
+[parameters: {'access_code__0': 'S8PJ2626', 'tba_key__0': 'frc2626', 'team_number__0': 2626, 'id__0': 1, 'nickname__0': 'Evolution', 'team_name__0': 'La Fondation du Seminaire de Sherbrooke/Scorpion/Michelin/Fastenal/Estrie Joue/Thibault Chevrolet Cadillac Buick GMC&Seminaire de Sherbrooke', 'access_code__1': '7XNL296', 'tba_key__1': 'frc296', 'team_number__1': 296, 'id__1': 2, 'nickname__1': 'Northern Knights', 'team_name__1': 'SME Chapter 50 Montreal&Loyola High School', 'access_code__2': 'H25Y3117', 'tba_key__2': 'frc3117', 'team_number__2': 3117, 'id__2': 3, 'nickname__2': 'Harfangs', 'team_name__2': "Fondation pour les élèves du CSSRS/Triolet/OTIS/CSSRS/Université de Sherbrooke/Centre 24-Juin/Fondation de l'école du Triolet/Café William/Innovair Solutions/ConceptroMEC&Triolet", 'access_code__3': 'UQQ03360', 'tba_key__3': 'frc3360', 'team_number__3': 3360, 'id__3': 4, 'nickname__3': 'Hyperion', 'team_name__3': "Fondation pour les élèves du centre de services scolaire de la region de Sherbrooke/MICHEL FABI & FILS INC./Gestion Goudreault-St-Pierre/Electrolab/S ... (83 characters truncated) ... herbrooke/ARJO Magog/Placage Granby/Fondation de l'École secondaire de la Montée/Acier David Simmonds/Batterie Illimitées/CSSRS&De La Montée (Le Ber)", 'access_code__4': 'E8EH3532', 'tba_key__4': 'frc3532', 'team_number__4': 3532, 'id__4': 5, 'nickname__4': 'Piranhas', 'team_name__4': 'PREMIER TECH/Otodata/Centre optimiste de Laflèche Saint-Hubert/Desjardins Caisse Charles Lemoyne &Monseigneur A.-M.-Parent', 'access_code__5': 'UL9I3533', 'tba_key__5': 'frc3533', 'team_number__5': 3533, 'id__5': 6, 'nickname__5': 'Mekano', 'team_name__5': 'Lucien Pagé school/CSS de Montréal/RBC PH&N Wealth Management&Ecole Lucien-Pagé', 'access_code__6': 'TQSU3544', 'tba_key__6': 'frc3544', 'team_number__6': 3544, 'id__6': 7, 'nickname__6': 'Spartiates', 'team_name__6': "CSS de la Pointe-de-l'Île/Honda Canada Foundation/RBC PH&N Wealth Management & École secondaire Calixa-Lavalée", 'access_code__7': 'YE0L3550', 'tba_key__7': 'frc3550', 'team_number__7': 3550, 'id__7': 8, 'nickname__7': 'Robotronix', 'team_name__7': 'Groupe STCH/Fondation J.Armand Bombardier/Fervel Entretien Ménager/CSSMB/Raytheon Technology/Desjardins - Caisse de LaSalle/Cégep André-Laurendeau&Ecole Cavelier-de LaSalle', 'access_code__8': 'WWKZ3975', 'tba_key__8': 'frc3975' ... 830 parameters truncated ... 'nickname__146': 'ConquEra', 'team_name__146': 'Manisa Bahcesehir Science and Technology High School', 'access_code__147': 'SE869029', 'tba_key__147': 'frc9029', 'team_number__147': 9029, 'id__147': 148, 'nickname__147': 'Team NF', 'team_name__147': 'Family/Community', 'access_code__148': 'LGNY9077', 'tba_key__148': 'frc9077', 'team_number__148': 9077, 'id__148': 149, 'nickname__148': 'The Crown', 'team_name__148': 'Profen/Kordsa/AFLİM/Mech Dynamix/Orkum/Harmoni/İmge İnşaat/THY/RTX/ARM/Rockwell/BOEING&İSTANBUL ATATÜRK FEN LİSESİ', 'access_code__149': 'GXR19132', 'tba_key__149': 'frc9132', 'team_number__149': 9132, 'id__149': 150, 'nickname__149': 'Roborsa Başakşehir', 'team_name__149': 'BORSA İSTANBUL BAŞAKŞEHİR MESLEKİ VE TEKNİK ANADOLU LİSESİ&Başakşehir Borsa istanbul MTAL', 'access_code__150': 'JU1Q9233', 'tba_key__150': 'frc9233', 'team_number__150': 9233, 'id__150': 151, 'nickname__150': 'Luminous Robotics Team', 'team_name__150': 'Premium Global Travel/Müdüroğlu Geri Dönüşüm/Perla Dental Care&Antalya Lara Bahçeşehir Anatolian High School', 'access_code__151': 'SHUO9483', 'tba_key__151': 'frc9483', 'team_number__151': 9483, 'id__151': 152, 'nickname__151': 'Overcharge', 'team_name__151': 'Family/Community', 'access_code__152': 'UC1R9583', 'tba_key__152': 'frc9583', 'team_number__152': 9583, 'id__152': 153, 'nickname__152': 'Lavender Robotics', 'team_name__152': 'Geleceği Tasarlayan Gençler Derneği/Gazi Kimya/Neontek/Disera&Family/Community', 'access_code__153': '2M5J9595', 'tba_key__153': 'frc9595', 'team_number__153': 9595, 'id__153': 154, 'nickname__153': 'ECHO', 'team_name__153': 'Altın Kural Kurs Merkezi Çanakkale/Özalp Hotels/Mansur Iletisim&Kadıköy Anadolu Lisesi', 'access_code__154': 'U0AZ9601', 'tba_key__154': 'frc9601', 'team_number__154': 9601, 'id__154': 155, 'nickname__154': 'BageTech', 'team_name__154': 'xDrive/Altınsoy Elektrik/Atık Nakit/Tekkaplan&Family/Community'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
