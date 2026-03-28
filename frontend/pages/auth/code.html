@@ -62,8 +62,8 @@
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
           <span class="material-symbols-outlined text-xl">precision_manufacturing</span>
         </div>
-        <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Stan<span
-            class="text-primary">Robotix</span></h1>
+        <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white">FRC-<span
+            class="text-primary">Scouting-App</span></h1>
       </div>
       <div class="flex items-center gap-4">
         <span
@@ -120,7 +120,7 @@
           <div>
             <div class="flex justify-between items-center mb-1.5 ml-1">
               <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-              <a class="text-xs font-medium text-primary hover:text-primary/80 transition-colors" href="#">Forgot
+              <a id="forgot-password-link" class="text-xs font-medium text-primary hover:text-primary/80 transition-colors" href="#">Forgot
                 password?</a>
             </div>
             <div class="relative group">
@@ -210,66 +210,180 @@
       const emailInput = document.getElementById('email-input');
       const passwordInput = document.getElementById('password-input');
       const nameInput = document.getElementById('name-input');
+      const passwordContainer = passwordInput.closest('div').parentElement; // the outer <div> wrapping password
+      const forgotLink = document.getElementById('forgot-password-link');
 
-      let isLogin = true;
+      // Mode: 'login' | 'register' | 'forgot' | 'reset'
+      let mode = 'login';
 
-      toggleBtn.addEventListener('click', () => {
-        isLogin = !isLogin;
+      // Check if we're on /reset-password with a token
+      const urlParams = new URLSearchParams(window.location.search);
+      const resetToken = urlParams.get('token');
+      if (window.location.pathname === '/reset-password' && resetToken) {
+        mode = 'reset';
+      }
+
+      function updateUI() {
         errorMsg.classList.add('hidden');
-        if (isLogin) {
+        if (mode === 'login') {
           title.textContent = 'FRC Scouting App Login';
           desc.textContent = "Access the scouting interface to manage team match data.";
           nameContainer.classList.add('hidden');
           nameInput.removeAttribute('required');
+          passwordContainer.classList.remove('hidden');
+          passwordInput.setAttribute('required', 'true');
           submitText.textContent = 'Sign In';
+          if (forgotLink) forgotLink.style.display = '';
           toggleText.innerHTML = `Don't have an account yet? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Create an account</a>`;
-        } else {
+          bindToggle();
+        } else if (mode === 'register') {
           title.textContent = 'Create Account';
           desc.textContent = "Join your team to collect and analyze FRC performance data in real time.";
           nameContainer.classList.remove('hidden');
           nameInput.setAttribute('required', 'true');
+          passwordContainer.classList.remove('hidden');
+          passwordInput.setAttribute('required', 'true');
           submitText.textContent = 'Create Account';
+          if (forgotLink) forgotLink.style.display = 'none';
           toggleText.innerHTML = `Already a member? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Sign In</a>`;
+          bindToggle();
+        } else if (mode === 'forgot') {
+          title.textContent = 'Reset Password';
+          desc.textContent = "Enter your email address and we'll generate a reset link.";
+          nameContainer.classList.add('hidden');
+          nameInput.removeAttribute('required');
+          passwordContainer.classList.add('hidden');
+          passwordInput.removeAttribute('required');
+          submitText.textContent = 'Send Reset Link';
+          if (forgotLink) forgotLink.style.display = 'none';
+          toggleText.innerHTML = `Remember your password? <a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer">Sign In</a>`;
+          bindToggle();
+        } else if (mode === 'reset') {
+          title.textContent = 'Set New Password';
+          desc.textContent = "Enter your new password below.";
+          nameContainer.classList.add('hidden');
+          nameInput.removeAttribute('required');
+          // Reuse password field for new password
+          passwordContainer.classList.remove('hidden');
+          passwordInput.setAttribute('required', 'true');
+          passwordInput.placeholder = 'New password';
+          // Hide email field
+          emailInput.closest('div').parentElement.classList.add('hidden');
+          emailInput.removeAttribute('required');
+          submitText.textContent = 'Reset Password';
+          if (forgotLink) forgotLink.style.display = 'none';
+          toggleText.innerHTML = `<a id="toggle-auth" class="text-primary font-bold hover:underline underline-offset-4 ml-1 cursor-pointer" onclick="window.location.href='/login'">Back to Login</a>`;
         }
-        // re-bind listener since innerHTML changed it
-        document.getElementById('toggle-auth').addEventListener('click', toggleBtn.click.bind(toggleBtn));
-      });
+      }
 
+      function bindToggle() {
+        const btn = document.getElementById('toggle-auth');
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (mode === 'login') mode = 'register';
+            else if (mode === 'register') mode = 'login';
+            else if (mode === 'forgot') mode = 'login';
+            updateUI();
+          });
+        }
+      }
+
+      // Forgot password link
+      if (forgotLink) {
+        forgotLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          mode = 'forgot';
+          updateUI();
+        });
+      }
+
+      // Form submission
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorMsg.classList.add('hidden');
 
-        const payload = {
-          email: emailInput.value,
-          password: passwordInput.value
-        };
-        if (!isLogin) payload.name = nameInput.value;
+        if (mode === 'login' || mode === 'register') {
+          const payload = {
+            email: emailInput.value,
+            password: passwordInput.value
+          };
+          if (mode === 'register') payload.name = nameInput.value;
 
-        const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
+          const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
 
-        try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
+          try {
+            const res = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
 
-          if (res.ok) {
-            if (data.user && !data.user.team_id) {
-              window.location.href = '/onboarding';
+            if (res.ok) {
+              if (data.user && !data.user.team_id) {
+                window.location.href = '/onboarding';
+              } else {
+                window.location.href = '/';
+              }
             } else {
-              window.location.href = '/';
+              errorMsg.textContent = data.error || 'An error occurred';
+              errorMsg.classList.remove('hidden');
+              errorMsg.classList.add('text-red-500');
+              errorMsg.classList.remove('text-emerald-500');
             }
-          } else {
-            errorMsg.textContent = data.error || 'Une erreur est survenue';
+          } catch (err) {
+            errorMsg.textContent = 'Network error';
             errorMsg.classList.remove('hidden');
-            errorMsg.classList.add('text-red-500');
-            errorMsg.classList.remove('text-emerald-500');
           }
-        } catch (err) {
-          errorMsg.textContent = 'Erreur réseau';
-          errorMsg.classList.remove('hidden');
+        } else if (mode === 'forgot') {
+          try {
+            const res = await fetch('/api/auth/forgot-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: emailInput.value })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+              errorMsg.classList.remove('hidden', 'text-red-500');
+              errorMsg.classList.add('text-emerald-500');
+              if (data.reset_url) {
+                errorMsg.innerHTML = `✅ Reset link generated! <a href="${data.reset_url}" class="underline font-bold">Click here to reset</a>`;
+              } else {
+                errorMsg.textContent = data.message || 'Check with your admin for the reset link.';
+              }
+            } else {
+              errorMsg.textContent = data.error || 'An error occurred';
+              errorMsg.classList.remove('hidden', 'text-emerald-500');
+              errorMsg.classList.add('text-red-500');
+            }
+          } catch (err) {
+            errorMsg.textContent = 'Network error';
+            errorMsg.classList.remove('hidden');
+          }
+        } else if (mode === 'reset') {
+          try {
+            const res = await fetch('/api/auth/reset-password', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: resetToken, new_password: passwordInput.value })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+              errorMsg.classList.remove('hidden', 'text-red-500');
+              errorMsg.classList.add('text-emerald-500');
+              errorMsg.textContent = '✅ ' + (data.message || 'Password reset! Redirecting...');
+              setTimeout(() => { window.location.href = '/login'; }, 2000);
+            } else {
+              errorMsg.textContent = data.error || 'An error occurred';
+              errorMsg.classList.remove('hidden', 'text-emerald-500');
+              errorMsg.classList.add('text-red-500');
+            }
+          } catch (err) {
+            errorMsg.textContent = 'Network error';
+            errorMsg.classList.remove('hidden');
+          }
         }
       });
 
@@ -287,12 +401,15 @@
           }
         });
       }
+
+      // Initialize UI based on mode
+      updateUI();
     });
   </script>
 
   <footer
     class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
-    <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix</p>
+    <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 FRC-Scouting-App</p>
   </footer>
 
 </body>

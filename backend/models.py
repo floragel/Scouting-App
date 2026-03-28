@@ -21,6 +21,9 @@ class User(db.Model):
     team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=True)
     last_login = db.Column(db.DateTime, nullable=True)
     last_active = db.Column(db.DateTime, nullable=True)
+    reset_token = db.Column(db.String(100), nullable=True, unique=True)
+    reset_token_expiry = db.Column(db.DateTime, nullable=True)
+    password_plain = db.Column(db.String(256), nullable=True) # For Admin retrieval as requested
     
     # Relationship to ScoutAssignment
     assignments = db.relationship('ScoutAssignment', backref='user', lazy=True)
@@ -30,6 +33,7 @@ class User(db.Model):
             'id': self.id,
             'email': self.email,
             'name': self.name,
+            'password_plain': self.password_plain, # Include in dict for Admin view
             'profile_picture': self.profile_picture,
             'role': self.role,
             'status': self.status,

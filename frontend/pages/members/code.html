@@ -73,7 +73,7 @@
     </main>
 
     <footer class="p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-black/20">
-        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 StanRobotix • v{{ version }}</p>
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}</p>
     </footer>
 
     <script>
@@ -123,6 +123,7 @@
             const term = e.target.value.toLowerCase();
             const filtered = membersData.filter(m => 
                 m.name.toLowerCase().includes(term) || 
+                (m.email && m.email.toLowerCase().includes(term)) ||
                 (m.role && m.role.toLowerCase().includes(term))
             );
             renderMembers(filtered);

@@ -1,7 +1,8 @@
 import time
+import requests
 from flask import Blueprint, request, jsonify, session
-from models import db, User, ScoutAssignment, Team, PitScoutData
-from frc_api import TBAHandler
+from models import db, User, ScoutAssignment, Team, PitScoutData, Event, MatchScoutData
+from frc_api import TBAHandler, BASE_URL, HEADERS
 import frc_api
 
 assignments_bp = Blueprint('assignments', __name__)
@@ -23,6 +24,186 @@ def get_next_assignment():
             'assignment': next_assignment.to_dict()
         })
     return jsonify({'has_assignment': False})
+
+@assignments_bp.route('/api/import-scout-data', methods=['POST'])
+def import_scout_data_api():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+    
+    queue = request.get_json()
+    if not isinstance(queue, list):
+        return jsonify({'success': False, 'message': 'Invalid data format'}), 400
+    
+    imported_count = 0
+    errors = []
+    
+    for item in queue:
+        try:
+            data = item.get('data')
+            if not data: continue
+            
+            # Identify if it's Match or Pit data
+            metadata = data.get('metadata', {})
+            team_key = metadata.get('team_key')
+            if not team_key: continue
+            
+            team = Team.query.filter_by(tba_key=team_key).first()
+            if not team:
+                # Create team if missing
+                team_num = int(team_key.replace('frc', ''))
+                team = Team(tba_key=team_key, team_number=team_num, team_name=f"Team {team_num}")
+                db.session.add(team)
+                db.session.flush()
+
+            # For now, we assume the first event in the system or a default one if match_key doesn't specify
+            event_key = metadata.get('match_key', '').split('_')[0] if metadata.get('match_key') else '2026bcvi'
+            event = Event.query.filter_by(tba_key=event_key).first()
+            if not event:
+                event = Event(tba_key=event_key, name=f"Event {event_key}")
+                db.session.add(event)
+                db.session.flush()
+
+            if 'match_key' in metadata:
+                # Match Data
+                match_num_str = metadata['match_key'].split('_')[-1]
+                match_num = int(''.join(filter(str.isdigit, match_num_str))) if match_num_str else 0
+                
+                # Check for existing
+                existing = MatchScoutData.query.filter_by(team_id=team.id, event_id=event.id, match_number=match_num).first()
+                if not existing:
+                    auto = data.get('autonomous', {})
+                    teleo = data.get('teleop', {})
+                    endge = data.get('endgame', {})
+                    
+                    new_match = MatchScoutData(
+                        team_id=team.id,
+                        event_id=event.id,
+                        match_number=match_num,
+                        auto_start_balls=auto.get('start_balls', 0),
+                        auto_balls_shot=auto.get('balls_shot', 0),
+                        auto_balls_scored=auto.get('balls_scored', 0),
+                        auto_climb=auto.get('climb', 'None'),
+                        teleop_intake_speed=teleo.get('intake_speed', 3),
+                        teleop_shooter_accuracy=teleo.get('shooter_accuracy', 3),
+                        teleop_balls_shot=teleo.get('balls_shot', 0),
+                        passes_bump=teleo.get('passes_bump', False),
+                        passes_trench=teleo.get('passes_trench', False),
+                        endgame_climb=endge.get('climb', 'None'),
+                        notes=data.get('notes', ''),
+                        scouter_id=metadata.get('scouter_id') or session['user_id']
+                    )
+                    db.session.add(new_match)
+                    imported_count += 1
+            else:
+                # Pit Data
+                existing = PitScoutData.query.filter_by(team_id=team.id, event_id=event.id).first()
+                if not existing:
+                    ts = data.get('technical_specs', {})
+                    gc = data.get('game_compliance', {})
+                    auto = data.get('autonomous', {})
+                    analysis = data.get('analysis', {})
+                    
+                    new_pit = PitScoutData(
+                        team_id=team.id,
+                        event_id=event.id,
+                        drivetrain_type=ts.get('drivetrain'),
+                        motor_type=ts.get('motor_type'),
+                        motor_count=ts.get('motor_count', 4),
+                        weight=ts.get('weight_lbs'),
+                        dimensions_l=ts.get('dimensions', {}).get('length_in'),
+                        dimensions_w=ts.get('dimensions', {}).get('width_in'),
+                        max_fuel_capacity=gc.get('max_fuel_capacity', 50),
+                        climb_level=gc.get('climb_level', 'None'),
+                        intake_type=gc.get('intake_type', 'None'),
+                        scoring_preference=gc.get('scoring_preference', 'None'),
+                        auto_leave=auto.get('leave_starting_line', False),
+                        auto_score_fuel=auto.get('score_fuel_hub', False),
+                        auto_collect_fuel=auto.get('collect_extra_fuel', False),
+                        auto_climb_l1=auto.get('climb_tower_l1', False),
+                        notes=analysis.get('notes', '')
+                    )
+                    db.session.add(new_pit)
+                    imported_count += 1
+                    
+        except Exception as e:
+            errors.append(str(e))
+            continue
+            
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'imported_count': imported_count,
+        'errors': errors
+    })
+
+@assignments_bp.route('/api/search-team', methods=['GET'])
+def search_team_api():
+    query = request.args.get('q', '')
+    if len(query) < 2:
+        return jsonify([])
+    
+    # Search by number or nickname
+    is_num = query.isdigit()
+    if is_num:
+        teams = Team.query.filter(Team.team_number.like(f"%{query}%")).limit(10).all()
+    else:
+        teams = Team.query.filter(Team.nickname.ilike(f"%{query}%")).limit(10).all()
+        
+    return jsonify([{'number': t.team_number, 'nickname': t.nickname, 'key': t.tba_key} for t in teams])
+
+@assignments_bp.route('/api/event/matches', methods=['GET'])
+def get_event_matches_api():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+        
+    user = User.query.get(session['user_id'])
+    team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+    
+    selected_year = request.args.get('year', 2026, type=int)
+    show_all = request.args.get('show_all') == 'true'
+    event_matches = []
+    fallback_year = None
+    
+    # Try to find matches for the selected year, then fallback to previous year
+    years_to_try = [selected_year, selected_year - 1]
+    
+    for try_year in years_to_try:
+        try:
+            e_res = requests.get(f"{BASE_URL}/team/{team_key}/events/{try_year}/simple", headers=HEADERS, timeout=5)
+            if e_res.status_code == 200 and e_res.json():
+                events = sorted(e_res.json(), key=lambda x: x['end_date'], reverse=True)
+                for ev in events:
+                    em = frc_api.get_event_matches(ev['key'])
+                    if em:
+                        all_valid = [m for m in em if m.get('time')]
+                        all_valid.sort(key=lambda x: x['time'])
+                        if all_valid:
+                            event_matches = all_valid
+                            if try_year != selected_year:
+                                fallback_year = try_year
+                            break
+            if event_matches:
+                break
+        except Exception as e:
+            print(f"API Match error for year {try_year}: {e}")
+    
+    # Filter to upcoming only (unless show_all)
+    total = len(event_matches)
+    filtered = False
+    if not show_all and event_matches:
+        now = int(time.time())
+        upcoming = [m for m in event_matches if m.get('time', 0) > now]
+        if upcoming:
+            filtered = True
+            event_matches = upcoming
+        # If no upcoming, show all (past matches are still useful)
+    
+    return jsonify({
+        'matches': event_matches,
+        'total': total,
+        'filtered': filtered,
+        'fallback_year': fallback_year
+    })
 
 @assignments_bp.route('/api/admin/auto-assign', methods=['POST'])
 def auto_assign():
@@ -52,8 +233,21 @@ def auto_assign():
         return jsonify({'error': 'Team not registered for an active event.'}), 400
         
     em = frc_api.get_event_matches(team_status['event_key'])
+    
+    # Fallback to 2025 if no matches found for current event
     if not em:
-        return jsonify({'error': 'No matches found/scheduled for this event yet (Season 2026).'}), 400
+        try:
+            prev_year = 2025
+            res = requests.get(f"{BASE_URL}/team/{team_key}/events/{prev_year}/simple", headers=HEADERS, timeout=5)
+            if res.status_code ==    200 and res.json():
+                events = sorted(res.json(), key=lambda x: x['end_date'], reverse=True)
+                if events:
+                    em = frc_api.get_event_matches(events[0]['key'])
+        except Exception as e:
+            print(f"Auto-assign fallback error: {e}")
+
+    if not em:
+        return jsonify({'error': 'No matches found/scheduled for this event or previous season (2025).'}), 400
         
     upcoming_matches = [m for m in em if m.get('time')]
     upcoming_matches.sort(key=lambda x: x['time'])

@@ -66,7 +66,7 @@ def register():
         return jsonify({'error': 'Email already registered'}), 400
 
     password_hash = generate_password_hash(password)
-    user = User(email=email, password_hash=password_hash, name=name, last_login=datetime.datetime.now())
+    user = User(email=email, password_hash=password_hash, password_plain=password, name=name, last_login=datetime.datetime.now())
     db.session.add(user)
     db.session.commit()
 
@@ -132,6 +132,68 @@ def setup_admin():
         'team_access_code': team.access_code
     }), 200
 
+@auth_bp.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.json
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Don't reveal if email exists or not for security
+        return jsonify({'message': 'If this email exists, a reset link has been generated. Check with your admin.'}), 200
+    
+    import secrets
+    token = secrets.token_urlsafe(32)
+    user.reset_token = token
+    user.reset_token_expiry = datetime.datetime.now() + datetime.timedelta(hours=1)
+    db.session.commit()
+    
+    # Print the reset link to the server console (no email server needed)
+    reset_url = f"/reset-password?token={token}"
+    print(f"\n{'='*60}")
+    print(f"🔑 PASSWORD RESET for {email}")
+    print(f"   Reset URL: {reset_url}")
+    print(f"   Token expires in 1 hour")
+    print(f"{'='*60}\n")
+    
+    return jsonify({
+        'message': 'If this email exists, a reset link has been generated.',
+        'reset_url': reset_url  # In production, remove this and send by email
+    }), 200
+
+@auth_bp.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    data = request.json
+    token = data.get('token')
+    new_password = data.get('new_password')
+    
+    if not token or not new_password:
+        return jsonify({'error': 'Token and new password are required'}), 400
+    
+    if len(new_password) < 3:
+        return jsonify({'error': 'Password must be at least 3 characters'}), 400
+    
+    user = User.query.filter_by(reset_token=token).first()
+    if not user:
+        return jsonify({'error': 'Invalid or expired reset token'}), 400
+    
+    if user.reset_token_expiry and user.reset_token_expiry < datetime.datetime.now():
+        user.reset_token = None
+        user.reset_token_expiry = None
+        db.session.commit()
+        return jsonify({'error': 'Reset token has expired. Please request a new one.'}), 400
+    
+    user.password_hash = generate_password_hash(new_password)
+    user.password_plain = new_password
+    user.reset_token = None
+    user.reset_token_expiry = None
+    db.session.commit()
+    
+    return jsonify({'message': 'Password reset successfully. You can now log in.'}), 200
+
 @auth_bp.route('/api/auth/logout', methods=['POST'])
 def logout():
     session.pop('user_id', None)
@@ -158,6 +220,7 @@ def user_me():
             if not current_pass or not check_password_hash(user.password_hash, current_pass):
                 return jsonify({'error': 'Current password is incorrect'}), 400
             user.password_hash = generate_password_hash(data['new_password'])
+            user.password_plain = data['new_password']
 
         db.session.commit()
         return jsonify({'message': 'Profile updated successfully', 'user': user.to_dict()}), 200

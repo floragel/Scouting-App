@@ -113,9 +113,20 @@
         <!-- Header & Quick Stats Section -->
         <div class="flex flex-col lg:flex-row gap-6">
             <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2">
-                    <span class="material-symbols-outlined text-primary">group_work</span>
-                    <h1 class="text-3xl font-black tracking-tight dark:text-white uppercase">Admin Scout Management</h1>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">group_work</span>
+                        <h1 class="text-3xl font-black tracking-tight dark:text-white uppercase">Admin Scout Management</h1>
+                    </div>
+                    <!-- Season Selector -->
+                    <div class="flex items-center gap-2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 shadow-sm transition-all hover:border-primary/50">
+                        <span class="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
+                        <select id="season-select" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
+                            {% for year in seasons %}
+                            <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>Season {{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
                 <p class="text-slate-600 dark:text-slate-400 max-w-2xl">
                     Control team access, assign technical roles, and monitor scouting activity.
@@ -206,6 +217,8 @@
                             </th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
                                 Assigned Role</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Password
+                            </th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Status
                             </th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Join
@@ -647,7 +660,7 @@
     <footer class="mt-auto p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161e2b]">
         <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
             <span class="material-symbols-outlined text-sm">precision_manufacturing</span>
-            © Nayl Lahlou, Team 6622 StanRobotix • v{{ version }}
+            © Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}
         </p>
     </footer>
     <script>
@@ -790,6 +803,9 @@
                 </select>
             </td>
             <td class="px-6 py-4">
+                <span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded select-all cursor-help" title="Click to select password">${user.password_plain || 'N/A'}</span>
+            </td>
+            <td class="px-6 py-4">
                 <div class="flex items-center gap-1.5">
                     <div class="size-2 rounded-full bg-emerald-500"></div>
                     <span class="text-xs font-medium dark:text-slate-300">Active</span>
@@ -888,12 +904,15 @@
             // ---- Fetch matches from API ----
             async function fetchAndRenderMatches(showAll) {
                 try {
-                    const url = showAll ? '/api/event/matches?show_all=true' : '/api/event/matches';
+                    const yearSelect = document.getElementById('season-select');
+                    const selectedYear = yearSelect ? yearSelect.value : '2026';
+                    const url = `/api/event/matches?year=${selectedYear}${showAll ? '&show_all=true' : ''}`;
                     const res = await fetch(url);
                     if (!res.ok) return;
                     const data = await res.json();
                     allMatches = data.matches || [];
                     const total = data.total || 0;
+                    const fallbackYear = data.fallback_year;
 
                     // Populate dropdown
                     assignMatchSelect.innerHTML = '<option value="">Select Match...</option>';
@@ -904,15 +923,21 @@
                         assignMatchSelect.appendChild(opt);
                     });
 
+                    // Fallback year notice
+                    let fallbackNotice = '';
+                    if (fallbackYear) {
+                        fallbackNotice = ` <span class="text-amber-400 font-bold">(Fallback: showing ${fallbackYear} data)</span>`;
+                    }
+
                     // Show/hide toggle button
                     if (data.filtered && allMatches.length === 0 && total > 0) {
                         toggleAllBtn.classList.remove('hidden');
                         toggleAllText.textContent = `Show All ${total} Matches`;
-                        gridSubtitle.textContent = 'No upcoming matches found.';
+                        gridSubtitle.innerHTML = 'No upcoming matches found.' + fallbackNotice;
                     } else if (data.filtered && allMatches.length > 0 && allMatches.length < total) {
                         toggleAllBtn.classList.remove('hidden');
                         toggleAllText.textContent = `Show All ${total} Matches`;
-                        gridSubtitle.textContent = `Showing ${allMatches.length} upcoming matches.`;
+                        gridSubtitle.innerHTML = `Showing ${allMatches.length} upcoming matches.` + fallbackNotice;
                     } else {
                         if (showAll) {
                             toggleAllBtn.classList.remove('hidden');
@@ -920,7 +945,7 @@
                         } else {
                             toggleAllBtn.classList.add('hidden');
                         }
-                        gridSubtitle.textContent = `Showing all ${allMatches.length} matches.`;
+                        gridSubtitle.innerHTML = `Showing all ${allMatches.length} matches.` + fallbackNotice;
                     }
 
                     renderMatchGrid(allMatches);
@@ -1233,6 +1258,18 @@
             };
 
             // ---- Initial Load ----
+            const seasonSelect = document.getElementById('season-select');
+            if (seasonSelect) {
+                seasonSelect.addEventListener('change', () => {
+                    // Update URL and reload if we want full page reload for members etc,
+                    // or just re-fetch matches. User said "voir en fonction des saisons avec les datas",
+                    // so maybe a full reload is better to refresh Jinja data?
+                    // But we want it to be smooth.
+                    const newYear = seasonSelect.value;
+                    window.location.href = `/admin-hub?year=${newYear}`;
+                });
+            }
+
             fetchAndRenderMatches(false);
 
             loadMembers();

@@ -46,6 +46,56 @@
 
 <body data-user-role="{{ user.role }}"
     class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col antialiased">
+    
+    <!-- New Report Modal -->
+    <dialog id="newReportModal" class="bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-0 backdrop:backdrop-blur-sm w-full max-w-md outline-none">
+        <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">add_circle</span>
+                New Scouting Report
+            </h3>
+            <button onclick="document.getElementById('newReportModal').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div class="space-y-4">
+                <p class="text-sm text-slate-500">Pick how you want to start scouting.</p>
+                <div class="grid grid-cols-1 gap-3">
+                    <button onclick="window.location.href='/dashboard'" class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 transition-all text-left group">
+                        <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                            <span class="material-symbols-outlined">assignment</span>
+                        </div>
+                        <div>
+                            <span class="block font-bold">From My Assignments</span>
+                            <span class="block text-xs text-slate-500">View matches assigned to you</span>
+                        </div>
+                    </button>
+                    <button onclick="window.location.href='/head-scout-stats'" class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 transition-all text-left group">
+                        <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                            <span class="material-symbols-outlined">analytics</span>
+                        </div>
+                        <div>
+                            <span class="block font-bold">Strategy Hub</span>
+                            <span class="block text-xs text-slate-500">Analyze team data and picklists</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Internal Team Search</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                    <input type="text" id="modalTeamSearch" placeholder="Enter team number..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-900 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary"
+                        oninput="window.handleModalSearch(this.value)">
+                    <div id="modalSearchResults" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden hidden z-50">
+                        <!-- Results populate here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </dialog>
     <!-- Top Navigation -->
     <header
         class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
@@ -159,6 +209,16 @@
                 </div>
             </div>
         </div>
+        <!-- Team Search Results (hidden by default) -->
+        <div id="team-results-section" class="mb-8 hidden">
+            <h2 class="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">groups</span>
+                Team Search Results
+            </h2>
+            <div id="team-results-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Team results here -->
+            </div>
+        </div>
         <!-- Dashboard Grid Layout -->
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- Left Column: Event Cards Grid -->
@@ -234,6 +294,14 @@
                 const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
                 const regionTerm = regionSelect ? regionSelect.value.toLowerCase() : "all";
                 const isListView = viewSelect && viewSelect.value === "list";
+
+                // Handle global team search display
+                const teamResultsSection = document.getElementById('team-results-section');
+                if (searchTerm.length >= 2 && teamResultsSection) {
+                    window.fetchGlobalTeams(searchTerm);
+                } else if (teamResultsSection) {
+                    teamResultsSection.classList.add('hidden');
+                }
 
                 // Set layout class
                 if (isListView) {
@@ -571,6 +639,73 @@
             fetchNextMatches();
             fetchScoutingDuty();
 
+            // Global Team Search logic
+            window.fetchGlobalTeams = async (query) => {
+                const container = document.getElementById('team-results-container');
+                const section = document.getElementById('team-results-section');
+                
+                try {
+                    const res = await fetch(`/api/search-team?q=${query}`);
+                    const teams = await res.json();
+                    
+                    if (teams.length > 0) {
+                        section.classList.remove('hidden');
+                        container.innerHTML = teams.map(t => `
+                            <div class="bg-card-dark border border-slate-800 p-4 rounded-xl flex items-center justify-between group hover:border-primary/50 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                        ${t.number}
+                                    </div>
+                                    <div class="flex flex-col min-w-0">
+                                        <span class="text-sm font-bold text-white truncate">${t.nickname || 'Team ' + t.number}</span>
+                                        <span class="text-[10px] text-slate-500 uppercase font-black uppercase tracking-widest">Internal DB</span>
+                                    </div>
+                                </div>
+                                <a href="/teams-dir?team=${t.number}" class="size-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+                                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                </a>
+                            </div>
+                        `).join('');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                } catch (e) {
+                    console.error("Global search error:", e);
+                }
+            };
+
+            // Modal Search logic
+            window.handleModalSearch = async (query) => {
+                const resultsDiv = document.getElementById('modalSearchResults');
+                if (query.length < 2) {
+                    resultsDiv.classList.add('hidden');
+                    return;
+                }
+                
+                try {
+                    const res = await fetch(`/api/search-team?q=${query}`);
+                    const teams = await res.json();
+                    
+                    if (teams.length > 0) {
+                        resultsDiv.classList.remove('hidden');
+                        resultsDiv.innerHTML = teams.map(t => `
+                            <div onclick="window.location.href='/teams-dir?team=${t.number}'" class="px-4 py-3 hover:bg-slate-700 cursor-pointer flex items-center justify-between border-b border-slate-700 last:border-0">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-bold text-white">${t.number}</span>
+                                    <span class="text-xs text-slate-400 truncate max-w-[150px]">${t.nickname}</span>
+                                </div>
+                                <span class="material-symbols-outlined text-sm text-primary">login</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        resultsDiv.innerHTML = '<div class="px-4 py-3 text-xs text-slate-500">No teams found</div>';
+                        resultsDiv.classList.remove('hidden');
+                    }
+                } catch (e) {
+                    console.error("Modal search error:", e);
+                }
+            };
+
             initSeasons();
         });
     </script>
@@ -578,7 +713,7 @@
 
     <footer
         class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
-        <p class="text-xs text-slate-500 font-medium whitespace-nowrap">© Nayl Lahlou, Team 6622 StanRobotix • v{{ version }}</p>
+        <p class="text-xs text-slate-500 font-medium whitespace-nowrap">© Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}</p>
     </footer>
 
 </body>

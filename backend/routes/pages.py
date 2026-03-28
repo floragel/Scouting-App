@@ -1,9 +1,11 @@
 import os
 import json
-from flask import Blueprint, session, redirect, url_for, send_from_directory, render_template_string
-from models import User, ScoutAssignment, MatchScoutData, PitScoutData, Event, Team
+import requests
+import time
+from flask import Blueprint, session, redirect, url_for, send_from_directory, render_template_string, request, jsonify
+from models import db, User, ScoutAssignment, MatchScoutData, PitScoutData, Event, Team
 import frc_api
-from frc_api import TBAHandler
+from frc_api import TBAHandler, BASE_URL, HEADERS
 from .admin import check_admin
 
 pages_bp = Blueprint('pages', __name__)
@@ -17,6 +19,10 @@ def login_page():
         if user and not user.team_id:
             return redirect(url_for('pages.onboarding_page'))
         return redirect(url_for('pages.home'))
+    return send_from_directory(os.path.join(basedir, '../frontend/pages/auth'), 'code.html')
+
+@pages_bp.route('/reset-password')
+def reset_password_page():
     return send_from_directory(os.path.join(basedir, '../frontend/pages/auth'), 'code.html')
 
 @pages_bp.route('/register')
@@ -51,13 +57,26 @@ def admin_page():
     if not user or user.role not in ['Admin', 'Head Scout']:
         return redirect(url_for('pages.scout_dashboard'))
     
+    import datetime
+    selected_year = request.args.get('year', 2026, type=int)
+    
+    # Get available seasons for the team or general
+    tba = TBAHandler()
+    team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+    
+    seasons = [2026, 2025, 2024] # Default simple list
+    try:
+        import requests
+        from frc_api import BASE_URL, HEADERS
+        y_res = requests.get(f"{BASE_URL}/team/{team_key}/years_participated", headers=HEADERS, timeout=5)
+        if y_res.status_code == 200:
+            seasons = sorted(y_res.json(), reverse=True)
+    except: pass
+
     team_members = []
     if user.team_id:
-        if hasattr(user, 'team_id') and user.team_id is not None:
-            team_members = User.query.filter_by(team_id=user.team_id).all()
-        else:
-            team_members = User.query.filter_by(team_access_code=user.team_access_code).all()
-            
+        team_members = User.query.filter_by(team_id=user.team_id).all()
+        
     if not team_members:
         team_members = User.query.all()
         
@@ -71,15 +90,29 @@ def admin_page():
     assignments_data = [a.to_dict() for a in assignments]
     
     event_matches = []
-    tba = TBAHandler()
-    team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
-    team_status = tba.get_team_status(team_key)
-    if team_status and team_status.get('event_key'):
-        em = frc_api.get_event_matches(team_status['event_key'])
-        if em:
-            valid_matches = [m for m in em if m.get('time')]
-            valid_matches.sort(key=lambda x: x['time'])
-            event_matches = valid_matches
+    
+    # Try to find matches for the selected year
+    try:
+        import requests
+        from frc_api import BASE_URL, HEADERS
+        # Find events for the team in the selected year
+        e_res = requests.get(f"{BASE_URL}/team/{team_key}/events/{selected_year}/simple", headers=HEADERS, timeout=5)
+        if e_res.status_code == 200 and e_res.json():
+            events = sorted(e_res.json(), key=lambda x: x['end_date'], reverse=True)
+            if events:
+                # Find matches for the most recent event of that year
+                for e in events:
+                    em = frc_api.get_event_matches(e['key'])
+                    if em:
+                        valid_matches = [m for m in em if m.get('time')]
+                        valid_matches.sort(key=lambda x: x['time'])
+                        event_matches = valid_matches
+                        if event_matches: break
+    except Exception as e:
+        print(f"Admin fallback error: {e}")
+
+    # Final fallback: if no matches for selected year but it was 2026, try 2025 automatically?
+    # No, let the user select it now that we have the selector.
 
     template_path = os.path.join(basedir, '../frontend/pages/admin/code.html')
     with open(template_path, 'r', encoding='utf-8') as f:
@@ -91,6 +124,8 @@ def admin_page():
             assignments=assignments_data, 
             assignments_json=json.dumps(assignments_data),
             event_matches=event_matches,
+            seasons=seasons,
+            selected_year=selected_year,
             version=APP_VERSION
         )
 
@@ -136,7 +171,6 @@ def scout_dashboard():
             valid_matches = [m for m in em if m.get('time')]
             valid_matches.sort(key=lambda x: x['time'])
             
-            import time
             current_unix = int(time.time())
             future_matches = [m for m in valid_matches if m['time'] > (current_unix - 600)]
             event_matches = future_matches
