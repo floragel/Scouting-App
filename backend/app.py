@@ -153,6 +153,76 @@ with app.app_context():
     except Exception as e:
         print(f"CRITICAL Migration error: {e}")
 
+@app.route('/api/admin/reset-and-init-team')
+def reset_and_init_team():
+    import datetime
+    import unicodedata
+    import re
+    from werkzeug.security import generate_password_hash
+    from models import User, Team, Event, MatchScoutData, PitScoutData, ScoutAssignment
+
+    def slugify(name):
+        name = unicodedata.normalize('NFD', name).encode('ascii', 'ignore').decode('utf-8')
+        name = name.lower().replace(' ', '.').replace('-', '.')
+        return re.sub(r'[^a-zA-Z0-9.]', '', name)
+
+    try:
+        # 1. Clear Data
+        ScoutAssignment.query.delete()
+        MatchScoutData.query.delete()
+        PitScoutData.query.delete()
+        User.query.delete()
+        Team.query.delete()
+        Event.query.delete()
+        db.session.commit()
+
+        # 2. Create Team
+        team = Team(team_number=6622, team_name="StanRobotix", access_code="STAN6622", tba_key="frc6622")
+        db.session.add(team)
+        db.session.commit()
+
+        # 3. Create Users
+        DEFAULT_PASS = "FRC6622!"
+        MEMBERS = {
+            "Head Scout": ["Danaé", "Jisoo"],
+            "Pit Scout": ["Saulius", "Lojayen", "Anna", "Pierre"],
+            "Stand Scout": [
+                "Alexander", "Raphaël A.", "Paul-Hugo", "Clémence", 
+                "Marcu", "Julien", "Sofia", "El Ghali", "Noé", "James",
+                "Luc", "George", "Théa", "Pauline"
+            ]
+        }
+
+        created = []
+        # Main Admin
+        admin = User(
+            email="nayl.lahlou@nayl.ca", name="Nayl Lahlou",
+            password_hash=generate_password_hash(DEFAULT_PASS), password_plain=DEFAULT_PASS,
+            role="Admin", status="active", team_id=team.id,
+            join_date=datetime.datetime.now().strftime("%Y-%m-%d")
+        )
+        db.session.add(admin)
+        created.append("Admin: Nayl Lahlou")
+
+        for role, names in MEMBERS.items():
+            for name in names:
+                email = f"{slugify(name)}@nayl.ca"
+                if User.query.filter_by(email=email).first(): continue
+                u = User(
+                    email=email, name=name,
+                    password_hash=generate_password_hash(DEFAULT_PASS), password_plain=DEFAULT_PASS,
+                    role=role, status="active", team_id=team.id,
+                    join_date=datetime.datetime.now().strftime("%Y-%m-%d")
+                )
+                db.session.add(u)
+                created.append(f"{role}: {name}")
+
+        db.session.commit()
+        return jsonify({"status": "Success", "database": "Reset and Initialized", "members_created": created, "default_password": DEFAULT_PASS})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "Error", "message": str(e)})
+
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.
     app.run(debug=True, host='0.0.0.0', port=5002)
