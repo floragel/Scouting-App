@@ -1,6 +1,9 @@
 import os
 from dotenv import load_dotenv
 from flask import Flask, jsonify
+from flask_cors import CORS
+import cloudinary
+import cloudinary.uploader
 
 from models import db
 from routes import register_blueprints
@@ -9,6 +12,11 @@ load_dotenv()
 
 # Initialize the Flask application
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
+
+# Cloudinary Configuration
+# It automatically picks up CLOUDINARY_URL from the environment
+cloudinary.config(secure=True)
 
 # Configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -24,20 +32,12 @@ else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'data', 'scouting.db')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.secret_key = 'dev_secret_key_scouting_app' # Change in production
+app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key_scouting_app')
 from datetime import timedelta
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=31)
 
 # File upload configuration
-UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['PITS_UPLOAD_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'pit_photos')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16 MB max upload size
-app.config['STRATEGY_UPLOAD_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'strategies')
-
-# Ensure upload directory exists
-os.makedirs(app.config['PITS_UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['STRATEGY_UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize the database with the app
 db.init_app(app)

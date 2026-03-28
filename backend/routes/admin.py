@@ -9,7 +9,7 @@ def check_admin():
     if 'user_id' not in session:
         return None, jsonify({'error': 'Not logged in'}), 401
     user = User.query.get(session['user_id'])
-    if not user or user.role not in ['Admin', 'Head Scout'] or not user.team_id:
+    if not user or (not user.has_role('Admin') and not user.has_role('Head Scout')) or not user.team_id:
         return None, jsonify({'error': 'Unauthorized'}), 403
     return user, None, None
 
@@ -72,7 +72,10 @@ def approve_user(user_id):
 
     if action == 'approve':
         user.status = 'active'
-        user.role = role
+        all_roles = data.get('roles', [])
+        if not all_roles:
+            all_roles = ['Stand Scout']
+        user.role = ", ".join(all_roles)
     elif action == 'reject':
         user.team_id = None
         user.status = 'rejected'
@@ -91,10 +94,10 @@ def change_role(user_id):
         return jsonify({'error': 'User not in your team'}), 403
 
     data = request.json
-    new_role = data.get('role')
-    if not new_role:
-        return jsonify({'error': 'Missing role'}), 400
+    new_roles = data.get('roles', [])
+    if not new_roles:
+        return jsonify({'error': 'Missing roles'}), 400
 
-    user.role = new_role
+    user.role = ", ".join(new_roles)
     db.session.commit()
-    return jsonify({'message': 'Role updated successfully'}), 200
+    return jsonify({'message': 'Roles updated successfully'}), 200

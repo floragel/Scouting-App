@@ -18,20 +18,24 @@ The app has been architected to handle the dynamic requirements of the **2026 FR
 
 ### 🏢 Elite Admin Hub
 The nerve center for team management and oversight:
-- **Automated Team Initialization**: Rapidly deploy the entire team roster with `@scout.com` placeholders and default secure credentials.
-- **Scout Progress Monitoring**: Real-time dashboard showing match-by-match completion rates and data quality for every scout.
-- **Fleet Access Control**: Transparent role management (Admin, Head Scout, Pit, Stand) with administrative password visibility for on-field support.
+- **Multi-Role Flexible System**: Support for users holding multiple roles simultaneously (e.g., *Captain + Driver + Admin*).
+- **Modern Tag-Based Interface**: Elite UI for managing scout roles with interactive tags and a streamlined selection modal.
+- **Binôme Pit Scouting**: Integrated support for paired scouting (assigning two scouts per robot) to maximize data accuracy and engagement.
+- **Automated Team Initialization**: Rapidly deploy the entire team roster with default secure credentials.
+- **Scout Progress Monitoring**: Real-time dashboard showing match-by-match completion rates and data quality.
+- **Fleet Access Control**: Transparent role management for all technical and tactical positions.
 
 ### 📈 Precision Analytics & Strategy
 Move beyond raw data into actionable intelligence:
-- **Briefing System**: Dedicated reports for drive teams and strategists, summarizing opponent weaknesses and ally strengths before match call.
-- **Dynamic Picklist Tool**: Drag-and-drop alliance selection interface with live-updating statistical rankings based on scouted performance.
-- **API Powerhouse**: Seamless bi-directional integration with **The Blue Alliance** and **Statbotics** for verified global stats.
+- **Extended Role Ecosystem**: Specialized roles for **Construction Lead**, **Captain**, **Driver**, and **Media** teams to centralize all 2026 season activities.
+- **Briefing System**: Dedicated reports for drive teams and strategists, summarizing opponent weaknesses and ally strengths.
+- **Dynamic Picklist Tool**: Drag-and-drop alliance selection interface with live-updating statistical rankings.
+- **API Powerhouse**: Seamless bi-directional integration with **The Blue Alliance** and **Statbotics** (v3 logic).
 
 ### 👤 Member Portfolios
 Empowering scouts to track their own contribution:
 - **Personal Metrics**: Automated tracking of matches scouted and team tenure (`join_date`).
-- **Profile Customization**: Individualized settings for regional preferences and scouting focus.
+- **Profile Customization**: Individualized settings for regional preferences and scouting focus with profile picture uploads.
 
 ---
 

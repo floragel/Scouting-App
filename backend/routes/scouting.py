@@ -2,16 +2,13 @@ import os
 import uuid
 import base64
 from flask import Blueprint, request, jsonify, session, abort
-from werkzeug.utils import secure_filename
+import cloudinary
+import cloudinary.uploader
+import datetime
 from models import db, Team, Event, PitScoutData, MatchScoutData, ScoutAssignment, User
 from frc_api import TBAHandler
 
 scouting_bp = Blueprint('scouting', __name__)
-
-basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
-PITS_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'pit_photos')
-STRATEGY_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'strategies')
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -34,11 +31,17 @@ def submit_pit_data():
         if 'photo' in request.files:
             file = request.files['photo']
             if file and file.filename != '' and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                unique_filename = f"t{team_id}_e{event_id}_{filename}"
-                file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-                file.save(file_path)
-                photo_path = os.path.join('uploads', 'pit_photos', unique_filename)
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder="pits",
+                        public_id=f"t{team_id}_e{event_id}_{int(datetime.datetime.now().timestamp())}",
+                        overwrite=True
+                    )
+                    photo_path = upload_result['secure_url']
+                except Exception as e:
+                    print(f"Cloudinary upload error: {e}")
+                    abort(500, description=f"Cloudinary upload failed: {str(e)}")
 
         pit_data = PitScoutData(
             team_id=int(team_id),
@@ -115,16 +118,19 @@ def upload_strategy():
 
         img_bytes = base64.b64decode(image_data_b64)
 
-        filename = f"strategy_match_{match_id}_{uuid.uuid4().hex[:6]}.png"
-        filepath = os.path.join(STRATEGY_UPLOAD_FOLDER, filename)
-
-        with open(filepath, 'wb') as f:
-            f.write(img_bytes)
-
-        match_data.strategy_image_url = f"/uploads/strategies/{filename}"
-        db.session.commit()
-
-        return jsonify({'message': 'Strategy saved successfully', 'url': match_data.strategy_image_url}), 200
+        try:
+            upload_result = cloudinary.uploader.upload(
+                img_bytes,
+                folder="strategies",
+                public_id=f"strategy_match_{match_id}_{int(datetime.datetime.now().timestamp())}",
+                overwrite=True
+            )
+            match_data.strategy_image_url = upload_result['secure_url']
+            db.session.commit()
+            return jsonify({'message': 'Strategy saved successfully', 'url': match_data.strategy_image_url}), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': f'Failed to process strategy image: {str(e)}'}), 500
 
     except Exception as e:
         db.session.rollback()
@@ -250,13 +256,17 @@ def submit_pit_scout_web():
         if 'photo' in request.files:
             file = request.files['photo']
             if file and file.filename != '':
-                import time
-                filename = secure_filename(file.filename)
-                unique_filename = f"t{team_key}_{int(time.time())}_{filename}"
-                upload_path = os.path.join(basedir, 'static', 'uploads', 'pit_photos')
-                os.makedirs(upload_path, exist_ok=True)
-                file.save(os.path.join(upload_path, unique_filename))
-                photo_path = f"/static/uploads/pit_photos/{unique_filename}"
+                try:
+                    upload_result = cloudinary.uploader.upload(
+                        file,
+                        folder="pit_photos",
+                        public_id=f"t{team_key}_{int(datetime.datetime.now().timestamp())}",
+                        overwrite=True
+                    )
+                    photo_path = upload_result['secure_url']
+                except Exception as e:
+                    print(f"Cloudinary upload error: {e}")
+                    return jsonify({'error': f'Failed to upload pit photo: {str(e)}'}), 500
                 
         pit_data.drivetrain_type = data.get('drivetrain_type', 'Swerve')
         pit_data.weight = float(data.get('weight', 0) if data.get('weight') else 0)

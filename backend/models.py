@@ -16,7 +16,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     profile_picture = db.Column(db.String(255), nullable=True)
-    role = db.Column(db.String(50), default='pending') # e.g. Admin, Head Scout, Pit Scout, pending
+    role = db.Column(db.String(256), default='pending') # e.g. "Admin, Captain"
     status = db.Column(db.String(50), default='pending') # e.g. active, pending
     team_id = db.Column(db.Integer, db.ForeignKey('team.id'), nullable=True)
     last_login = db.Column(db.DateTime, nullable=True)
@@ -30,6 +30,16 @@ class User(db.Model):
     # Relationship to ScoutAssignment
     assignments = db.relationship('ScoutAssignment', backref='user', lazy=True)
 
+    @property
+    def roles_list(self):
+        """Returns roles as a list of trimmed strings."""
+        if not self.role: return []
+        return [r.strip() for r in self.role.split(',') if r.strip()]
+
+    def has_role(self, role_name):
+        """Checks if a user has a specific role."""
+        return role_name in self.roles_list
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -38,12 +48,15 @@ class User(db.Model):
             'password_plain': self.password_plain, # Include in dict for Admin view
             'profile_picture': self.profile_picture,
             'role': self.role,
+            'roles': self.roles_list, # Return roles as a clean list
             'status': self.status,
             'team_id': self.team_id,
             'team_number': self.team.team_number if self.team else None,
             'team_access_code': self.team.access_code if self.team else None,
             'last_login': self.last_login.isoformat() if self.last_login else None,
-            'last_active': self.last_active.isoformat() if self.last_active else None
+            'last_active': self.last_active.isoformat() if self.last_active else None,
+            'join_date': self.join_date,
+            'matches_scouted': self.matches_scouted
         }
 
 class Event(db.Model):

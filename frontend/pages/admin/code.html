@@ -513,14 +513,14 @@
                         <div>
                             <label
                                 class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
-                            <select id="assign-pit-scout"
-                                class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
+                            <select id="assign-pit-scout" multiple
+                                class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium h-20"
                                 required>
-                                <option value="">Select Scout...</option>
                                 {% for member in team_members %}
                                 <option value="{{ member.id }}">{{ member.name }}</option>
                                 {% endfor %}
                             </select>
+                            <p class="text-[10px] text-slate-500 mt-1">Hold Ctrl/Cmd to select multiple scouts.</p>
                         </div>
 
                         <!-- Team Input -->
@@ -638,7 +638,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="px-6 py-4 text-right">
-                                    <button onclick="revokeAssignment({{ assignment.id }})"
+                                    <button onclick="revokeAssignment('{{ assignment.id }}')"
                                         class="p-1 px-3 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors text-xs font-bold">
                                         Revoke
                                     </button>
@@ -657,6 +657,31 @@
                 </div>
             </section>
     </main>
+
+    <!-- Role Selection Modal -->
+    <div id="role-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all">
+        <div class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden scale-95 transition-transform duration-300">
+            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <h3 class="text-xl font-bold dark:text-white">Manage Member Roles</h3>
+                    <p class="text-xs text-slate-500 mt-1" id="role-modal-subtitle">Assign roles to Sarah Conner</p>
+                </div>
+                <button onclick="window.closeRoleModal()" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 gap-3" id="role-checkbox-container">
+                    <!-- Roles will be injected here -->
+                </div>
+            </div>
+            <div class="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex gap-3">
+                <button onclick="window.closeRoleModal()" class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:opacity-80 transition-all">Cancel</button>
+                <button id="save-roles-btn" class="flex-1 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all">Save Roles</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="mt-auto p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161e2b]">
         <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
             <span class="material-symbols-outlined text-sm">precision_manufacturing</span>
@@ -666,7 +691,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
 
-            const roleOptions = ['Admin', 'Head Scout', 'Strategy Lead', 'Pit Scout', 'Stand Scout'];
+            const roleOptions = [
+                'Admin', 'Head Scout', 'Strategy Lead', 'Construction Lead', 
+                'Captain', 'Pit Scout', 'Stand Scout', 'Driver', 'Media'
+            ];
             const pendingContainer = document.getElementById('pending-container');
             const directoryTbody = document.getElementById('directory-tbody');
             const showingText = document.getElementById('showing-text');
@@ -727,18 +755,63 @@
                 }
             }
 
-            const changeRole = async (userId, role) => {
+            window.toggleRoleMenu = (userId, event) => {
+                const user = allMembersData.find(m => m.id === userId);
+                if (!user) return;
+
+                const modal = document.getElementById('role-modal');
+                const title = document.getElementById('role-modal-subtitle');
+                const container = document.getElementById('role-checkbox-container');
+                const saveBtn = document.getElementById('save-roles-btn');
+
+                title.textContent = `Assign roles to ${user.name}`;
+                container.innerHTML = '';
+
+                roleOptions.forEach(role => {
+                    const isChecked = user.roles && user.roles.includes(role);
+                    const div = document.createElement('label');
+                    div.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-primary/20";
+                    div.innerHTML = `
+                        <span class="text-sm font-bold dark:text-slate-200">${role}</span>
+                        <input type="checkbox" value="${role}" ${isChecked ? 'checked' : ''} class="rounded text-primary focus:ring-primary bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                    `;
+                    container.appendChild(div);
+                });
+
+                saveBtn.onclick = () => window.confirmRoleUpdate(userId);
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.querySelector('.scale-95')?.classList.replace('scale-95', 'scale-100'), 10);
+            };
+
+            window.closeRoleModal = () => {
+                const modal = document.getElementById('role-modal');
+                modal.querySelector('.scale-100')?.classList.replace('scale-100', 'scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 200);
+            };
+
+            window.confirmRoleUpdate = async (userId) => {
+                const container = document.getElementById('role-checkbox-container');
+                const selectedRoles = Array.from(container.querySelectorAll('input:checked')).map(i => i.value);
+                
                 try {
-                    await fetch(`/api/admin/role/${userId}`, {
+                    const res = await fetch(`/api/admin/role/${userId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ role })
+                        body: JSON.stringify({ roles: selectedRoles })
                     });
-                    loadMembers();
+                    if (res.ok) {
+                        window.closeRoleModal();
+                        loadMembers();
+                    } else {
+                        const err = await res.json();
+                        alert(`Error: ${err.error || 'Failed to update roles'}`);
+                    }
                 } catch (e) {
                     console.error(e);
+                    alert("Network error updating roles");
                 }
-            }
+            };
+
 
             const renderMembers = (members) => {
                 pendingContainer.innerHTML = '';
@@ -783,7 +856,6 @@
                     const tr = document.createElement('tr');
                     tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors";
 
-                    const optionsHtml = roleOptions.map(r => `<option ${user.role === r ? 'selected' : ''}>${r}</option>`).join('');
 
                     tr.innerHTML = `
             <td class="px-6 py-4">
@@ -798,9 +870,18 @@
                 </div>
             </td>
             <td class="px-6 py-4">
-                <select onchange="window.changeRole(${user.id}, this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
-                    ${optionsHtml}
-                </select>
+                <div class="flex flex-wrap gap-1.5 max-w-[220px]">
+                    ${(user.roles || []).map(r => `
+                        <span class="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20" 
+                              onclick="window.toggleRoleMenu(${user.id}, event)">
+                            ${r}
+                        </span>
+                    `).join('')}
+                    ${(!user.roles || user.roles.length === 0) ? '<span class="text-slate-400 italic text-[10px]">No roles</span>' : ''}
+                    <button onclick="window.toggleRoleMenu(${user.id}, event)" class="size-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-primary transition-colors ml-1">
+                        <span class="material-symbols-outlined text-[14px]">add</span>
+                    </button>
+                </div>
             </td>
             <td class="px-6 py-4">
                 <span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded select-all cursor-help" title="Click to select password">${user.password_plain || 'N/A'}</span>
@@ -839,7 +920,7 @@
                 }
 
                 if (pitScoutSelect) {
-                    pitScoutSelect.innerHTML = '<option value="">Select Scout...</option>';
+                    pitScoutSelect.innerHTML = '';
                     active.forEach(user => {
                         const opt = document.createElement('option');
                         opt.value = user.id;
@@ -1216,46 +1297,118 @@
                 }
             };
 
+            window.toggleRoleMenu = (userId, event) => {
+                const user = allMembersData.find(m => m.id === userId);
+                if (!user) return;
+
+                const modal = document.getElementById('role-modal');
+                const title = document.getElementById('role-modal-subtitle');
+                const container = document.getElementById('role-checkbox-container');
+                const saveBtn = document.getElementById('save-roles-btn');
+
+                title.textContent = `Assign roles to ${user.name}`;
+                container.innerHTML = '';
+
+                roleOptions.forEach(role => {
+                    const isChecked = user.roles && user.roles.includes(role);
+                    const div = document.createElement('label');
+                    div.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-primary/20";
+                    div.innerHTML = `
+                        <span class="text-sm font-bold dark:text-slate-200">${role}</span>
+                        <input type="checkbox" value="${role}" ${isChecked ? 'checked' : ''} class="rounded text-primary focus:ring-primary bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
+                    `;
+                    container.appendChild(div);
+                });
+
+                saveBtn.onclick = () => window.confirmRoleUpdate(userId);
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.firstElementChild?.classList.replace('scale-95', 'scale-100'), 10);
+            };
+
+            window.closeRoleModal = () => {
+                const modal = document.getElementById('role-modal');
+                modal.firstElementChild?.classList.replace('scale-100', 'scale-95');
+                setTimeout(() => modal.classList.add('hidden'), 200);
+            };
+
+            window.confirmRoleUpdate = async (userId) => {
+                const container = document.getElementById('role-checkbox-container');
+                const selectedRoles = Array.from(container.querySelectorAll('input:checked')).map(i => i.value);
+                
+                try {
+                    const res = await fetch(`/api/admin/role/${userId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ roles: selectedRoles })
+                    });
+                    if (res.ok) {
+                        window.closeRoleModal();
+                        loadMembers();
+                    } else {
+                        const err = await res.json();
+                        alert(`Error: ${err.error || 'Failed to update roles'}`);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert("Network error updating roles");
+                }
+            };
+
             window.submitPitAssignment = async (e) => {
                 e.preventDefault();
+                const btn = document.getElementById('pit-assign-btn');
+                const scoutSelect = document.getElementById('assign-pit-scout');
+                const teamInput = document.getElementById('assign-pit-team');
 
-                const userId = document.getElementById('assign-pit-scout').value;
-                const teamNumber = document.getElementById('assign-pit-team').value;
+                const userIds = Array.from(scoutSelect.selectedOptions).map(opt => opt.value);
+                const teamNumber = teamInput.value;
 
-                if (!userId || !teamNumber) {
-                    alert("Please select a scout and enter a team number.");
+                if (userIds.length === 0 || !teamNumber) {
+                    alert("Please select at least one scout and enter a team number.");
                     return;
                 }
 
-                const btn = document.getElementById('pit-assign-btn');
-                btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">refresh</span> Assigning...`;
                 btn.disabled = true;
+                btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">progress_activity</span> Assigning...';
 
                 try {
                     const res = await fetch('/api/admin/assign-pit', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            user_id: userId,
-                            team_key: 'frc' + teamNumber
+                            user_ids: userIds,
+                            team_key: `frc${teamNumber}`
                         })
                     });
 
                     if (res.ok) {
-                        window.location.reload();
+                        location.reload();
                     } else {
                         const data = await res.json();
-                        alert(data.error || "Failed to create pit assignment");
-                        btn.innerHTML = `<span class="material-symbols-outlined text-sm">add</span> Assign Pit`;
+                        alert(`Error: ${data.error || 'Failed to assign'}`);
                         btn.disabled = false;
+                        btn.innerHTML = '<span class="material-symbols-outlined text-sm">add</span> Assign Pit';
                     }
                 } catch (err) {
-                    console.error("Pit Assignment error:", err);
-                    alert("A network error occurred.");
-                    btn.innerHTML = `<span class="material-symbols-outlined text-sm">add</span> Assign Pit`;
+                    console.error(err);
+                    alert("Error creating assignment");
                     btn.disabled = false;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-sm">add</span> Assign Pit';
                 }
             };
+
+            const changeRole = async (userId, roles) => {
+                try {
+                    await fetch(`/api/admin/role/${userId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ roles: Array.isArray(roles) ? roles : [roles] })
+                    });
+                    loadMembers();
+                } catch (e) {
+                    console.error(e);
+                }
+            }
 
             // ---- Initial Load ----
             const seasonSelect = document.getElementById('season-select');

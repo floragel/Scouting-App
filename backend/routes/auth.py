@@ -2,8 +2,9 @@ import os
 import datetime
 import tempfile
 from flask import Blueprint, request, jsonify, session
-from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
+import cloudinary
+import cloudinary.uploader
 from models import db, User
 
 auth_bp = Blueprint('auth', __name__)
@@ -241,13 +242,16 @@ def upload_profile_picture():
         return jsonify({'error': 'No selected file'}), 400
 
     if file:
-        filename = secure_filename(file.filename)
-        filename = f"{user.id}_{filename}"
-        upload_path = os.path.join(basedir, 'static', 'uploads', 'profiles')
-        os.makedirs(upload_path, exist_ok=True)
-        file.save(os.path.join(upload_path, filename))
-
-        user.profile_picture = f"/static/uploads/profiles/{filename}"
-        db.session.commit()
-
-        return jsonify({'message': 'Profile picture uploaded successfully', 'url': user.profile_picture}), 200
+        try:
+            upload_result = cloudinary.uploader.upload(
+                file,
+                folder="profiles",
+                public_id=f"user_{user.id}_{int(datetime.datetime.now().timestamp())}",
+                overwrite=True
+            )
+            user.profile_picture = upload_result['secure_url']
+            db.session.commit()
+            return jsonify({'message': 'Profile picture uploaded successfully', 'url': user.profile_picture}), 200
+        except Exception as e:
+            print(f"Cloudinary upload error: {e}")
+            return jsonify({'error': 'Failed to upload image to cloud storage', 'details': str(e)}), 500

@@ -221,7 +221,7 @@ def auto_assign():
     if not team_members:
         team_members = User.query.all()
         
-    eligible_scouts = [m for m in team_members if m.role in ['Stand Scout', 'Pit Scout', 'Strategy Lead'] and m.status == 'active']
+    eligible_scouts = [m for m in team_members if (m.has_role('Stand Scout') or m.has_role('Pit Scout') or m.has_role('Strategy Lead')) and m.status == 'active']
     
     if len(eligible_scouts) < 6:
         return jsonify({'error': f'Need at least 6 active scouts. Only found {len(eligible_scouts)}.'}), 400
@@ -358,26 +358,38 @@ def create_pit_assignment():
         return jsonify({'error': 'Unauthorized'}), 401
     
     admin_user = User.query.get(session['user_id'])
-    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+    if not admin_user or (not admin_user.has_role('Admin') and not admin_user.has_role('Head Scout')):
         return jsonify({'error': 'Forbidden'}), 403
         
     data = request.json
-    required_fields = ['user_id', 'team_key']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Missing required fields'}), 400
+    # Allow either a single user_id or a list of user_ids for binômes
+    user_ids = data.get('user_ids')
+    if not user_ids and 'user_id' in data:
+        user_ids = [data['user_id']]
+        
+    team_key = data.get('team_key')
+    if not user_ids or not team_key:
+        return jsonify({'error': 'Missing user_ids or team_key'}), 400
         
     try:
-        new_assignment = ScoutAssignment(
-            user_id=data['user_id'],
-            assignment_type='Pit',
-            match_key='',
-            team_key=data['team_key'],
-            alliance_color='',
-            status='Pending'
-        )
-        db.session.add(new_assignment)
+        assignments = []
+        for uid in user_ids:
+            new_assignment = ScoutAssignment(
+                user_id=uid,
+                assignment_type='Pit',
+                match_key='',
+                team_key=team_key,
+                alliance_color='',
+                status='Pending'
+            )
+            db.session.add(new_assignment)
+            assignments.append(new_assignment)
+            
         db.session.commit()
-        return jsonify({'message': 'Pit Assignment created successfully', 'assignment': new_assignment.to_dict()}), 201
+        return jsonify({
+            'message': f'Pit Assignment created for {len(assignments)} scouts', 
+            'assignments': [a.to_dict() for a in assignments]
+        }), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -397,7 +409,7 @@ def auto_assign_pit():
     if not team_members:
         team_members = User.query.all()
         
-    pit_scouts = [m for m in team_members if m.role == 'Pit Scout' and m.status == 'active']
+    pit_scouts = [m for m in team_members if m.has_role('Pit Scout') and m.status == 'active']
     
     if not pit_scouts:
         return jsonify({'error': 'No active Pit Scouts found.'}), 400
@@ -427,23 +439,42 @@ def auto_assign_pit():
     if not unassigned_teams:
         return jsonify({'error': 'All teams have already been assigned or scouted for pit data.'}), 400
 
+    # Create binômes (pairs)
+    binomes = []
+    for j in range(0, len(pit_scouts) - 1, 2):
+        binomes.append([pit_scouts[j], pit_scouts[j+1]])
+    
+    # Handle odd number of scouts
+    if len(pit_scouts) % 2 == 1:
+        if binomes:
+            # Add to the first binome or keep as separate "binome" of 1? 
+            # User said "binomes", let's keep it as a single scout if alone.
+            binomes.append([pit_scouts[-1]])
+        else:
+            binomes.append([pit_scouts[-1]])
+
     assignments_created = 0
     for i, team in enumerate(unassigned_teams):
-        scout = pit_scouts[i % len(pit_scouts)]
-        new_assignment = ScoutAssignment(
-            user_id=scout.id,
-            match_key='',
-            team_key=team['key'],
-            alliance_color='',
-            assignment_type='Pit',
-            status='Pending'
-        )
-        db.session.add(new_assignment)
-        assignments_created += 1
+        # Select the next binome
+        current_binome = binomes[i % len(binomes)]
+        for scout in current_binome:
+            new_assignment = ScoutAssignment(
+                user_id=scout.id,
+                match_key='',
+                team_key=team['key'],
+                alliance_color='',
+                assignment_type='Pit',
+                status='Pending'
+            )
+            db.session.add(new_assignment)
+            assignments_created += 1
 
     try:
         db.session.commit()
-        return jsonify({'message': f'Successfully assigned {assignments_created} teams to {len(pit_scouts)} Pit Scouts.', 'count': assignments_created}), 200
+        return jsonify({
+            'message': f'Successfully assigned {len(unassigned_teams)} teams to {len(binomes)} binômes ({len(pit_scouts)} scouts).', 
+            'count': assignments_created
+        }), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
