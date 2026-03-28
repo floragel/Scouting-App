@@ -8,21 +8,31 @@ import cloudinary.uploader
 from models import db
 from routes import register_blueprints
 
-load_dotenv()
+print("STAGE 1: Loading environment...")
+try:
+    load_dotenv()
+    print("LOG: Environment loaded.")
+except Exception as e:
+    print(f"LOG: load_dotenv failed: {e}")
 
 # Initialize the Flask application
+print("STAGE 2: Initializing Flask app...")
 app = Flask(__name__)
+print("LOG: Flask app variable created.")
 CORS(app, supports_credentials=True)
 
-# Cloudinary Configuration
-# It automatically picks up CLOUDINARY_URL from the environment
-cloudinary.config(secure=True)
+print("STAGE 3: Configuring Cloudinary...")
+try:
+    cloudinary.config(secure=True)
+    print("LOG: Cloudinary configured.")
+except Exception as e:
+    print(f"LOG: Cloudinary config failed: {e}")
 
-# Configuration
-basedir = os.path.abspath(os.path.dirname(__file__))
+print("STAGE 4: Configuring Database...")
 # Check for DATABASE_URL (often provided by Render or Heroku)
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
+    print(f"LOG: Found DATABASE_URL starting with {database_url[:15]}...")
     # SQLAlchemy 1.4+ requires postgresql:// instead of postgres://
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -35,9 +45,11 @@ if database_url:
             database_url += "?sslmode=require"
             
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    print("LOG: Database URI set to PostgreSQL.")
 else:
-    # Fallback to local SQLite database
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, '..', 'data', 'scouting.db')
+    print("LOG: No DATABASE_URL found. Check Vercel environment variables.")
+    # Fallback - intentionally not setting a path here to see if it's the culprit
+    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:' # Use memory for safety if no DB URL
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key_scouting_app')
@@ -109,8 +121,21 @@ def internal_server_error(error):
         'traceback': None # Never leak stack traces on production
     }), 500
 
-# Register all routes from blueprints
-register_blueprints(app)
+print("STAGE 5: Initializing Database handler...")
+try:
+    db.init_app(app)
+    print("LOG: db.init_app complete.")
+except Exception as e:
+    print(f"LOG: db.init_app failed: {e}")
+
+print("STAGE 6: Registering Blueprints...")
+try:
+    register_blueprints(app)
+    print("LOG: Blueprints registered successfully.")
+except Exception as e:
+    print(f"LOG: Blueprint registration failed: {e}")
+    import traceback
+    traceback.print_exc()
 
 @app.route('/api/health')
 def health_check():
