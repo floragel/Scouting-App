@@ -3,7 +3,8 @@
 <html class="dark" lang="en">
 
 <head>
-    <script src="/shared_assets/translator.js"></script>
+    <script src="../../shared/translator.js"></script>
+    <script src="../../shared/api_config.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
     <title>FRC Scouting App - FRC Scouting Dashboard</title>
@@ -533,7 +534,7 @@
                 matchesContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-400">Loading next matches...</div>';
 
                 try {
-                    const res = await fetch('/api/team/next-matches');
+                    const res = await window.apiFetch('/api/team/next-matches');
                     const data = await res.json();
 
                     if (!data.matches || data.matches.length === 0) {
@@ -595,7 +596,7 @@
                 }
 
                 try {
-                    const res = await fetch('/api/user/next-assignment');
+                    const res = await window.apiFetch('/api/user/next-assignment');
                     const data = await res.json();
 
                     if (data.has_assignment && data.assignment) {
@@ -645,7 +646,7 @@
                 const section = document.getElementById('team-results-section');
                 
                 try {
-                    const res = await fetch(`/api/search-team?q=${query}`);
+                    const res = await window.apiFetch(`/api/search-team?q=${query}`);
                     const teams = await res.json();
                     
                     if (teams.length > 0) {
@@ -683,7 +684,7 @@
                 }
                 
                 try {
-                    const res = await fetch(`/api/search-team?q=${query}`);
+                    const res = await window.apiFetch(`/api/search-team?q=${query}`);
                     const teams = await res.json();
                     
                     if (teams.length > 0) {

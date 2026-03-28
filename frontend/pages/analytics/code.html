@@ -2,7 +2,8 @@
 <html class="dark" lang="en">
 
 <head>
-    <script src="/shared_assets/translator.js"></script>
+    <script src="../../shared/translator.js"></script>
+    <script src="../../shared/api_config.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Head Scout Analytics Hub - FRC Scouting App</title>
@@ -482,7 +483,7 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch('/api/import-scout-data', {
+                const response = await window.apiFetch('/api/import-scout-data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(offlineQueue)

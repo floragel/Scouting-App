@@ -3,7 +3,8 @@
 <html class="dark" lang="en">
 
 <head>
-    <script src="/shared_assets/translator.js"></script>
+    <script src="../../shared/translator.js"></script>
+    <script src="../../shared/api_config.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Admin Scout Management Hub | FRC Scouting App</title>
@@ -713,7 +714,7 @@
             let teamAccessCode = 'N/A';
 
             try {
-                const userRes = await fetch('/api/user/me');
+                const userRes = await window.apiFetch('/api/user/me');
                 if (userRes.ok) {
                     const userData = await userRes.json();
                     if (userData.team_access_code) {
@@ -726,7 +727,7 @@
 
             const loadMembers = async () => {
                 try {
-                    const res = await fetch('/api/admin/members');
+                    const res = await window.apiFetch('/api/admin/members');
                     if (res.status === 401 || res.status === 403) {
                         // Not authorized
                         document.body.innerHTML = '<div class="p-10 text-center text-red-500 font-bold">Unauthorized. Access denied.</div>';
@@ -1051,7 +1052,7 @@
                     autoAssignBtn.disabled = true;
 
                     try {
-                        const res = await fetch('/api/admin/auto-assign', { method: 'POST' });
+                        const res = await window.apiFetch('/api/admin/auto-assign', { method: 'POST' });
                         const data = await res.json();
 
                         if (res.ok) {
@@ -1256,7 +1257,7 @@
                     }
 
                     try {
-                        const res = await fetch('/api/admin/assignments', {
+                        const res = await window.apiFetch('/api/admin/assignments', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1372,7 +1373,7 @@
                 btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">progress_activity</span> Assigning...';
 
                 try {
-                    const res = await fetch('/api/admin/assign-pit', {
+                    const res = await window.apiFetch('/api/admin/assign-pit', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1399,7 +1400,7 @@
 
             const changeRole = async (userId, roles) => {
                 try {
-                    await fetch(`/api/admin/role/${userId}`, {
+                    await window.apiFetch(`/api/admin/role/${userId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ roles: Array.isArray(roles) ? roles : [roles] })
@@ -1437,7 +1438,7 @@
                 btn.disabled = true;
 
                 try {
-                    const res = await fetch('/api/admin/auto-assign-pit', { method: 'POST' });
+                    const res = await window.apiFetch('/api/admin/auto-assign-pit', { method: 'POST' });
                     const data = await res.json();
 
                     if (res.ok) {
@@ -1462,7 +1463,7 @@
                 }
 
                 try {
-                    const res = await fetch('/api/admin/assignments/all', {
+                    const res = await window.apiFetch('/api/admin/assignments/all', {
                         method: 'DELETE'
                     });
                     if (res.ok) {

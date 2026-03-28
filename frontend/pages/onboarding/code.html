@@ -3,7 +3,8 @@
 <html class="dark" lang="en">
 
 <head>
-    <script src="/shared_assets/translator.js"></script>
+    <script src="../../shared/translator.js"></script>
+    <script src="../../shared/api_config.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>FRC Scouting App - Team Onboarding</title>
@@ -168,7 +169,7 @@
                 joinBtn.opacity = '0.5';
 
                 try {
-                    const res = await fetch('/api/team/join', {
+                    const res = await window.apiFetch('/api/team/join', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({

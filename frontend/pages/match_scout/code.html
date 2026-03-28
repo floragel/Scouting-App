@@ -3,7 +3,8 @@
 <html class="dark" lang="en">
 
 <head>
-    <script src="/shared_assets/translator.js"></script>
+    <script src="../../shared/translator.js"></script>
+    <script src="../../shared/api_config.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Match Scouting Entry - FRC Scouting App</title>
@@ -657,7 +658,7 @@
                 };
 
                 try {
-                    const res = await fetch('/api/submit-match-scout', {
+                    const res = await window.apiFetch('/api/submit-match-scout', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
@@ -692,7 +693,7 @@
                                     ctx.strokeStyle = '#3b82f6';
                                     ctx.strokeRect((rx * scaleX) - 15, (ry * scaleY) - 15, 30, 30);
 
-                                    const uploadRes = await fetch('/api/match-scout/upload-strategy', {
+                                    const uploadRes = await window.apiFetch('/api/match-scout/upload-strategy', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({

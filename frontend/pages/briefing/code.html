@@ -11,6 +11,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="../../shared/translator.js"></script>
+    <script src="../../shared/api_config.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -156,7 +158,7 @@
             matchSelect.disabled = true;
 
             try {
-                const res = await fetch(`/api/team_matches/${eventId}`);
+                const res = await window.apiFetch(`/api/team_matches/${eventId}`);
                 const matches = await res.json();
 
                 if (!res.ok) throw new Error(matches.error || 'Server error');
@@ -204,7 +206,7 @@
 
             try {
                 // Fetch Data
-                const res = await fetch(`/api/briefing/${eventId}/${matchKey}`);
+                const res = await window.apiFetch(`/api/briefing/${eventId}/${matchKey}`);
                 const data = await res.json();
 
                 if (!res.ok) {

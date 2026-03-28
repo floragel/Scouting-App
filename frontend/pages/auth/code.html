@@ -3,7 +3,8 @@
 <html class="dark" lang="en">
 
 <head>
-  <script src="/shared_assets/translator.js"></script>
+  <script src="../../shared/translator.js"></script>
+  <script src="../../shared/api_config.js"></script>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
   <title>FRC Scouting App - Authentication</title>
@@ -312,7 +313,7 @@
           const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
 
           try {
-            const res = await fetch(endpoint, {
+            const res = await window.apiFetch(endpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
@@ -337,7 +338,7 @@
           }
         } else if (mode === 'forgot') {
           try {
-            const res = await fetch('/api/auth/forgot-password', {
+            const res = await window.apiFetch('/api/auth/forgot-password', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: emailInput.value })
@@ -363,7 +364,7 @@
           }
         } else if (mode === 'reset') {
           try {
-            const res = await fetch('/api/auth/reset-password', {
+            const res = await window.apiFetch('/api/auth/reset-password', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ token: resetToken, new_password: passwordInput.value })

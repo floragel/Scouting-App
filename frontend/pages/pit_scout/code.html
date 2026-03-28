@@ -3,7 +3,8 @@
 <html class="dark" lang="en">
 
 <head>
-    <script src="/shared_assets/translator.js"></script>
+    <script src="../../shared/translator.js"></script>
+    <script src="../../shared/api_config.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Pit Scouting Form - FRC Scouting App</title>
@@ -503,7 +504,7 @@
             form.append('audio', blob, 'scouting_voice.webm');
 
             try {
-                const res = await fetch('/api/voice-transcribe', {
+                const res = await window.apiFetch('/api/voice-transcribe', {
                     method: 'POST',
                     body: form
                 });
@@ -639,7 +640,7 @@
             }
 
             try {
-                const res = await fetch('/api/submit-pit-scout', {
+                const res = await window.apiFetch('/api/submit-pit-scout', {
                     method: 'POST',
                     body: form
                 });
