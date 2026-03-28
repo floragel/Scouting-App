@@ -87,16 +87,26 @@ def not_found(error):
 def method_not_allowed(error):
     return jsonify({'error': 'Method Not Allowed', 'message': str(error.description)}), 405
 
-@app.errorhandler(500)
-def internal_server_error(error):
-    import traceback
-    print("!!! 500 INTERNAL SERVER ERROR !!!")
-    traceback.print_exc()
-    return jsonify({
-        'error': 'Internal Server Error', 
-        'message': str(error),
-        'traceback': traceback.format_exc() if os.environ.get('FLASK_DEBUG') == '1' else None
-    }), 500
+@app.route('/api/migrate')
+def manual_migrate():
+    results = []
+    try:
+        from sqlalchemy import text
+        with db.engine.connect() as conn:
+            for col, sql in [
+                ("reset_token", "ALTER TABLE \"user\" ADD COLUMN reset_token VARCHAR(100)"),
+                ("reset_token_expiry", "ALTER TABLE \"user\" ADD COLUMN reset_token_expiry TIMESTAMP"),
+                ("password_plain", "ALTER TABLE \"user\" ADD COLUMN password_plain VARCHAR(256)")
+            ]:
+                try:
+                    conn.execute(text(sql))
+                    conn.commit()
+                    results.append(f"SUCCESS: {col}")
+                except Exception as e:
+                    results.append(f"SKIP/FAIL: {col}") # Usually columns exist
+        return jsonify({"status": "Migration complete", "results": results})
+    except Exception as e:
+        return jsonify({"status": "Migration failed", "error": str(e)})
 
 # Register all routes from blueprints
 register_blueprints(app)
