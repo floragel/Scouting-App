@@ -13,59 +13,59 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "dest": "backend/app.py"
+      "destination": "backend/app.py"
     },
     {
       "source": "/login",
-      "dest": "frontend/pages/auth/code.html"
+      "destination": "frontend/pages/auth/code.html"
     },
     {
       "source": "/dashboard",
-      "dest": "frontend/pages/dashboard/code.html"
+      "destination": "frontend/pages/dashboard/code.html"
     },
     {
       "source": "/admin-hub",
-      "dest": "frontend/pages/admin/code.html"
+      "destination": "frontend/pages/admin/code.html"
     },
     {
       "source": "/teams-dir",
-      "dest": "frontend/pages/teams/code.html"
+      "destination": "frontend/pages/teams/code.html"
     },
     {
       "source": "/events",
-      "dest": "frontend/pages/events/code.html"
+      "destination": "frontend/pages/events/code.html"
     },
     {
       "source": "/pit-scout",
-      "dest": "frontend/pages/pit_scout/code.html"
+      "destination": "frontend/pages/pit_scout/code.html"
     },
     {
       "source": "/match-scout",
-      "dest": "frontend/pages/match_scout/code.html"
+      "destination": "frontend/pages/match_scout/code.html"
     },
     {
       "source": "/analytics",
-      "dest": "frontend/pages/analytics/code.html"
+      "destination": "frontend/pages/analytics/code.html"
     },
     {
       "source": "/onboarding",
-      "dest": "frontend/pages/onboarding/code.html"
+      "destination": "frontend/pages/onboarding/code.html"
     },
     {
       "source": "/profile",
-      "dest": "frontend/pages/profile/code.html"
+      "destination": "frontend/pages/profile/code.html"
     },
     {
       "source": "/profile-edit",
-      "dest": "frontend/pages/profile_edit/code.html"
+      "destination": "frontend/pages/profile_edit/code.html"
     },
     {
       "source": "/shared_assets/(.*)",
-      "dest": "frontend/shared/$1"
+      "destination": "frontend/shared/$1"
     },
     {
       "source": "/",
-      "dest": "frontend/pages/auth/code.html"
+      "destination": "frontend/pages/auth/code.html"
     }
   ]
 }

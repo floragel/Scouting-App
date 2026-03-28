@@ -13,7 +13,7 @@ from .assignments import assignments_bp
 from .analytics import analytics_bp
 from .picklist import picklist_bp
 from .briefing import briefing_bp
-from .pages import pages_bp
+# from .pages import pages_bp
 from .pwa import pwa_bp
 
 ALL_BLUEPRINTS = [
@@ -26,7 +26,7 @@ ALL_BLUEPRINTS = [
     analytics_bp,
     picklist_bp,
     briefing_bp,
-    pages_bp,
+    # pages_bp,
     pwa_bp,
 ]
 
