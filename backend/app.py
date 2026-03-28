@@ -26,6 +26,14 @@ if database_url:
     # SQLAlchemy 1.4+ requires postgresql:// instead of postgres://
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
+    
+    # Add sslmode=require for Supabase/Vercel if not already present
+    if "postgresql://" in database_url and "sslmode=" not in database_url:
+        if "?" in database_url:
+            database_url += "&sslmode=require"
+        else:
+            database_url += "?sslmode=require"
+            
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     # Fallback to local SQLite database
@@ -103,6 +111,14 @@ def internal_server_error(error):
 
 # Register all routes from blueprints
 register_blueprints(app)
+
+@app.route('/api/health')
+def health_check():
+    return jsonify({
+        'status': 'healthy',
+        'database_configured': bool(app.config.get('SQLALCHEMY_DATABASE_URI')),
+        'version': '2.0.26-vercel'
+    }), 200
 
 @app.route('/api/admin/init-db')
 def manual_init_db():

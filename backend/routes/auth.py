@@ -17,9 +17,16 @@ whisper_model = None
 def get_whisper_model():
     global whisper_model
     if whisper_model is None:
-        print("Loading Whisper model...")
-        import whisper
-        whisper_model = whisper.load_model("base")
+        try:
+            print("Loading Whisper model...")
+            import whisper
+            whisper_model = whisper.load_model("base")
+        except ImportError:
+            print("Whisper module not found. Voice transcription disabled.")
+            return None
+        except Exception as e:
+            print(f"Error loading Whisper: {e}")
+            return None
     return whisper_model
 
 @auth_bp.route('/api/voice-transcribe', methods=['POST'])
