@@ -89,7 +89,14 @@ def method_not_allowed(error):
 
 @app.errorhandler(500)
 def internal_server_error(error):
-    return jsonify({'error': 'Internal Server Error', 'message': 'An unexpected error occurred.'}), 500
+    import traceback
+    print("!!! 500 INTERNAL SERVER ERROR !!!")
+    traceback.print_exc()
+    return jsonify({
+        'error': 'Internal Server Error', 
+        'message': str(error),
+        'traceback': traceback.format_exc() if os.environ.get('FLASK_DEBUG') == '1' else None
+    }), 500
 
 # Register all routes from blueprints
 register_blueprints(app)
@@ -97,26 +104,36 @@ register_blueprints(app)
 # Ensure database tables are created before handling requests
 # Gunicorn imports `app` directly, so it skips the __main__ block below.
 with app.app_context():
+    print("Checking database tables...")
     db.create_all()
     # Migration helper for new columns
     try:
         from sqlalchemy import text
         with db.engine.connect() as conn:
+            print("Running database migrations...")
             # Check if columns exist (simple try/except for each)
             try:
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN reset_token VARCHAR(100)"))
                 conn.commit()
-            except: pass
+                print("Added column: reset_token")
+            except Exception as e: 
+                print(f"Column reset_token check: {e}")
             try:
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN reset_token_expiry TIMESTAMP"))
                 conn.commit()
-            except: pass
+                print("Added column: reset_token_expiry")
+            except Exception as e: 
+                print(f"Column reset_token_expiry check: {e}")
             try:
                 conn.execute(text("ALTER TABLE \"user\" ADD COLUMN password_plain VARCHAR(256)"))
                 conn.commit()
-            except: pass
+                print("Added column: password_plain")
+            except Exception as e: 
+                print(f"Column password_plain check: {e}")
     except Exception as e:
-        print(f"Migration error (expected if columns exist): {e}")
+        print(f"CRITICAL Migration error: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.
