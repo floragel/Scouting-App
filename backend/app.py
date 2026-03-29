@@ -370,16 +370,25 @@ def admin_hub_view():
     five_mins_ago = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None) - timedelta(minutes=5)
     active_now_count = User.query.filter(User.team_id == user.team_id, User.last_active >= five_mins_ago).count()
     
+    # Pre-fetch team members to filter assignments
+    team_members = User.query.filter_by(team_id=user.team_id).all()
+    team_member_ids = [m.id for m in team_members]
+
     # Stats scoped to selection
     stats = {
         'total_scouts': User.query.filter_by(team_id=user.team_id, status='active').count(),
         'active_now': active_now_count,
         'pending_requests': User.query.filter_by(team_id=user.team_id, status='pending').count(),
-        'match_assignments': ScoutAssignment.query.filter_by(team_id=user.team_id, assignment_type='Match').count(),
-        'pit_assignments': ScoutAssignment.query.filter_by(team_id=user.team_id, assignment_type='Pit').count()
+        'match_assignments': ScoutAssignment.query.filter(
+            ScoutAssignment.user_id.in_(team_member_ids),
+            ScoutAssignment.assignment_type == 'Match'
+        ).count() if team_member_ids else 0,
+        'pit_assignments': ScoutAssignment.query.filter(
+            ScoutAssignment.user_id.in_(team_member_ids),
+            ScoutAssignment.assignment_type == 'Pit'
+        ).count() if team_member_ids else 0
     }
     
-    team_members = User.query.filter_by(team_id=user.team_id).all()
     members_data = []
     
     # Fetch events for the selected year
@@ -394,7 +403,7 @@ def admin_hub_view():
         ).count()
         members_data.append(m_dict)
         
-    assignments = ScoutAssignment.query.filter_by(team_id=user.team_id).all()
+    assignments = ScoutAssignment.query.filter(ScoutAssignment.user_id.in_(team_member_ids)).all() if team_member_ids else []
     
     # Placeholder for match list from the most recent event of the year
     curr_events = Event.query.filter(Event.date.like(f"%{selected_year}%")).order_by(Event.date.desc()).all()
