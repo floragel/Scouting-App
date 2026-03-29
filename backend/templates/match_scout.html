@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <script src="/shared_assets/translator.js"></script>
+    <script src="/shared_assets/api_config.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Match Scouting Entry - FRC Scouting App</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Theme Config -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101823", // Matches component provided
+                        "surface-dark": "#1e293b",
+                        "surface-light": "#ffffff",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* Custom scrollbar for dark mode feeling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #101823;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #223249;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #314868;
+        }
+
+        .stepper-btn {
+            transition: all 0.2s ease;
+        }
+
+        .stepper-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+    <!-- Header -->
+    <header
+        class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-[#223249] px-6 py-4 bg-white dark:bg-[#101823] sticky top-0 z-50">
+        <a href="/" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
+            <div class="size-8 text-primary">
+                <svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z"
+                        fill="currentColor"></path>
+                </svg>
+            </div>
+            <div>
+                <h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">FRC Scouting
+                    App
+                </h2>
+                <p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Scouting App v2.4</p>
+            </div>
+        </a>
+        <div class="hidden md:flex flex-1 justify-center">
+            <div
+                class="flex items-center gap-6 bg-slate-100 dark:bg-[#1e293b] px-6 py-2 rounded-full border border-slate-200 dark:border-slate-700">
+                <div class="flex flex-col items-center">
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Match</span>
+                    <span class="text-lg font-bold text-primary">{{ assignment.match_key.split('_')[1].upper() if
+                        assignment else 'TEST' }}</span>
+                </div>
+                <div class="h-8 w-px bg-slate-300 dark:bg-slate-600"></div>
+                <div class="flex flex-col items-center">
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Team</span>
+                    <span class="text-lg font-bold text-white">{{ assignment.team_key.replace('frc','') if assignment
+                        else '0000' }}</span>
+                </div>
+                <div class="h-8 w-px bg-slate-300 dark:bg-slate-600"></div>
+                <div class="flex flex-col items-center">
+                    <span
+                        class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-bold">Scouter</span>
+                    <span class="text-lg font-bold text-emerald-400">{{ user.name.split()[0] if user else 'Scout'
+                        }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="exportToQR()"
+                class="flex items-center justify-center gap-2 px-4 rounded-lg h-10 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all font-bold text-sm">
+                <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
+                <span class="hidden sm:inline">QR Sync</span>
+            </button>
+            <a href="/profile/edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
+                <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
+                    data-alt="Circular profile picture of user {{ user.name }}"
+                    style="background-image: url('{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuBW0NayFZO35Uv9IGxj_-NzOfe5RGu95osmR7Qb_NBYCPhNhOBAJ7SUy-EPhEt9IviIrFBwmmOH_8WQdOrTtWJ0sPcr55FluNEQQZ06Ru_HrfhfEmo2ZwyDcC9SAYsCgibNf8jBYrgDKsQuycNwXjP3JrmKx9a_FizwBzqpfr6jVq7J1LOiYLIVnHnjXnItmllLyTp8445_FS83590fvN_8l3Q0ybany-CTIjSJvHnOr1YlCy1OlL9qi8-jNdO12czbUrYSu47kvOPq' }}')">
+                </div>
+                <div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
+                </div>
+            </a>
+        </div>
+    </header>
+    <!-- Mobile Match Info (Visible only on small screens) -->
+    <div class="md:hidden flex justify-between px-4 py-3 bg-[#1e293b] border-b border-[#223249]">
+        <span class="font-bold text-white">M# {{ assignment.match_key.split('_')[1].upper() if assignment else 'TEST'
+            }}</span>
+        <span class="font-bold text-primary">T# {{ assignment.team_key.replace('frc','') if assignment else '0000'
+            }}</span>
+        <span class="font-medium text-slate-400">{{ user.name.split()[0] if user else 'Scout' }}</span>
+    </div>
+    <!-- Main Content Grid -->
+    <main class="flex-grow p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
+        <form class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+            <!-- COLUMN 1: AUTONOMOUS -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">smart_toy</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Autonomous</h2>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6">
+
+                    <!-- Starting Position -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Starting
+                            Position</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startingPosition" type="radio" value="Left" />
+                                <div
+                                    class="text-center py-2 text-sm md:text-base font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    Left</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startingPosition" type="radio" value="Center"
+                                    checked />
+                                <div
+                                    class="text-center py-2 text-sm md:text-base font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    Center</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="startingPosition" type="radio" value="Right" />
+                                <div
+                                    class="text-center py-2 text-sm md:text-base font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    Right</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
+
+                    <!-- Ball Tracking Steppers -->
+                    <div class="space-y-6">
+                        <!-- Starting Balls -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Starting Internal
+                                Balls</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button" data-field="auto_start_balls" data-action="minus">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span class="text-2xl font-bold font-mono" id="val-auto_start_balls">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button" data-field="auto_start_balls" data-action="plus">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Total Shot -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Total Balls Shot</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button" data-field="auto_balls_shot" data-action="minus">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span class="text-2xl font-bold font-mono" id="val-auto_balls_shot">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button" data-field="auto_balls_shot" data-action="plus">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Balls Scored -->
+                        <div class="flex flex-col gap-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Balls Scored</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button" data-field="auto_balls_scored" data-action="minus">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-12 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700">
+                                    <span class="text-2xl font-bold font-mono" id="val-auto_balls_scored">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-12 flex items-center justify-center rounded-lg bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button" data-field="auto_balls_scored" data-action="plus">
+                                    <span class="material-symbols-outlined">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
+
+                    <!-- Auto Climb -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Level
+                            Climb Auto</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="None" checked />
+                                <div
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    None</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="L1" />
+                                <div
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    L1</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="L2" />
+                                <div
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    L2</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="autoClimb" type="radio" value="L3" />
+                                <div
+                                    class="text-center py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] peer-checked:bg-primary/10 peer-checked:border-primary peer-checked:text-primary transition-all">
+                                    L3</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COLUMN 2: TELEOP / MATCH -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">sports_esports</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Teleop / Match</h2>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6 h-full">
+                    <!-- Technical Performance (Sliders) -->
+                    <div class="space-y-8">
+                        <!-- Intake Speed Slider -->
+                        <div class="flex flex-col gap-3">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Intake
+                                    Speed</label>
+                                <span class="text-lg font-bold text-primary" id="val-intake-speed">3</span>
+                            </div>
+                            <input type="range" name="intake_speed" min="1" max="5" value="3"
+                                class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                                oninput="document.getElementById('val-intake-speed').innerText = this.value">
+                            <div class="flex justify-between text-[10px] text-slate-400 uppercase font-bold px-1">
+                                <span>Slow</span>
+                                <span>Fast</span>
+                            </div>
+                        </div>
+
+                        <!-- Shooter Accuracy Slider -->
+                        <div class="flex flex-col gap-3">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-slate-500 uppercase tracking-wider">Shooter
+                                    Accuracy</label>
+                                <span class="text-lg font-bold text-primary" id="val-shooter-accuracy">3</span>
+                            </div>
+                            <input type="range" name="shooter_accuracy" min="1" max="5" value="3"
+                                class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary"
+                                oninput="document.getElementById('val-shooter-accuracy').innerText = this.value">
+                            <div class="flex justify-between text-[10px] text-slate-400 uppercase font-bold px-1">
+                                <span>Inaccurate</span>
+                                <span>Accurate</span>
+                            </div>
+                        </div>
+
+                        <!-- Obstacles / Mobility -->
+                        <div class="pt-2">
+                            <label
+                                class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 block">Obstacles /
+                                Mobility</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label
+                                    class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823]/50 cursor-pointer hover:border-primary/50 transition-colors group">
+                                    <input type="checkbox" name="passes_bump"
+                                        class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent" />
+                                    <span class="ml-3 font-bold text-xs text-slate-700 dark:text-slate-200">Passes
+                                        Bump</span>
+                                </label>
+                                <label
+                                    class="flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823]/50 cursor-pointer hover:border-primary/50 transition-colors group">
+                                    <input type="checkbox" name="passes_trench"
+                                        class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary bg-transparent" />
+                                    <span class="ml-3 font-bold text-xs text-slate-700 dark:text-slate-200">Passes
+                                        Trench</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Teleop Balls Shot -->
+                        <div class="flex flex-col gap-2 pt-2">
+                            <label class="text-sm font-bold text-slate-700 dark:text-white">Total Balls Shot
+                                (Teleop)</label>
+                            <div class="flex items-center gap-3">
+                                <button
+                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-[#101823] text-slate-400 hover:text-white hover:bg-red-500/20 hover:border-red-500 border border-transparent transition-colors"
+                                    type="button" data-field="teleop_balls_shot" data-action="minus">
+                                    <span class="material-symbols-outlined">remove</span>
+                                </button>
+                                <div
+                                    class="flex-1 bg-slate-100 dark:bg-[#101823] h-14 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                                    <div class="absolute inset-0 bg-primary/5"></div>
+                                    <span class="text-3xl font-bold font-mono text-primary"
+                                        id="val-teleop_balls_shot">0</span>
+                                </div>
+                                <button
+                                    class="stepper-btn size-14 flex items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90"
+                                    type="button" data-field="teleop_balls_shot" data-action="plus">
+                                    <span class="material-symbols-outlined text-3xl">add</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- COLUMN 3: ENDGAME & SUMMARY -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">flag</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Endgame</h2>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-6">
+                    <!-- Note: Starting Position is now recorded interactively on the Auto Trajectory Map -->
+                    <!-- Climb Status -->
+                    <div>
+                        <label
+                            class="block text-sm font-medium text-slate-500 dark:text-slate-400 mb-3 uppercase tracking-wider">Level
+                            Climb Endgame</label>
+                        <div class="flex flex-col gap-2">
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input class="sr-only" name="endgameClimb" type="radio" value="None" checked />
+                                <span class="material-symbols-outlined text-slate-400 mr-3">close</span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">None / Failed</span>
+                            </label>
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input class="sr-only" name="endgameClimb" type="radio" value="L1" />
+                                <span class="material-symbols-outlined text-yellow-500 mr-3">filter_1</span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">L1</span>
+                            </label>
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input class="sr-only" name="endgameClimb" type="radio" value="L2" />
+                                <span class="material-symbols-outlined text-orange-500 mr-3">filter_2</span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">L2</span>
+                            </label>
+                            <label
+                                class="relative flex items-center p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#101823] cursor-pointer hover:bg-slate-100 dark:hover:bg-[#223249] transition-all has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary">
+                                <input class="sr-only" name="endgameClimb" type="radio" value="L3" />
+                                <span class="material-symbols-outlined text-red-500 mr-3">filter_3</span>
+                                <span class="font-bold text-sm text-slate-700 dark:text-slate-200">L3</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Area (Notes & Submit) -->
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4 mt-auto">
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase mb-2 block">Additional Notes</span>
+                        <textarea id="notesBoard"
+                            class="w-full h-24 rounded-lg bg-slate-50 dark:bg-[#101823] border-slate-200 dark:border-slate-700 text-sm p-3 focus:ring-primary focus:border-primary resize-none dark:text-white dark:placeholder-slate-500"
+                            placeholder="Observations on shots, defense, or breakdowns..."></textarea>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button onclick="exportToJSON()"
+                            class="flex-1 h-12 rounded-xl border border-primary/30 bg-primary/5 text-primary font-bold hover:bg-primary/10 transition-all flex items-center justify-center gap-2"
+                            type="button">
+                            <span class="material-symbols-outlined">download</span>
+                            Export JSON
+                        </button>
+                        <button
+                            class="flex-[2] h-12 bg-primary hover:bg-blue-600 text-white font-bold rounded-lg shadow-lg shadow-primary/25 flex items-center justify-center gap-2 transition-all transform hover:translate-y-[-1px]"
+                            type="submit">
+                            <span class="material-symbols-outlined">send</span>
+                            Submit Match Data
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AUTO TRAJECTORY MAP -->
+            <section class="lg:col-span-3 flex flex-col gap-4 mt-2 mb-6">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-primary">route</span>
+                    <h2 class="text-2xl font-bold tracking-tight text-white uppercase">Auto Trajectory Map</h2>
+                    <p class="text-xs text-slate-400 ml-2 hidden sm:block">Trace the robot's starting position and
+                        autonomous path.</p>
+                </div>
+                <div
+                    class="bg-white dark:bg-[#1e293b] rounded-xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col gap-4">
+                    <!-- Toolbox -->
+                    <div class="flex flex-wrap gap-4 items-center justify-between">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-red-500 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-red-500 transition-colors"
+                                data-color="#ef4444"></button>
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-blue-500 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-blue-500 transition-colors"
+                                style="border-color: white;" data-color="#3b82f6"></button>
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-green-500 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-green-500 transition-colors"
+                                data-color="#22c55e"></button>
+                            <button type="button"
+                                class="color-btn size-8 rounded-full bg-slate-900 border border-slate-700 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-[#1e293b] ring-transparent focus:ring-slate-900 transition-colors"
+                                data-color="#0f172a"></button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="undo-btn"
+                                class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-[#101823] text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-[#223249] transition-colors font-bold text-sm">
+                                <span class="material-symbols-outlined">undo</span> <span
+                                    class="hidden sm:inline">Undo</span>
+                            </button>
+                            <button type="button" id="clear-btn"
+                                class="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors font-bold text-sm">
+                                <span class="material-symbols-outlined text-lg">delete</span> <span
+                                    class="hidden sm:inline">Clear</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Canvas Area -->
+                    <div id="canvas-container"
+                        class="relative w-full aspect-[2/1] bg-slate-100 dark:bg-[#101823] rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700"
+                        style="touch-action: none;">
+                        <img src="/static/images/auto_field_new.png"
+                            class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-80 dark:opacity-70"
+                            alt="Auto Field Map" />
+                        <!-- Strategy Canvas -->
+                        <canvas id="strategyCanvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+                        <!-- Draggable Robot Icon -->
+                        <div id="robot-start-icon" title="Drag to set Starting Position"
+                            class="absolute z-10 flex items-center justify-center size-8 bg-blue-500/20 border-2 border-blue-500 rounded cursor-grab active:cursor-grabbing shadow-lg backdrop-blur-sm touch-none"
+                            style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                            <span class="material-symbols-outlined text-blue-500 font-bold"
+                                style="font-size: 20px;">smart_toy</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </form>
+    </main>
+
+    <footer
+        class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 FRC-Scouting-App</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const state = {
+                auto_start_balls: 0,
+                auto_balls_shot: 0,
+                auto_balls_scored: 0,
+                teleop_balls_shot: 0
+            };
+
+            // Setup Steppers
+            document.querySelectorAll('.stepper-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const field = btn.getAttribute('data-field');
+                    const action = btn.getAttribute('data-action');
+                    const span = document.getElementById(`val-${field}`);
+
+                    if (action === 'plus') {
+                        state[field]++;
+                    } else if (action === 'minus' && state[field] > 0) {
+                        state[field]--;
+                    }
+
+                    span.textContent = state[field];
+
+                    // Style updates for non-zero values
+                    if (state[field] > 0) {
+                        span.classList.remove('text-slate-500', 'dark:text-slate-400');
+                        span.classList.add('text-primary');
+                    } else {
+                        span.classList.add('text-slate-500', 'dark:text-slate-400');
+                        span.classList.remove('text-primary');
+                    }
+                });
+            });
+
+            // Robot Start Icon Dragging Logic
+            const robotIcon = document.getElementById('robot-start-icon');
+            const canvasContainer = document.getElementById('canvas-container');
+            let isDraggingRobot = false;
+            window.robotMoved = false;
+
+            function moveIcon(clientX, clientY) {
+                const rect = canvasContainer.getBoundingClientRect();
+                let x = clientX - rect.left;
+                let y = clientY - rect.top;
+
+                x = Math.max(0, Math.min(x, rect.width));
+                y = Math.max(0, Math.min(y, rect.height));
+
+                robotIcon.style.left = `${(x / rect.width) * 100}%`;
+                robotIcon.style.top = `${(y / rect.height) * 100}%`;
+                window.robotMoved = true;
+            }
+
+            robotIcon.addEventListener('mousedown', (e) => {
+                isDraggingRobot = true;
+                robotIcon.classList.add('scale-110');
+            });
+
+            robotIcon.addEventListener('touchstart', (e) => {
+                isDraggingRobot = true;
+                robotIcon.classList.add('scale-110');
+                if (e.cancelable) e.preventDefault();
+            }, { passive: false });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDraggingRobot) moveIcon(e.clientX, e.clientY);
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (isDraggingRobot && e.touches.length > 0) moveIcon(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: false });
+
+            window.addEventListener('mouseup', () => {
+                isDraggingRobot = false;
+                robotIcon.classList.remove('scale-110');
+            });
+            window.addEventListener('touchend', () => {
+                isDraggingRobot = false;
+                robotIcon.classList.remove('scale-110');
+            });
+
+            // Handle Form Submit
+            const form = document.querySelector('form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Saving...';
+                submitBtn.disabled = true;
+
+                // Get relative positioning
+                const canvasContainer = document.getElementById('canvas-container');
+                const rcElt = canvasContainer.getBoundingClientRect();
+                const iconElt = document.getElementById('robot-start-icon');
+                const iElt = iconElt.getBoundingClientRect();
+                // Normalized coordinates 0.0 -> 1.0 based on container width/height
+                const startX = ((iElt.left - rcElt.left) + (iElt.width / 2)) / rcElt.width;
+                const startY = ((iElt.top - rcElt.top) + (iElt.height / 2)) / rcElt.height;
+
+                // Ensure paths array has normalized coordinates as well for DB persistence 
+                // We keep paths as is, since they are drawn via getCoordinates, which is offset from canvas.
+                // We normalize coords before saving.
+                const cw = canvasContainer.clientWidth;
+                const ch = canvasContainer.clientHeight;
+                const normalizedPaths = paths.map(path => ({
+                    color: path.color,
+                    points: path.points.map(pt => ({
+                        x: pt.x / cw,
+                        y: pt.y / ch
+                    }))
+                }));
+
+                const payload = {
+                    assignment_id: '{{ assignment.id if assignment else "" }}',
+                    starting_position: { x: startX, y: startY },
+                    auto_trajectory: normalizedPaths,
+                    auto_start_balls: state.auto_start_balls,
+                    auto_balls_shot: state.auto_balls_shot,
+                    auto_balls_scored: state.auto_balls_scored,
+                    auto_climb: document.querySelector('input[name="autoClimb"]:checked')?.value || 'None',
+                    teleop_intake_speed: parseInt(document.querySelector('input[name="intake_speed"]').value),
+                    teleop_shooter_accuracy: parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
+                    teleop_balls_shot: state.teleop_balls_shot,
+                    passes_bump: document.querySelector('input[name="passes_bump"]').checked,
+                    passes_trench: document.querySelector('input[name="passes_trench"]').checked,
+                    endgame_climb: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'None',
+                    notes: document.getElementById('notesBoard').value
+                };
+
+                try {
+                    const res = await window.apiFetch('/api/submit-match-scout', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        if (window.canvasHasDrawn || window.robotMoved) {
+                            if (data.match_id) {
+                                try {
+                                    submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">autorenew</span> Saving Canvas...';
+
+                                    // Make sure the robot icon is burned into the canvas before saving!
+                                    const canvasElt = document.getElementById('strategyCanvas');
+                                    const ctx = canvasElt.getContext('2d');
+                                    const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+                                    const iconElt = document.getElementById('robot-start-icon');
+                                    const iconRect = iconElt.getBoundingClientRect();
+
+                                    // calculate relative center coordinate of the draggable icon
+                                    const rx = (iconRect.left - containerRect.left + iconRect.width / 2);
+                                    const ry = (iconRect.top - containerRect.top + iconRect.height / 2);
+
+                                    // Scale to internal canvas resolution
+                                    const scaleX = canvasElt.width / containerRect.width;
+                                    const scaleY = canvasElt.height / containerRect.height;
+
+                                    ctx.fillStyle = 'rgba(59, 130, 246, 0.5)';
+                                    ctx.fillRect((rx * scaleX) - 15, (ry * scaleY) - 15, 30, 30);
+                                    ctx.lineWidth = 3;
+                                    ctx.strokeStyle = '#3b82f6';
+                                    ctx.strokeRect((rx * scaleX) - 15, (ry * scaleY) - 15, 30, 30);
+
+                                    const uploadRes = await window.apiFetch('/api/match-scout/upload-strategy', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            match_id: data.match_id,
+                                            image_data: canvasElt.toDataURL('image/png')
+                                        })
+                                    });
+                                    if (!uploadRes.ok) {
+                                        console.error('Failed to upload strategy canvas');
+                                    }
+                                } catch (err) {
+                                    console.error('Error saving strategy canvas:', err);
+                                }
+                            }
+                        }
+
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Saved!';
+                        submitBtn.classList.replace('bg-primary', 'bg-green-500');
+                        setTimeout(() => window.location.href = '/', 1000);
+                    } else {
+                        alert(data.error || 'Failed to submit match');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                } catch (e) {
+                    alert('Network error. Please try again.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            window.exportToJSON = function () {
+                const data = {
+                    metadata: {
+                        assignment_id: '{{ assignment.id if assignment else "" }}',
+                        match_key: '{{ assignment.match_key if assignment else "TEST_MATCH" }}',
+                        team_key: '{{ assignment.team_key if assignment else "frc0000" }}',
+                        scouter_id: parseInt("{{ session.user_id or 0 }}"),
+                        exported_at: new Date().toISOString()
+                    },
+                    autonomous: {
+                        start_balls: state.auto_start_balls,
+                        balls_shot: state.auto_balls_shot,
+                        balls_scored: state.auto_balls_scored,
+                        climb: document.querySelector('input[name="autoClimb"]:checked')?.value || 'None'
+                    },
+                    teleop: {
+                        intake_speed: parseInt(document.querySelector('input[name="intake_speed"]').value),
+                        shooter_accuracy: parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
+                        balls_shot: state.teleop_balls_shot,
+                        passes_bump: document.querySelector('input[name="passes_bump"]').checked,
+                        passes_trench: document.querySelector('input[name="passes_trench"]').checked
+                    },
+                    endgame: {
+                        climb: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'None'
+                    },
+                    notes: document.getElementById('notesBoard').value
+                };
+                const jsonString = JSON.stringify(data, null, 4);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const matchName = data.metadata.match_key.split('_')[1] || 'match';
+                a.download = `match_scout_${matchName}_${data.metadata.team_key}_${new Date().getTime()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                // QR cleanup
+                URL.revokeObjectURL(url);
+            };
+
+            // QR Code Export
+            window.exportToQR = function () {
+                // Determine starting position before export
+                const cContainer = document.getElementById('canvas-container');
+                const crect = cContainer.getBoundingClientRect();
+                const icNode = document.getElementById('robot-start-icon');
+                const irect = icNode.getBoundingClientRect();
+                const sX = (((irect.left - crect.left) + (irect.width / 2)) / crect.width).toFixed(2);
+                const sY = (((irect.top - crect.top) + (irect.height / 2)) / crect.height).toFixed(2);
+
+                const data = {
+                    v: "2.5", // version
+                    m: '{{ assignment.match_key if assignment else "TEST" }}',
+                    t: '{{ assignment.team_key if assignment else "0000" }}',
+                    s: parseInt("{{ session.user_id or 0 }}"),
+                    a: [[sX, sY], state.auto_start_balls, state.auto_balls_shot, state.auto_balls_scored, document.querySelector('input[name="autoClimb"]:checked')?.value || 'N'],
+                    tO: [
+                        parseInt(document.querySelector('input[name="intake_speed"]').value),
+                        parseInt(document.querySelector('input[name="shooter_accuracy"]').value),
+                        state.teleop_balls_shot,
+                        document.querySelector('input[name="passes_bump"]').checked ? 1 : 0,
+                        document.querySelector('input[name="passes_trench"]').checked ? 1 : 0
+                    ],
+                    e: document.querySelector('input[name="endgameClimb"]:checked')?.value || 'N',
+                    n: document.getElementById('notesBoard').value.substring(0, 100) // Truncate notes for QR capacity
+                };
+
+                const qrString = JSON.stringify(data);
+                const qrContainer = document.getElementById('qrcode-container');
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: qrString,
+                    width: 256,
+                    height: 256,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+                document.getElementById('qr-modal').classList.remove('hidden');
+            };
+
+            window.closeQRModal = function () {
+                document.getElementById('qr-modal').classList.add('hidden');
+            };
+
+            // --- Strategy Whiteboard Logic ---
+            const canvas = document.getElementById('strategyCanvas');
+            const ctx = canvas.getContext('2d');
+            let isDrawing = false;
+            let paths = [];
+            let currentPath = [];
+            let currentColor = '#3b82f6'; // Match the selected button
+            const lineWidth = 5;
+            window.canvasHasDrawn = false;
+
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                redrawPaths();
+            }
+            window.addEventListener('resize', resizeCanvas);
+            setTimeout(resizeCanvas, 150);
+
+            function redrawPaths() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = lineWidth;
+                paths.forEach(path => {
+                    if (path.points.length < 2) return;
+                    ctx.strokeStyle = path.color;
+                    ctx.beginPath();
+                    ctx.moveTo(path.points[0].x, path.points[0].y);
+                    for (let i = 1; i < path.points.length; i++) {
+                        ctx.lineTo(path.points[i].x, path.points[i].y);
+                    }
+                    ctx.stroke();
+                });
+            }
+
+            function getCoordinates(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - rect.left, y: clientY - rect.top };
+            }
+
+            function startDrawing(e) {
+                // Ignore touches outside of single fingers
+                if (e.touches && e.touches.length > 1) return;
+
+                isDrawing = true;
+                const coords = getCoordinates(e);
+                currentPath = { color: currentColor, points: [coords] };
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                e.preventDefault(); // Prevent scrolling while drawing on mobile
+                const coords = getCoordinates(e);
+                currentPath.points.push(coords);
+
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = lineWidth;
+                ctx.strokeStyle = currentColor;
+
+                ctx.beginPath();
+                const lastIdx = currentPath.points.length - 2;
+                ctx.moveTo(currentPath.points[lastIdx].x, currentPath.points[lastIdx].y);
+                ctx.lineTo(coords.x, coords.y);
+                ctx.stroke();
+                window.canvasHasDrawn = true;
+            }
+
+            function stopDrawing(e) {
+                if (!isDrawing) return;
+                isDrawing = false;
+                if (currentPath.points.length > 0) {
+                    paths.push(currentPath);
+                }
+            }
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            window.addEventListener('mouseup', stopDrawing); // capture mouseup outside canvas
+
+            canvas.addEventListener('touchstart', startDrawing, { passive: false });
+            canvas.addEventListener('touchmove', draw, { passive: false });
+            window.addEventListener('touchend', stopDrawing);
+
+            document.querySelectorAll('.color-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.color-btn').forEach(b => b.style.borderColor = 'transparent');
+                    currentColor = btn.getAttribute('data-color');
+                    btn.style.borderColor = 'white';
+                });
+            });
+
+            document.getElementById('undo-btn').addEventListener('click', () => {
+                paths.pop();
+                redrawPaths();
+                if (paths.length === 0) window.canvasHasDrawn = false;
+            });
+
+            document.getElementById('clear-btn').addEventListener('click', () => {
+                paths = [];
+                window.canvasHasDrawn = false;
+                redrawPaths();
+            });
+        });
+    </script>
+    <!-- QR Modal -->
+    <div id="qr-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" onclick="closeQRModal()"></div>
+        <div class="relative bg-white p-8 rounded-3xl shadow-2xl flex flex-col items-center gap-6 max-w-sm w-full">
+            <h3 class="text-xl font-bold text-slate-900">Sync QR Code</h3>
+            <div id="qrcode-container" class="p-4 bg-white rounded-xl border-4 border-slate-100"></div>
+            <p class="text-xs text-center text-slate-500 font-medium">Have the Head Scout scan this QR code to sync your
+                data instantly.</p>
+            <button onclick="closeQRModal()"
+                class="w-full h-12 rounded-xl bg-slate-100 text-slate-900 font-bold hover:bg-slate-200 transition-colors">Close</button>
+        </div>
+    </div>
+</body>
+
+</html>

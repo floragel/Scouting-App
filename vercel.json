@@ -11,61 +11,22 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/backend/app.py"
-    },
-    {
-      "source": "/login",
-      "destination": "frontend/pages/auth/code.html"
-    },
-    {
-      "source": "/dashboard",
-      "destination": "frontend/pages/dashboard/code.html"
-    },
-    {
-      "source": "/admin-hub",
-      "destination": "frontend/pages/admin/code.html"
-    },
-    {
-      "source": "/teams-dir",
-      "destination": "frontend/pages/teams/code.html"
-    },
-    {
-      "source": "/events",
-      "destination": "frontend/pages/events/code.html"
-    },
-    {
-      "source": "/pit-scout",
-      "destination": "frontend/pages/pit_scout/code.html"
-    },
-    {
-      "source": "/match-scout",
-      "destination": "frontend/pages/match_scout/code.html"
-    },
-    {
-      "source": "/analytics",
-      "destination": "frontend/pages/analytics/code.html"
-    },
-    {
-      "source": "/onboarding",
-      "destination": "frontend/pages/onboarding/code.html"
-    },
-    {
-      "source": "/profile",
-      "destination": "frontend/pages/profile/code.html"
-    },
-    {
-      "source": "/profile-edit",
-      "destination": "frontend/pages/profile_edit/code.html"
-    },
+    { "source": "/api/(.*)", "destination": "/backend/app.py" },
+    { "source": "/login", "destination": "/backend/app.py" },
+    { "source": "/", "destination": "/backend/app.py" },
+    { "source": "/dashboard", "destination": "/backend/app.py" },
+    { "source": "/analytics", "destination": "/backend/app.py" },
+    { "source": "/admin-hub", "destination": "/backend/app.py" },
+    { "source": "/teams-dir", "destination": "/backend/app.py" },
+    { "source": "/events", "destination": "/backend/app.py" },
+    { "source": "/onboarding", "destination": "/backend/app.py" },
+    { "source": "/profile", "destination": "/backend/app.py" },
+    { "source": "/profile-edit", "destination": "/backend/app.py" },
+    { "source": "/match-scout/(.*)", "destination": "/backend/app.py" },
+    { "source": "/pit-scout/(.*)", "destination": "/backend/app.py" },
     {
       "source": "/shared_assets/(.*)",
       "destination": "frontend/shared/$1"
-    },
-    {
-      "source": "/",
-      "destination": "frontend/pages/auth/code.html"
     }
   ]
 }

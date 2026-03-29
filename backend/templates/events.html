@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <script src="/shared_assets/translator.js"></script>
+    <script src="/shared_assets/api_config.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
+    <title>FRC Scouting App - FRC Scouting Dashboard</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Theme Config -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f172a", // Deep slate for high-tech feel
+                        "card-dark": "#1e293b", // Slightly lighter for cards
+                        "card-hover": "#334155",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body data-user-role="{{ user.role }}"
+    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col antialiased">
+    
+    <!-- New Report Modal -->
+    <dialog id="newReportModal" class="bg-white dark:bg-card-dark rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-0 backdrop:backdrop-blur-sm w-full max-w-md outline-none">
+        <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">add_circle</span>
+                New Scouting Report
+            </h3>
+            <button onclick="document.getElementById('newReportModal').close()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div class="space-y-4">
+                <p class="text-sm text-slate-500">Pick how you want to start scouting.</p>
+                <div class="grid grid-cols-1 gap-3">
+                    <button onclick="window.location.href='/dashboard'" class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 transition-all text-left group">
+                        <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                            <span class="material-symbols-outlined">assignment</span>
+                        </div>
+                        <div>
+                            <span class="block font-bold">From My Assignments</span>
+                            <span class="block text-xs text-slate-500">View matches assigned to you</span>
+                        </div>
+                    </button>
+                    <button onclick="window.location.href='/head-scout-stats'" class="flex items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 transition-all text-left group">
+                        <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
+                            <span class="material-symbols-outlined">analytics</span>
+                        </div>
+                        <div>
+                            <span class="block font-bold">Strategy Hub</span>
+                            <span class="block text-xs text-slate-500">Analyze team data and picklists</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Internal Team Search</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                    <input type="text" id="modalTeamSearch" placeholder="Enter team number..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-900 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary"
+                        oninput="window.handleModalSearch(this.value)">
+                    <div id="modalSearchResults" class="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden hidden z-50">
+                        <!-- Results populate here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </dialog>
+    <!-- Top Navigation -->
+    <header
+        class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <!-- Left: Logo & Brand -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="size-8 text-primary">
+                    <svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z"
+                            fill="currentColor"></path>
+                    </svg>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white hidden sm:block">FRC Scouting
+                    App <span class="text-[10px] font-normal opacity-50 ml-1">v{{ version }}</span>
+                </h1>
+            </div>
+            <!-- Middle: Navigation Links -->
+            <nav class="hidden md:flex items-center gap-1">
+                <a class="px-3 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg transition-colors"
+                    href="/">Dashboard</a>
+                <a class="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors"
+                    href="/admin-hub">Scout Management</a>
+            </nav>
+            <!-- Right: Search & Actions -->
+            <div class="flex items-center gap-4 flex-1 justify-end">
+                <div class="relative w-full max-w-md hidden sm:block">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span class="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+                    </div>
+                    <input id="eventSearchInput"
+                        class="block w-full rounded-lg border-0 bg-slate-100 dark:bg-card-dark py-2 pl-10 pr-3 text-slate-900 dark:text-slate-100 ring-1 ring-inset ring-slate-300 dark:ring-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6"
+                        placeholder="Search events, teams..." type="text" />
+                </div>
+                <!-- Scout Management Mobile Button -->
+                {% if user.role == 'Admin' or user.role == 'Head Scout' %}
+                <a href="/admin-hub"
+                    class="md:hidden flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-card-dark text-slate-600 dark:text-slate-400 hover:text-primary transition-colors glass">
+                    <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
+                </a>
+                {% endif %}
+
+                <a href="/members"
+                    class="hidden sm:flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-card-dark text-slate-600 dark:text-slate-400 hover:text-primary transition-colors glass"
+                    title="Member Directory">
+                    <span class="material-symbols-outlined text-[24px]">group</span>
+                </a>
+                <button id="newReportBtn"
+                    class="flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary whitespace-nowrap gap-2">
+                    <span class="material-symbols-outlined text-[20px]">add</span>
+                    <span class="hidden lg:inline">New Report</span>
+                </button>
+                <a href="/profile" class="relative block hover:scale-105 transition-transform cursor-pointer">
+                    <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
+                        data-alt="Circular profile picture of user {{ user.name }}"
+                        style="background-image: url('{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuAt0LTwXrSF2sHICD94v7fWbijvk3vrr7qLMfQtvwUUJBTpG2N1u5Rg2s0EB3ircDVNlyVhqPSgjm5ZU1L6y5YNyPbErCWuE4V2-9HIPDE6rnZMlpW3_Rw8kbVqq6UwX3-fImQfI3VRZ0TJ3HTu7kEdzs5OlymZ26lSH_uXH5kYeaXrY7QBq3_vVoImnJgVg7zHUPhSfhji-FLRws880p7yfB_PDHFoZK8KbxjCD9ecpg3S002jVdTrl4kY0ugU0LxyPio7Dg8Ivben' }}')">
+                    </div>
+                    <div
+                        class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
+                    </div>
+                </a>
+            </div>
+        </div>
+    </header>
+    <!-- Main Content -->
+    <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Header & Filters -->
+        <div class="flex flex-col gap-6 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 id="seasonTitle" class="text-3xl font-bold text-slate-900 dark:text-white">Loading Season...
+                    </h2>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1">Manage events, track match schedules, and analyze
+                        regional performance.</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <div class="relative group">
+                        <select id="seasonSelect"
+                            class="appearance-none flex items-center gap-2 px-4 py-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-card-hover transition-colors pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="" disabled selected>Loading Seasons...</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700 dark:text-slate-200">
+                            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                        </div>
+                    </div>
+                    <div class="relative group">
+                        <select id="regionSelect"
+                            class="appearance-none flex items-center gap-2 px-4 py-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-card-hover transition-colors pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="all">Region: All</option>
+                            <option value="ca">California</option>
+                            <option value="tx">Texas</option>
+                            <option value="mi">Michigan</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700 dark:text-slate-200">
+                            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                        </div>
+                    </div>
+                    <div class="relative group">
+                        <select id="viewSelect"
+                            class="appearance-none flex items-center gap-2 px-4 py-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-card-hover transition-colors pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="grid">Grid View</option>
+                            <option value="list">List View</option>
+                        </select>
+                        <div
+                            class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700 dark:text-slate-200">
+                            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Team Search Results (hidden by default) -->
+        <div id="team-results-section" class="mb-8 hidden">
+            <h2 class="text-sm font-bold uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">groups</span>
+                Team Search Results
+            </h2>
+            <div id="team-results-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Team results here -->
+            </div>
+        </div>
+        <!-- Dashboard Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Left Column: Event Cards Grid -->
+            <div id="events-loader" class="lg:col-span-3 flex justify-center items-center py-20 hidden">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+            <div id="events-container" class="lg:col-span-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <!-- Events will be populated here via JavaScript -->
+            </div>
+            <!-- Right Column: Stats & Quick View -->
+            <aside class="lg:col-span-1 space-y-6">
+                <!-- Mini Stats Card -->
+                <div class="rounded-xl bg-card-dark border border-slate-800 p-5">
+                    <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Team Status (<span
+                            id="team-status-year">-</span>)</h3>
+                    <div id="team-status-content" class="space-y-4">
+                        <div class="animate-pulse flex space-x-4">
+                            <div class="flex-1 space-y-4 py-1">
+                                <div class="h-4 bg-slate-700 rounded w-3/4"></div>
+                                <div class="space-y-2">
+                                    <div class="h-4 bg-slate-700 rounded"></div>
+                                    <div class="h-4 bg-slate-700 rounded w-5/6"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Upcoming Matches List -->
+                <div class="rounded-xl bg-card-dark border border-slate-800 overflow-hidden">
+                    <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+                        <h3 class="text-sm font-semibold text-white">Next Matches (<span
+                                id="next-matches-team">-</span>)</h3>
+                    </div>
+                    <div id="next-matches-content" class="divide-y divide-slate-700/50">
+                        <!-- Matches will be populated here via JavaScript -->
+                        <div class="p-6 text-center text-sm text-slate-400">Loading next matches...</div>
+                    </div>
+                    <div class="p-3 bg-slate-800/30 text-center">
+                        <button class="text-xs font-medium text-primary hover:text-blue-400 transition-colors">View Full
+                            Schedule</button>
+                    </div>
+                </div>
+                <!-- Quick Scout Action -->
+                <div id="scouting-duty-widget"
+                    class="rounded-xl bg-gradient-to-br from-primary/20 to-transparent border border-primary/30 p-5 text-center">
+                    <div class="inline-flex p-3 rounded-full bg-primary/20 text-primary mb-3">
+                        <span class="material-symbols-outlined">edit_document</span>
+                    </div>
+                    <h3 class="text-white font-bold mb-1">Scouting Duty</h3>
+                    <div id="scouting-duty-content">
+                        <p class="text-slate-400 text-sm mb-4">Loading your next assignment...</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const seasonSelect = document.getElementById("seasonSelect");
+            const regionSelect = document.getElementById("regionSelect");
+            const viewSelect = document.getElementById("viewSelect");
+            const searchInput = document.getElementById("eventSearchInput");
+
+            const eventsContainer = document.getElementById("events-container");
+            const eventsLoader = document.getElementById("events-loader");
+            const seasonTitle = document.getElementById("seasonTitle");
+
+            let currentEvents = [];
+
+            const renderEvents = () => {
+                eventsContainer.innerHTML = '';
+
+                const searchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+                const regionTerm = regionSelect ? regionSelect.value.toLowerCase() : "all";
+                const isListView = viewSelect && viewSelect.value === "list";
+
+                // Handle global team search display
+                const teamResultsSection = document.getElementById('team-results-section');
+                if (searchTerm.length >= 2 && teamResultsSection) {
+                    window.fetchGlobalTeams(searchTerm);
+                } else if (teamResultsSection) {
+                    teamResultsSection.classList.add('hidden');
+                }
+
+                // Set layout class
+                if (isListView) {
+                    eventsContainer.className = "lg:col-span-3 flex flex-col gap-4";
+                } else {
+                    eventsContainer.className = "lg:col-span-3 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6";
+                }
+
+                // Filter events
+                const filteredEvents = currentEvents.filter(event => {
+                    let matchesSearch = event.name.toLowerCase().includes(searchTerm) || (event.location && event.location.toLowerCase().includes(searchTerm));
+                    if (!matchesSearch && event.teams) {
+                        matchesSearch = event.teams.some(t =>
+                            (t.nickname && t.nickname.toLowerCase().includes(searchTerm)) ||
+                            (t.number && t.number.includes(searchTerm))
+                        );
+                    }
+                    let matchesRegion = true;
+                    if (regionTerm !== "all" && event.location) {
+                        const loc = event.location.toLowerCase();
+                        if (regionTerm === "ca") matchesRegion = loc.includes("california") || loc.includes(" ca");
+                        if (regionTerm === "tx") matchesRegion = loc.includes("texas") || loc.includes(" tx");
+                        if (regionTerm === "mi") matchesRegion = loc.includes("michigan") || loc.includes(" mi");
+                    }
+                    return matchesSearch && matchesRegion;
+                });
+
+                if (filteredEvents.length === 0) {
+                    const is2026 = (seasonSelect && seasonSelect.value === "2026");
+                    eventsContainer.innerHTML = `
+                        <div class="col-span-full py-12 text-center border-2 border-dashed border-slate-800 rounded-xl">
+                            <span class="material-symbols-outlined text-4xl text-slate-700 mb-2">event_busy</span>
+                            <p class="text-slate-400 max-w-sm mx-auto">
+                                ${is2026 ? "The 2026 season hasn't started yet! No events found in the database for now. Check back later as the competition begins." : "No events found matching your current filters."}
+                            </p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                filteredEvents.forEach((event, index) => {
+                    const isPrimary = index === 0;
+
+                    let cardHTML;
+                    if (isListView) {
+                        cardHTML = `
+                            <article class="flex items-center gap-4 bg-card-dark border ${isPrimary ? 'border-primary/50 shadow-[0_0_15px_rgba(13,108,242,0.15)]' : 'border-slate-800'} rounded-lg p-3 hover:bg-slate-800/80 transition-colors">
+                                <div class="w-16 h-16 bg-slate-800 rounded-md shrink-0 block bg-[url('https://images.unsplash.com/photo-1562408590-e32931084e23?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center ${isPrimary ? '' : 'grayscale opacity-60'}"></div>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-lg font-bold text-white leading-tight truncate px-1">${event.name}</h3>
+                                    <div class="flex items-center gap-4 text-xs text-slate-400 mt-1">
+                                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">calendar_today</span> ${event.date}</span>
+                                        <span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">location_on</span> ${event.location}</span>
+                                    </div>
+                                </div>
+                                <div class="shrink-0 flex items-center gap-3">
+                                    <span class="hidden sm:inline-flex items-center gap-1.5 rounded-full ${isPrimary ? 'bg-green-500/10 text-green-400' : 'bg-slate-500/10 text-slate-400'} px-2 py-0.5 text-[10px] font-medium ring-1 ring-inset ring-slate-500/20">
+                                        ${isPrimary ? 'Ongoing' : 'Upcoming'}
+                                    </span>
+                                    <a href="/teams-dir?event_id=${event.id}" class="bg-primary hover:bg-primary-dark text-white px-3 py-1.5 text-xs font-bold rounded flex items-center gap-1 transition-colors">Details</a>
+                                </div>
+                            </article>
+                        `;
+                    } else {
+                        cardHTML = `
+                            <article class="group relative flex flex-col overflow-hidden rounded-xl bg-card-dark border ${isPrimary ? 'border-primary/50 shadow-[0_0_15px_rgba(13,108,242,0.15)]' : 'border-slate-800'} transition-all hover:-translate-y-1 hover:shadow-lg">
+                                <div class="absolute top-0 right-0 p-3 z-10">
+                                    <span class="inline-flex items-center gap-1.5 rounded-full ${isPrimary ? 'bg-green-500/10 text-green-400 ring-green-500/20' : 'bg-slate-500/10 text-slate-400 ring-slate-500/20'} px-2.5 py-1 text-xs font-medium ring-1 ring-inset backdrop-blur-md">
+                                        ${isPrimary ? '<span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span></span> Ongoing' : 'Upcoming'}
+                                    </span>
+                                </div>
+                                <div class="h-40 w-full bg-slate-800 relative ${isPrimary ? '' : 'grayscale'}">
+                                    <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1562408590-e32931084e23?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
+                                    <div class="absolute inset-0 bg-gradient-to-t from-card-dark to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4">
+                                        <h3 class="text-lg font-bold text-white leading-tight">${event.name}</h3>
+                                        <p class="text-xs text-slate-300 font-mono mt-1">${event.date}</p>
+                                    </div>
+                                </div>
+                                <div class="flex flex-1 flex-col justify-between p-4 gap-4">
+                                    <div class="space-y-3">
+                                        <div class="flex items-start gap-3 text-sm text-slate-400">
+                                            <span class="material-symbols-outlined ${isPrimary ? 'text-primary' : 'text-slate-500'} text-[20px] shrink-0">location_on</span>
+                                            <span>${event.location}</span>
+                                        </div>
+                                    </div>
+                                    <div class="pt-4 border-t border-slate-700/50 flex gap-2">
+                                        <a href="/teams-dir?event_id=${event.id}" class="w-full text-center rounded-lg bg-slate-700 py-2 text-sm font-medium text-slate-200 hover:bg-slate-600 transition-colors">Event Details</a>
+                                    </div>
+                                </div>
+                            </article>
+                        `;
+                    }
+                    eventsContainer.insertAdjacentHTML('beforeend', cardHTML);
+                });
+            }
+
+            const fetchEvents = async (year) => {
+                eventsContainer.innerHTML = '';
+                eventsContainer.classList.add("hidden");
+                eventsLoader.classList.remove("hidden");
+                // FRC Game name lookup
+                const gameNames = {
+                    2022: 'RAPID REACT℠ presented by The Boeing Company',
+                    2023: 'CHARGED UP℠ presented by Haas',
+                    2024: 'CRESCENDO℠ presented by Haas',
+                    2025: 'REEFSCAPE℠ presented by Haas',
+                    2026: 'REBUILT™ presented by Haas'
+                };
+                const gameName = gameNames[year] || 'FRC';
+                if (seasonTitle) seasonTitle.textContent = `${year} ${gameName} Season (Loading...)`;
+
+                try {
+                    const response = await fetch(`/events?year=${year}`);
+                    currentEvents = await response.json();
+
+                    eventsLoader.classList.add("hidden");
+                    eventsContainer.classList.remove("hidden");
+                    if (seasonTitle) seasonTitle.textContent = `${year} ${gameName} Season`;
+
+                    renderEvents();
+                    fetchTeamStatus(year);
+                } catch (error) {
+                    console.error("Failed to fetch events:", error);
+                    eventsLoader.classList.add("hidden");
+                    eventsContainer.classList.remove("hidden");
+                    eventsContainer.innerHTML = '<p class="text-red-400">Error loading events.</p>';
+                }
+            };
+
+            // Event Listeners for interactivity
+            if (regionSelect) regionSelect.addEventListener("change", renderEvents);
+            if (viewSelect) viewSelect.addEventListener("change", renderEvents);
+            if (searchInput) {
+                searchInput.addEventListener("input", renderEvents);
+                // Add real-time team number handling
+                searchInput.addEventListener("keypress", (e) => {
+                   if (e.key === 'Enter') {
+                       const val = searchInput.value.trim();
+                       if (/^\d+$/.test(val)) {
+                           window.location.href = `/teams-dir?team=${val}`;
+                       }
+                   }
+                });
+            }
+
+            // Fetch dynamic seasons
+            const initSeasons = async () => {
+                if (!seasonSelect) return;
+                try {
+                    const res = await fetch('/api/seasons');
+                    const seasons = await res.json();
+                    seasonSelect.innerHTML = '';
+                    if (seasons.length === 0) {
+                        seasonSelect.innerHTML = '<option value="" disabled>No Seasons Found</option>';
+                        return;
+                    }
+                    seasons.forEach((year, index) => {
+                        const opt = document.createElement('option');
+                        opt.value = year;
+                        opt.textContent = `Season: ${year}`;
+                        // Select the most recent year by default (or the ones closest to present)
+                        if (index === 0) opt.selected = true;
+                        seasonSelect.appendChild(opt);
+                    });
+
+                    // Hook up event listener after populating
+                    seasonSelect.addEventListener("change", (e) => fetchEvents(e.target.value));
+
+                    // Fetch events for initial season
+                    fetchEvents(seasonSelect.value);
+                } catch (e) {
+                    console.error("Failed to load seasons", e);
+                    seasonSelect.innerHTML = '<option value="">Error Data</option>';
+                }
+            };
+
+            const THE_TEAM_KEY = "{{ user.affiliation or 'frc6622' }}";
+            const THE_TEAM_NUMBER = THE_TEAM_KEY.replace('frc', '');
+            const USER_ROLE = "{{ user.role }}";
+
+            // Dashboard Widgets Fetch Functions
+            const fetchTeamStatus = async (year) => {
+                document.getElementById('team-status-year').textContent = year;
+                const statusContainer = document.getElementById('team-status-content');
+                statusContainer.innerHTML = '<div class="text-slate-400 text-sm text-center">Loading regional stats...</div>';
+
+                try {
+                    const res = await fetch(`/api/team/regional-status?year=${year}`);
+                    if (!res.ok) throw new Error("Regional stats unavailable");
+                    const data = await res.json();
+
+                    const rank = data.rank || 'N/A';
+                    const winrate = data.win_rate || '0%';
+                    const eventName = data.event_name || 'No Event';
+
+                    statusContainer.innerHTML = `
+                        <div class="mb-2">
+                            <span class="text-[10px] font-bold text-primary uppercase tracking-widest">${eventName}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-300">Regional Rank</span>
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-[16px] text-yellow-400">emoji_events</span>
+                                <span class="text-xl font-bold text-white">${rank}</span>
+                            </span>
+                        </div>
+                        <div class="w-full h-px bg-slate-700/50 my-2"></div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-300">Season Win Rate</span>
+                            <span class="text-xl font-bold text-green-400">${winrate}</span>
+                        </div>
+                    `;
+                } catch (err) {
+                    console.error("Error fetching team stats:", err);
+                    statusContainer.innerHTML = '<div class="text-slate-500 text-sm text-center py-4">No data available for this regional.</div>';
+                }
+            };
+
+            const formatTime = (unixTs) => {
+                if (!unixTs) return '';
+                const d = new Date(unixTs * 1000);
+                return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            };
+
+            const fetchNextMatches = async () => {
+                const matchesContainer = document.getElementById('next-matches-content');
+                document.getElementById('next-matches-team').textContent = THE_TEAM_NUMBER;
+                matchesContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-400">Loading next matches...</div>';
+
+                try {
+                    const res = await window.apiFetch('/api/team/next-matches');
+                    const data = await res.json();
+
+                    if (!data.matches || data.matches.length === 0) {
+                        matchesContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-500 italic">No upcoming matches found for our team.</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    data.matches.forEach((m, idx) => {
+                        const isNext = idx === 0;
+                        const redTeams = m.alliances.red.team_keys.map(t => t.replace('frc', ''));
+                        const blueTeams = m.alliances.blue.team_keys.map(t => t.replace('frc', ''));
+
+                        const renderTeam = (teamNumbers, highlightColor) => {
+                            return teamNumbers.map(t => {
+                                if (t === THE_TEAM_NUMBER) {
+                                    return `<span class="text-white font-bold underline decoration-${highlightColor}-500 decoration-2 underline-offset-4">${t}</span>`;
+                                }
+                                return `<span>${t}</span>`;
+                            }).join(' ');
+                        };
+
+                        const redHtml = renderTeam(redTeams, 'red');
+                        const blueHtml = renderTeam(blueTeams, 'blue');
+
+                        const timeBadge = isNext ? `<span class="text-xs text-green-400 font-bold animate-pulse">Up Next</span>` : `<span class="text-xs text-slate-500">${formatTime(m.time)}</span>`;
+
+                        html += `
+                        <div class="p-4 hover:bg-card-hover transition-colors cursor-pointer group">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs font-mono ${isNext ? 'text-primary bg-primary/10' : 'text-slate-400 bg-slate-700/30'} px-2 py-0.5 rounded">${m.comp_level.toUpperCase()} ${m.match_number}</span>
+                                ${timeBadge}
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <div class="flex gap-2 font-mono font-medium text-red-400 ${!isNext ? 'opacity-80' : ''}">${redHtml}</div>
+                                <span class="text-slate-600 text-xs">VS</span>
+                                <div class="flex gap-2 font-mono font-medium text-blue-400 ${!isNext ? 'opacity-80' : ''}">${blueHtml}</div>
+                            </div>
+                        </div>
+                        `;
+                    });
+                    matchesContainer.innerHTML = html;
+
+                } catch (err) {
+                    console.error("Error fetching next matches:", err);
+                    matchesContainer.innerHTML = '<div class="p-6 text-center text-sm text-red-400">Error loading matches.</div>';
+                }
+            };
+
+            const fetchScoutingDuty = async () => {
+                const dutyContainer = document.getElementById('scouting-duty-content');
+
+                if (USER_ROLE === 'Admin' || USER_ROLE === 'Head Scout') {
+                    dutyContainer.innerHTML = `
+                        <p class="text-slate-400 text-sm mb-4">Go to the admin hub to assign scouts or see scouting data.</p>
+                        <a href="/admin-hub" class="block w-full py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20">Admin Hub</a>
+                    `;
+                    return;
+                }
+
+                try {
+                    const res = await window.apiFetch('/api/user/next-assignment');
+                    const data = await res.json();
+
+                    if (data.has_assignment && data.assignment) {
+                        const a = data.assignment;
+                        if (a.assignment_type === 'Pit') {
+                            dutyContainer.innerHTML = `
+                                <p class="text-slate-400 text-sm mb-4">You are assigned to pit scout <span class="text-white font-bold">${a.team_key.replace('frc', '')}</span>.</p>
+                                <a href="/pit-scout/${a.id}" class="block w-full py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition shadow-lg shadow-blue-500/20">Start Pit Scouting</a>
+                            `;
+                        } else {
+                            const badgeColor = a.alliance_color.toLowerCase() === 'red' ? 'text-red-400 bg-red-400/10' : 'text-blue-400 bg-blue-400/10';
+                            dutyContainer.innerHTML = `
+                                <p class="text-slate-400 text-sm mb-4">You are assigned to scout <span class="px-2 py-0.5 rounded font-bold ${badgeColor}">${a.alliance_color} ${a.team_key.replace('frc', '')}</span> in match <span class="text-white font-mono">${a.match_key.split('_')[1].toUpperCase()}</span>.</p>
+                                <a href="/match-scout/${a.id}" class="block w-full py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-blue-600 transition shadow-lg shadow-blue-500/20">Start Match Scouting</a>
+                            `;
+                        }
+                    } else {
+                        dutyContainer.innerHTML = `
+                            <p class="text-slate-400 text-sm mb-4">You currently have no assignments. Enjoy the match!</p>
+                            <button disabled class="w-full py-2 bg-slate-700 text-slate-400 text-sm font-bold rounded-lg cursor-not-allowed">Relax</button>
+                        `;
+                    }
+                } catch (err) {
+                    console.error("Error fetching assignments:", err);
+                    dutyContainer.innerHTML = '<p class="text-red-400 text-sm">Failed to load assignment.</p>';
+                }
+            };
+
+            // New Report logic
+            document.getElementById('newReportBtn').addEventListener('click', () => {
+                const dutyWidget = document.getElementById('scouting-duty-content');
+                const actionBtn = dutyWidget.querySelector('a');
+                if (actionBtn) {
+                    actionBtn.click();
+                } else {
+                    window.location.href = '/scout-dashboard';
+                }
+            });
+
+            // Initialize Widgets
+            fetchNextMatches();
+            fetchScoutingDuty();
+
+            // Global Team Search logic
+            window.fetchGlobalTeams = async (query) => {
+                const container = document.getElementById('team-results-container');
+                const section = document.getElementById('team-results-section');
+                
+                try {
+                    const res = await window.apiFetch(`/api/search-team?q=${query}`);
+                    const teams = await res.json();
+                    
+                    if (teams.length > 0) {
+                        section.classList.remove('hidden');
+                        container.innerHTML = teams.map(t => `
+                            <div class="bg-card-dark border border-slate-800 p-4 rounded-xl flex items-center justify-between group hover:border-primary/50 transition-all">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                                        ${t.number}
+                                    </div>
+                                    <div class="flex flex-col min-w-0">
+                                        <span class="text-sm font-bold text-white truncate">${t.nickname || 'Team ' + t.number}</span>
+                                        <span class="text-[10px] text-slate-500 uppercase font-black uppercase tracking-widest">Internal DB</span>
+                                    </div>
+                                </div>
+                                <a href="/teams-dir?team=${t.number}" class="size-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all">
+                                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                                </a>
+                            </div>
+                        `).join('');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                } catch (e) {
+                    console.error("Global search error:", e);
+                }
+            };
+
+            // Modal Search logic
+            window.handleModalSearch = async (query) => {
+                const resultsDiv = document.getElementById('modalSearchResults');
+                if (query.length < 2) {
+                    resultsDiv.classList.add('hidden');
+                    return;
+                }
+                
+                try {
+                    const res = await window.apiFetch(`/api/search-team?q=${query}`);
+                    const teams = await res.json();
+                    
+                    if (teams.length > 0) {
+                        resultsDiv.classList.remove('hidden');
+                        resultsDiv.innerHTML = teams.map(t => `
+                            <div onclick="window.location.href='/teams-dir?team=${t.number}'" class="px-4 py-3 hover:bg-slate-700 cursor-pointer flex items-center justify-between border-b border-slate-700 last:border-0">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-bold text-white">${t.number}</span>
+                                    <span class="text-xs text-slate-400 truncate max-w-[150px]">${t.nickname}</span>
+                                </div>
+                                <span class="material-symbols-outlined text-sm text-primary">login</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        resultsDiv.innerHTML = '<div class="px-4 py-3 text-xs text-slate-500">No teams found</div>';
+                        resultsDiv.classList.remove('hidden');
+                    }
+                } catch (e) {
+                    console.error("Modal search error:", e);
+                }
+            };
+
+            initSeasons();
+        });
+    </script>
+
+
+    <footer
+        class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
+        <p class="text-xs text-slate-500 font-medium whitespace-nowrap">© Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}</p>
+    </footer>
+
+</body>
+
+</html>

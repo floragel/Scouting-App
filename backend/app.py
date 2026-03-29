@@ -6,10 +6,11 @@ import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 from flask_cors import CORS
 import cloudinary
 import cloudinary.uploader
+from sqlalchemy import text
 
 from models import db
 from routes import register_blueprints
@@ -182,6 +183,100 @@ def manual_init_db():
 
 # Gunicorn imports `app` directly, so it skips the __main__ block below.
 # Removed db.create_all() from global scope to prevent cold start crashes.
+
+# ─── Navigation & Template Routes ───
+
+def get_current_user():
+    if 'user_id' not in session:
+        return None
+    from models import User
+    return User.query.get(session['user_id'])
+
+def get_dashboard_data(user):
+    # Mock or fetch real performance data
+    return {
+        'user_performance': {
+            'matches_scouted': 12,
+            'accuracy': '85%'
+        },
+        'team_status': {
+            'type': 'next_match',
+            'text': 'Quals 42: Ready to Scout',
+            'color': 'green',
+            'event_key': '2026pncmp'
+        },
+        'live_match': 'Quals 41',
+        'is_admin': user.role in ['Admin', 'Head Scout'],
+        'assignments': [],
+        'event_matches': [],
+        'dashboard_note': 'Focus on trap notes and climb speed for top seeds.',
+        'version': '2.0.26'
+    }
+
+@app.route('/')
+def index():
+    user = get_current_user()
+    if user:
+        return redirect(url_for('analytics_view'))
+    return render_template('login.html')
+
+@app.route('/login')
+def login_view():
+    return render_template('login.html')
+
+@app.route('/dashboard')
+def dashboard_view():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login_view'))
+    data = get_dashboard_data(user)
+    return render_template('dashboard.html', user=user, **data)
+
+@app.route('/analytics')
+def analytics_view():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login_view'))
+    data = get_dashboard_data(user)
+    # Analytics page might need extra data, but for now we reuse dashboard logic
+    return render_template('analytics.html', user=user, **data)
+
+@app.route('/admin-hub')
+def admin_hub_view():
+    user = get_current_user()
+    if not user or user.role not in ['Admin', 'Head Scout']:
+        return redirect(url_for('dashboard_view'))
+    return render_template('admin.html', user=user)
+
+@app.route('/teams-dir')
+def teams_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    return render_template('teams.html', user=user)
+
+@app.route('/events')
+def events_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    return render_template('events.html', user=user)
+
+@app.route('/onboarding')
+def onboarding_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    return render_template('onboarding.html', user=user)
+
+@app.route('/profile')
+def profile_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    return render_template('profile.html', user=user)
+
+@app.route('/profile-edit')
+def profile_edit_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    return render_template('profile_edit.html', user=user)
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.
