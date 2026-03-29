@@ -312,6 +312,26 @@ def get_dashboard_data(user, year=2026):
     except Exception:
         pass
 
+    # Event matches from TBA for the Event Schedule panel
+    event_matches = []
+    event_name = "Competition"
+    try:
+        import frc_api
+        import requests as req
+        team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{team_number}" if user.team else 'frc6622')
+        e_res = req.get(f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{year}/simple", headers={'X-TBA-Auth-Key': frc_api.TBA_API_KEY}, timeout=5)
+        if e_res.status_code == 200 and e_res.json():
+            events_tba = sorted(e_res.json(), key=lambda x: x.get('end_date', ''), reverse=True)
+            for ev in events_tba:
+                event_name = ev.get('name', 'Competition')
+                em = frc_api.get_event_matches(ev['key'])
+                if em:
+                    event_matches = [m for m in em if m.get('time')]
+                    event_matches.sort(key=lambda x: x['time'])
+                    break
+    except Exception:
+        pass
+
     common = get_common_data(user)
     return {
         **common,
@@ -327,7 +347,10 @@ def get_dashboard_data(user, year=2026):
             'color': 'green' if 'Ready' in next_match_text else 'slate'
         },
         'live_match': live_match,
+        'dashboard_note': f"Season {year} data is shown. Change the season selector to explore past years.",
         'assignments': user_assignments,
+        'event_matches': event_matches,
+        'event_name': event_name,
         'events_list': [e.to_dict() for e in Event.query.filter(Event.date.like(f"%{year}%")).all()],
         'match_data_json': json.dumps([m.to_dict() for m in match_entries]),
         'team_averages_json': json.dumps(team_stats),

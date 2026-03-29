@@ -104,15 +104,23 @@
                 
                 const profilePic = m.profile_picture || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAnp9GOlcDa8yzzLYbNH-rZvRzXCOhGowYtsQLEwSiFWlli3IaU7AHu9_97kWBlOit0r8unOBUNcb1sviDjjS-2wJcHmKmORqedn9EjHp5EvTQdCWjG5bGAUm2L3v1IZZU2t0S8wQQjF-EPgUcs9U6ru9xKGgwWQiqgMhCIpZm7SDFjdLyhQPlWlwP80kUNonmdKgIqFqxP3cF3KVh-lMnYK3WSedOVb4La5S1umlOMTVV4iPbc3R8zgtHbl5h5YBtoUpUN6gV-O5rZ';
                 
-                const memberRole = m.role || 'Scout';
-                const roleColor = m.is_admin ? 'text-primary bg-primary/10 border-primary/20' : 'text-slate-400 bg-slate-900 border-slate-800';
+                const roles = m.roles || (m.role ? m.role.split(',').map(r => r.trim()).filter(Boolean) : ['Scout']);
+                const roleBadges = roles.map(role => {
+                    let colorClass = 'text-slate-400 bg-slate-900 border-slate-800';
+                    if (['Admin', 'Captain', 'Head Scout'].includes(role)) colorClass = 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+                    else if (role.includes('Lead')) colorClass = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+                    else if (role === 'Pit Scout') colorClass = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+                    else if (role === 'Stand Scout') colorClass = 'text-violet-400 bg-violet-400/10 border-violet-400/20';
+                    else if (role === 'Media') colorClass = 'text-pink-400 bg-pink-400/10 border-pink-400/20';
+                    return `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter border ${colorClass}">${role}</span>`;
+                }).join('');
 
                 card.innerHTML = `
                     <div class="flex items-center gap-4 mb-4">
                         <img src="${profilePic}" class="size-12 rounded-full border-2 border-slate-700 object-cover shrink-0" alt="${m.name}'s profile">
                         <div class="min-w-0">
                             <h3 class="font-bold text-white truncate group-hover:text-primary transition-colors">${m.name || 'Unknown'}</h3>
-                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter border ${roleColor}">${memberRole}</span>
+                            <div class="flex flex-wrap gap-1 mt-1">${roleBadges}</div>
                         </div>
                     </div>
                     <div class="space-y-2">
@@ -134,7 +142,8 @@
             const filtered = membersData.filter(m => 
                 (m.name || '').toLowerCase().includes(term) || 
                 (m.email && m.email.toLowerCase().includes(term)) ||
-                (m.role && m.role.toLowerCase().includes(term))
+                (m.role && m.role.toLowerCase().includes(term)) ||
+                (m.roles && m.roles.some(r => r.toLowerCase().includes(term)))
             );
             renderMembers(filtered);
         });
