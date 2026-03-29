@@ -1,22 +1,13 @@
 <!DOCTYPE html>
-
 <html class="dark" lang="en">
-
 <head>
     <script src="/shared_assets/translator.js"></script>
-    <script src="/shared_assets/api_config.js"></script>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
     <title>Admin Scout Management Hub | FRC Scouting App</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
-        rel="stylesheet" />
-    <link
-        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet" />
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -30,88 +21,46 @@
                     fontFamily: {
                         "display": ["Space Grotesk", "sans-serif"]
                     },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
                 },
             },
         }
     </script>
     <style>
-        body {
-            font-family: 'Space Grotesk', sans-serif;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #314868;
-            border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #0d6cf2;
-        }
+        body { font-family: 'Space Grotesk', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #314868; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #0d6cf2; }
     </style>
 </head>
-
-<body
-    class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
-    <!-- Top Navigation Bar -->
-    <header
-        class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 py-3 bg-white dark:bg-[#161e2b] sticky top-0 z-50">
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+    <header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 py-3 bg-white dark:bg-[#161e2b] sticky top-0 z-50">
         <div class="flex items-center gap-8">
             <div class="flex items-center gap-3 text-primary">
                 <div class="size-8 bg-primary/10 rounded-lg flex items-center justify-center">
                     <span class="material-symbols-outlined text-primary">precision_manufacturing</span>
                 </div>
-                <h2 class="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">FRC Scouting
-                    App
-                    Hub</h2>
+                <h2 class="text-slate-900 dark:text-white text-lg font-bold">FRC Scouting App Hub</h2>
             </div>
             <nav class="hidden md:flex items-center gap-6">
-                <a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors"
-                    href="/events">Dashboard</a>
-                <a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="/admin-hub">Scout
-                    Management</a>
-                <a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors"
-                    href="/head-scout-stats">Analytics Hub</a>
-                <a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors"
-                    href="/picklist">Pick List Board</a>
+                <a class="text-slate-600 dark:text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="/events">Explore Events</a>
+                <a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="/admin-hub">Scout Management</a>
+                <a class="text-slate-600 dark:text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="/head-scout-stats">Analytics Hub</a>
+                <a class="text-slate-600 dark:text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="/picklist">Pick List Board</a>
             </nav>
         </div>
         <div class="flex items-center gap-4">
-            <div
-                class="hidden lg:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-transparent focus-within:border-primary transition-all">
-                <span class="material-symbols-outlined text-slate-400 text-sm">search</span>
-                <input id="global-search"
-                    class="bg-transparent border-none focus:ring-0 text-sm w-48 placeholder:text-slate-500"
-                    placeholder="Search members..." type="text" />
-            </div>
-            <button id="invite-btn"
-                class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
+            <button id="invite-btn" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
                 <span class="material-symbols-outlined text-sm">person_add</span>
                 <span id="invite-text">Invite Member</span>
             </button>
-            <a href="/profile"
-                class="size-9 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-2 border-primary/20 hover:border-primary transition-colors block cursor-pointer">
-                <img class="w-full h-full object-cover" data-alt="Profile picture of Leader"
-                    src="{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9iUxlk3utSOjVCWI5oMbZrf0EBLhH_dcLGeLf1f_tgR7D4wxGDhvI1143PmzfbOe5Q1yAmUoSjLh0qNckOErQNU39vY8rk92vNVReqk-c9N6r3Sawl46yacnyGfrsfYl6gjmE6MwanDcKrS8lXA5X4Rf7qRufuUlpNW1d6PTlp16glZKE1Lq7QkzTj5dfPL1r2WIEqMB7pj1u4MIQDFLZqA80Gq6h3ZLtpNr63PvKBHus9mQxEBRVPZdkXAJ-G6kndpSRgPMBPGbl' }}" />
+            <a href="/profile" class="size-9 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-2 border-primary/20 hover:border-primary transition-colors block cursor-pointer">
+                <img class="w-full h-full object-cover" src="{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuC9iUxlk3utSOjVCWI5oMbZrf0EBLhH_dcLGeLf1f_tgR7D4wxGDhvI1143PmzfbOe5Q1yAmUoSjLh0qNckOErQNU39vY8rk92vNVReqk-c9N6r3Sawl46yacnyGfrsfYl6gjmE6MwanDcKrS8lXA5X4Rf7qRufuUlpNW1d6PTlp16glZKE1Lq7QkzTj5dfPL1r2WIEqMB7pj1u4MIQDFLZqA80Gq6h3ZLtpNr63PvKBHus9mQxEBRVPZdkXAJ-G6kndpSRgPMBPGbl' }}" />
             </a>
         </div>
     </header>
+
     <main class="flex-1 flex flex-col max-w-[1440px] mx-auto w-full p-6 gap-8">
-        <!-- Header & Quick Stats Section -->
         <div class="flex flex-col lg:flex-row gap-6">
             <div class="flex-1">
                 <div class="flex items-center justify-between mb-2">
@@ -119,7 +68,6 @@
                         <span class="material-symbols-outlined text-primary">group_work</span>
                         <h1 class="text-3xl font-black tracking-tight dark:text-white uppercase">Admin Scout Management</h1>
                     </div>
-                    <!-- Season Selector -->
                     <div class="flex items-center gap-2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 shadow-sm transition-all hover:border-primary/50">
                         <span class="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
                         <select id="season-select" onchange="window.location.href='/admin-hub?year='+this.value" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
@@ -129,1216 +77,194 @@
                         </select>
                     </div>
                 </div>
-                <p class="text-slate-600 dark:text-slate-400 max-w-2xl">
-                    Manage assignments and monitoring for the <b>{{ selected_year }}</b> FRC season.
-                </p>
             </div>
         </div>
+
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div
-                class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+            <div class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
                 <div class="flex justify-between items-start">
                     <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Total Scouts</p>
                     <span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">groups</span>
                 </div>
                 <p class="text-4xl font-bold dark:text-white">{{ stats.total_scouts }}</p>
-                <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">
-                    <span class="material-symbols-outlined text-xs">trending_up</span> +5% from last week
-                </p>
+                <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">Team Size</p>
             </div>
-            <div
-                class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+            <div class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
                 <div class="flex justify-between items-start">
                     <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Active Now</p>
-                    <span
-                        class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg">sensors</span>
+                    <span class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg">sensors</span>
                 </div>
                 <p class="text-4xl font-bold dark:text-white">{{ stats.active_now }}</p>
-                <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">
-                    <span class="material-symbols-outlined text-xs">check_circle</span> 90% Engagement
-                </p>
+                <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">In last 5 mins</p>
             </div>
-            <div
-                class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
+            <div class="bg-white dark:bg-[#161e2b] p-6 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col gap-1">
                 <div class="flex justify-between items-start">
                     <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Pending Requests</p>
-                    <span
-                        class="material-symbols-outlined text-amber-500 bg-amber-500/10 p-2 rounded-lg">person_search</span>
+                    <span class="material-symbols-outlined text-amber-500 bg-amber-500/10 p-2 rounded-lg">person_search</span>
                 </div>
                 <p class="text-4xl font-bold dark:text-white">{{ stats.pending_requests }}</p>
-                <p class="text-xs font-bold text-amber-500 flex items-center gap-1 mt-2">
-                    <span class="material-symbols-outlined text-xs">priority_high</span> Action required
-                </p>
+                <p class="text-xs font-bold text-amber-500 flex items-center gap-1 mt-2">Action required</p>
             </div>
         </div>
-        <!-- Pending Approvals Section -->
+
+        {% if stats.pending_requests > 0 %}
         <section class="flex flex-col gap-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
-                    <span class="material-symbols-outlined text-amber-500">notification_important</span>
-                    Pending Approvals
+                    <span class="material-symbols-outlined text-amber-500">notification_important</span> Pending Approvals
                 </h3>
-                <span
-                    class="px-2 py-1 bg-amber-500/10 text-amber-500 text-xs font-bold rounded-lg border border-amber-500/20">{{ stats.pending_requests }}
-                    Priority Items</span>
             </div>
-            <div id="pending-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for teamUser in team_members %}
+                {% if teamUser.status == 'pending' %}
+                <div class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl p-5 hover:border-primary/50 transition-all group">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="size-12 rounded-full overflow-hidden bg-primary/20 text-primary flex justify-center items-center font-bold text-lg">
+                            {{ teamUser.name[:2] | upper if teamUser.name else '??' }}
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm dark:text-white">{{ teamUser.name or 'Unknown' }}</p>
+                            <p class="text-xs text-slate-500">{{ teamUser.email }}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="approveUser({{ teamUser.id }}, 'approve')" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-sm">check</span> Approve
+                        </button>
+                        <button onclick="approveUser({{ teamUser.id }}, 'reject')" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-500/10 hover:text-red-500 dark:hover:bg-red-500/10 text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors">
+                            <span class="material-symbols-outlined text-sm">close</span> Reject
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
             </div>
         </section>
-        <!-- Member Directory Table -->
-        <section
-            class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col">
-            <div
-                class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {% endif %}
+
+        <section class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-bold dark:text-white">Member Directory</h3>
-                    <p class="text-sm text-slate-500">Manage and edit roles for all {{ stats.total_scouts }} registered scouts.</p>
+                    <p class="text-sm text-slate-500">Manage and edit roles for registered scouts.</p>
                 </div>
-                <div class="flex gap-3">
-                    <div class="relative">
-                        <span
-                            class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                        <input
-                            id="member-search-input"
-                            class="pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-full md:w-64 focus:ring-primary focus:border-primary"
-                            placeholder="Filter by name or email..." type="text" />
-                    </div>
-                    <button
-                        class="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                        <span class="material-symbols-outlined text-lg">filter_list</span>
-                        Filter
-                    </button>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                    <input id="member-search-input" class="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm w-full md:w-64 focus:ring-primary focus:border-primary" placeholder="Filter members..." type="text" />
                 </div>
             </div>
             <div class="overflow-x-auto custom-scrollbar">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-50 dark:bg-slate-900/50">
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Member
-                            </th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
-                                Assigned Role</th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Password
-                            </th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Status
-                            </th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Join
-                                Date</th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-center">Matches
-                                Scouted</th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Last
-                                Active</th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Last
-                                Login</th>
-                            <th
-                                class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Member</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Assigned Role</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Password</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-center">Matches Scouted</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="directory-tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <!-- Table will be populated by JS with real Supabase data -->
+                        {% for teamUser in team_members %}
+                        {% if teamUser.status == 'active' %}
+                        <tr class="member-row hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors" data-search="{{ teamUser.name | lower }} {{ teamUser.email | lower }} {{ teamUser.role | lower }}">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="size-8 rounded-full overflow-hidden {% if not teamUser.profile_picture %}bg-primary/20 text-primary flex justify-center items-center font-bold text-xs{% else %}bg-slate-200 dark:bg-slate-700{% endif %}">
+                                        {% if teamUser.profile_picture %}
+                                            <img class="w-full h-full object-cover" src="{{ teamUser.profile_picture }}" />
+                                        {% else %}
+                                            {{ teamUser.name[:2] | upper if teamUser.name else '??' }}
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold dark:text-white">{{ teamUser.name or 'Unknown' }}</p>
+                                        <p class="text-xs text-slate-500">{{ teamUser.email }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <select onchange="changeRole({{ teamUser.id }}, this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
+                                    <option {% if teamUser.role == 'Admin' %}selected{% endif %}>Admin</option>
+                                    <option {% if teamUser.role == 'Head Scout' %}selected{% endif %}>Head Scout</option>
+                                    <option {% if teamUser.role == 'Strategy Lead' %}selected{% endif %}>Strategy Lead</option>
+                                    <option {% if teamUser.role == 'Pit Scout' %}selected{% endif %}>Pit Scout</option>
+                                    <option {% if teamUser.role == 'Stand Scout' %}selected{% endif %}>Stand Scout</option>
+                                </select>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded select-all cursor-help" title="Password">{{ teamUser.password_plain or 'N/A' }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-xs font-bold text-primary text-center">{{ teamUser.matches_scouted or 0 }}</td>
+                            <td class="px-6 py-4 text-right">
+                                <button onclick="approveUser({{ teamUser.id }}, 'reject')" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors" title="Revoke Access">
+                                    <span class="material-symbols-outlined text-lg">person_remove</span>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% else %}
+                        <tr><td colspan="5" class="p-6 text-center text-slate-500 text-sm">No members found.</td></tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
-            <p id="showing-text" class="text-xs text-slate-500">Showing 0 members</p>
-            <div class="flex gap-2">
-                <button
-                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold disabled:opacity-50"
-                    disabled="">Previous</button>
-                <button
-                    class="px-3 py-1 bg-primary text-white border border-primary rounded text-xs font-bold">1</button>
-                <button
-                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">2</button>
-                <button
-                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">3</button>
-                <button
-                    class="px-3 py-1 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Next</button>
-            </div>
+            <p id="showing-text" class="text-xs text-slate-500 p-4 border-t border-slate-200 dark:border-slate-800">Showing members.</p>
         </section>
 
-        <!-- Match Assignments Section -->
-        <section
-            class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
-            <div
-                class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Match Assignments -->
+        <section class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
-                        <span class="material-symbols-outlined text-primary">assignment</span>
-                        Match Assignments
+                        <span class="material-symbols-outlined text-primary">assignment</span> Match Assignments
                     </h3>
-                    <p class="text-sm text-slate-500">Assign specific scouts to upcoming matches and teams.</p>
                 </div>
-                <button id="auto-assign-btn"
-                    class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
+                <button id="auto-assign-btn" onclick="autoAssignAll()" class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
                     <span class="material-symbols-outlined text-sm">smart_toy</span>
                     <span>Auto-Assign All</span>
                 </button>
             </div>
-
-            <!-- Assignment Form -->
             <div class="p-6 bg-slate-50 dark:bg-slate-900/30 border-b border-slate-200 dark:border-slate-800">
-                <form id="assignment-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-                    <!-- Scout Selection -->
+                <form id="assignment-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end" onsubmit="submitAssignment(event)">
                     <div>
-                        <label
-                            class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
-                        <select id="assign-scout"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
+                        <select id="assign-scout" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="">Select Scout...</option>
-                            {% for member in team_members %}
-                            <option value="{{ member.id }}">{{ member.name }}</option>
+                            {% for teamUser in team_members %}
+                            {% if teamUser.status == 'active' %}
+                            <option value="{{ teamUser.id }}">{{ teamUser.name }}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
-
-                    <!-- Match Selection -->
                     <div>
-                        <label
-                            class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Match</label>
-                        <select id="assign-match"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Match</label>
+                        <select id="assign-match" onchange="matchSelected(this.value)" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="">Select Match...</option>
                             {% for match in event_matches %}
-                            <option value="{{ match.key }}">{{ match.comp_level | upper }} {{ match.match_number }}
-                            </option>
+                            <option value="{{ match.key }}">{{ match.comp_level | upper }} {{ match.match_number }}</option>
                             {% endfor %}
                         </select>
                     </div>
-
-                    <!-- Team Input -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team
-                            Key</label>
-                        <select id="assign-team"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required disabled>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team Key</label>
+                        <select id="assign-team" onchange="teamSelected(this)" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required disabled>
                             <option value="">Select Team...</option>
                         </select>
                     </div>
-
-                    <!-- Alliance Color -->
                     <div>
-                        <label
-                            class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Alliance</label>
-                        <select id="assign-alliance"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Alliance</label>
+                        <select id="assign-alliance" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="Red">Red</option>
                             <option value="Blue">Blue</option>
                         </select>
                     </div>
-
-                    <!-- Submit Button -->
                     <div>
-                        <button type="submit"
-                            class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
-                            <span class="material-symbols-outlined text-sm">add</span>
-                            Assign
+                        <button type="submit" id="submit-assign-btn" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                            <span class="material-symbols-outlined text-sm">add</span> Assign
                         </button>
                     </div>
                 </form>
             </div>
-            <!-- Pit Assignments Section -->
-            <section
-                class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
-                <div
-                    class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary">engineering</span>
-                            Pit Assignments
-                        </h3>
-                        <p class="text-sm text-slate-500">Assign specific scouts to gather technical data from teams in
-                            the pits.</p>
-                    </div>
-                    <button id="auto-assign-pit-btn" onclick="autoAssignPit()"
-                        class="px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 hover:opacity-90 text-white text-sm font-bold rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                        <span>Auto-Assign All</span>
-                    </button>
-                </div>
-
-                <!-- Pit Assignment Form -->
-                <div class="p-6 bg-slate-50 dark:bg-slate-900/30 border-b border-slate-200 dark:border-slate-800">
-                    <form id="pit-assignment-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
-                        onsubmit="submitPitAssignment(event)">
-                        <!-- Scout Selection -->
-                        <div>
-                            <label
-                                class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
-                            <select id="assign-pit-scout" multiple
-                                class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium h-20"
-                                required>
-                                {% for member in team_members %}
-                                <option value="{{ member.id }}">{{ member.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <p class="text-[10px] text-slate-500 mt-1">Hold Ctrl/Cmd to select multiple scouts.</p>
-                        </div>
-
-                        <!-- Team Input -->
-                        <div class="md:col-span-2">
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team
-                                Number</label>
-                            <input id="assign-pit-team" type="number"
-                                class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                                placeholder="e.g. 254" required />
-                        </div>
-
-                        <!-- Submit Button -->
-                        <div>
-                            <button type="submit" id="pit-assign-btn"
-                                class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
-                                <span class="material-symbols-outlined text-sm">add</span>
-                                Assign Pit
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Match Schedule Grid -->
-            <section
-                class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
-                <div
-                    class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary">calendar_month</span>
-                            Match Schedule
-                        </h3>
-                        <p class="text-sm text-slate-500" id="match-grid-subtitle">Loading matches...</p>
-                    </div>
-                    <button id="toggle-all-matches-btn"
-                        class="hidden px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-sm font-bold rounded-lg transition-colors flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">visibility</span>
-                        <span id="toggle-all-matches-text">Show All Matches</span>
-                    </button>
-                </div>
-
-                <div id="match-grid-container" class="p-4 overflow-x-auto custom-scrollbar">
-                    <div class="flex items-center justify-center py-12 text-slate-400">
-                        <span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>
-                        Loading match schedule...
-                    </div>
-                </div>
-            </section>
-
-            <!-- Active Assignments Table -->
-            <section
-                class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
-                <div
-                    class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
-                            <span class="material-symbols-outlined text-primary">checklist</span>
-                            Active Assignments
-                        </h3>
-                        <p class="text-sm text-slate-500">All current scout-to-match assignments.</p>
-                    </div>
-                    <button id="revoke-all-btn" onclick="revokeAllAssignments()"
-                        class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg shadow-lg shadow-red-500/20 transition-all flex items-center gap-2">
-                        <span class="material-symbols-outlined text-sm">delete_sweep</span>
-                        <span>Revoke All</span>
-                    </button>
-                </div>
-                <div class="overflow-x-auto custom-scrollbar">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-50 dark:bg-slate-900/50">
-                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
-                                    Scout
-                                </th>
-                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
-                                    Match
-                                </th>
-                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
-                                    Team
-                                </th>
-                                <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">
-                                    Alliance</th>
-                                <th
-                                    class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">
-                                    Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                            {% for assignment in assignments %}
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                                <td class="px-6 py-4">
-                                    <span class="text-sm font-bold dark:text-white">
-                                        {% for member in team_members %}
-                                        {% if member.id == assignment.user_id %}
-                                        {{ member.name }}
-                                        {% endif %}
-                                        {% endfor %}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm font-medium dark:text-slate-300">
-                                    {% if assignment.match_key %} {{ assignment.match_key }} {% else %} <span
-                                        class="text-slate-500 italic">Pit</span> {% endif %}
-                                </td>
-                                <td class="px-6 py-4 text-sm font-bold dark:text-white">{{ assignment.team_key }}</td>
-                                <td class="px-6 py-4">
-                                    {% if assignment.alliance_color %}
-                                    <span
-                                        class="px-2 py-1 rounded text-xs font-bold {{ 'bg-red-500/10 text-red-500' if assignment.alliance_color == 'Red' else 'bg-blue-500/10 text-blue-500' }}">
-                                        {{ assignment.alliance_color }}
-                                    </span>
-                                    {% else %}
-                                    <span
-                                        class="px-2 py-1 rounded text-xs font-bold bg-slate-500/10 text-slate-500">N/A</span>
-                                    {% endif %}
-                                </td>
-                                <td class="px-6 py-4 text-right">
-                                    <button onclick="revokeAssignment('{{ assignment.id }}')"
-                                        class="p-1 px-3 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors text-xs font-bold">
-                                        Revoke
-                                    </button>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5"
-                                    class="px-6 py-8 text-center text-slate-500 dark:text-slate-400 text-sm">
-                                    No active assignments found.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-    </main>
-
-    <!-- Role Selection Modal -->
-    <div id="role-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-all">
-        <div class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden scale-95 transition-transform duration-300">
-            <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <div>
-                    <h3 class="text-xl font-bold dark:text-white">Manage Member Roles</h3>
-                    <p class="text-xs text-slate-500 mt-1" id="role-modal-subtitle">Synchronizing member roles...</p>
-                </div>
-                <button onclick="window.closeRoleModal()" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 gap-3" id="role-checkbox-container">
-                    <!-- Roles will be injected here -->
-                </div>
-            </div>
-            <div class="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex gap-3">
-                <button onclick="window.closeRoleModal()" class="flex-1 py-2.5 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:opacity-80 transition-all">Cancel</button>
-                <button id="save-roles-btn" class="flex-1 py-2.5 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all">Save Roles</button>
-            </div>
-        </div>
-    </div>
-
-    <footer class="mt-auto p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161e2b]">
-        <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
-            <span class="material-symbols-outlined text-sm">precision_manufacturing</span>
-            © Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}
-        </p>
-    </footer>
-
-    <script id="users-data-script" type="application/json">{{ users_json | safe }}</script>
-    <script id="assignments-data-script" type="application/json">{{ assignments_json | safe }}</script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-
-            const roleOptions = [
-                'Admin', 'Head Scout', 'Strategy Lead', 'Construction Lead', 
-                'Captain', 'Pit Scout', 'Stand Scout', 'Driver', 'Media'
-            ];
-            const pendingContainer = document.getElementById('pending-container');
-            const directoryTbody = document.getElementById('directory-tbody');
-            const showingText = document.getElementById('showing-text');
-
-            // Quick stat counters
-            const totalScoutsEl = document.querySelectorAll('.text-4xl')[0];
-            const activeScoutsEl = document.querySelectorAll('.text-4xl')[1];
-            const pendingCountEl = document.querySelectorAll('.text-4xl')[2];
-
-            const inviteBtn = document.getElementById('invite-btn');
-            const inviteText = document.getElementById('invite-text');
-            const headerSearchInput = document.getElementById('global-search');
-            const memberSearchInput = document.getElementById('member-search-input');
-
-            let allMembersData = [];
-            let teamAccessCode = 'N/A';
-
-            try {
-                const userRes = await window.apiFetch('/api/user/me');
-                if (userRes.ok) {
-                    const userData = await userRes.json();
-                    if (userData.team_access_code) {
-                        teamAccessCode = userData.team_access_code;
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to fetch user data", e);
-            }
-
-            const loadMembers = async () => {
-                try {
-                    const res = await window.apiFetch('/api/admin/members');
-                    if (res.status === 401 || res.status === 403) {
-                        // Not authorized
-                        document.body.innerHTML = '<div class="p-10 text-center text-red-500 font-bold">Unauthorized. Access denied.</div>';
-                        return;
-                    }
-                    if (!res.ok) throw new Error('Failed to load members');
-                    const members = await res.json();
-
-                    allMembersData = members;
-                    renderMembers(members);
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-
-            const approveUser = async (userId, action, role = 'Stand Scout') => {
-                try {
-                    await fetch(`/api/admin/approve/${userId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action, role })
-                    });
-                    loadMembers();
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-
-            window.toggleRoleMenu = (userId, event) => {
-                const user = allMembersData.find(m => m.id === userId);
-                if (!user) return;
-
-                const modal = document.getElementById('role-modal');
-                const title = document.getElementById('role-modal-subtitle');
-                const container = document.getElementById('role-checkbox-container');
-                const saveBtn = document.getElementById('save-roles-btn');
-
-                title.textContent = `Assign roles to ${user.name}`;
-                container.innerHTML = '';
-
-                roleOptions.forEach(role => {
-                    const isChecked = user.roles && user.roles.includes(role);
-                    const div = document.createElement('label');
-                    div.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-primary/20";
-                    div.innerHTML = `
-                        <span class="text-sm font-bold dark:text-slate-200">${role}</span>
-                        <input type="checkbox" value="${role}" ${isChecked ? 'checked' : ''} class="rounded text-primary focus:ring-primary bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
-                    `;
-                    container.appendChild(div);
-                });
-
-                saveBtn.onclick = () => window.confirmRoleUpdate(userId);
-                modal.classList.remove('hidden');
-                setTimeout(() => modal.querySelector('.scale-95')?.classList.replace('scale-95', 'scale-100'), 10);
-            };
-
-            window.closeRoleModal = () => {
-                const modal = document.getElementById('role-modal');
-                modal.querySelector('.scale-100')?.classList.replace('scale-100', 'scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 200);
-            };
-
-            window.confirmRoleUpdate = async (userId) => {
-                const container = document.getElementById('role-checkbox-container');
-                const selectedRoles = Array.from(container.querySelectorAll('input:checked')).map(i => i.value);
-                
-                try {
-                    const res = await fetch(`/api/admin/role/${userId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ roles: selectedRoles })
-                    });
-                    if (res.ok) {
-                        window.closeRoleModal();
-                        loadMembers();
-                    } else {
-                        const err = await res.json();
-                        alert(`Error: ${err.error || 'Failed to update roles'}`);
-                    }
-                } catch (e) {
-                    console.error(e);
-                    alert("Network error updating roles");
-                }
-            };
-
-
-            const renderMembers = (members) => {
-                pendingContainer.innerHTML = '';
-                directoryTbody.innerHTML = '';
-
-                const pending = members.filter(m => m.status === 'pending');
-                const active = members.filter(m => m.status === 'active');
-
-                totalScoutsEl.textContent = active.length;
-                activeScoutsEl.textContent = active.length;
-                pendingCountEl.textContent = pending.length;
-                showingText.textContent = `Showing all ${active.length} active members`;
-
-                // Render Pending
-                pending.forEach(user => {
-                    const card = document.createElement('div');
-                    card.className = "bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl p-5 hover:border-primary/50 transition-all group";
-                    card.innerHTML = `
-            <div class="flex items-center gap-3 mb-4">
-                <a href="/profile" class="size-12 rounded-full overflow-hidden bg-primary/20 text-primary flex justify-center items-center font-bold text-lg">
-                    ${(user.name || '??').substring(0, 2).toUpperCase()}
-                </a>
-                <div>
-                    <p class="font-bold text-sm dark:text-white">${user.name || 'Unknown'}</p>
-                    <p class="text-xs text-slate-500">${user.email}</p>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="window.approveUser(${user.id}, 'approve')" class="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors">
-                    <span class="material-symbols-outlined text-sm">check</span> Approve
-                </button>
-                <button onclick="window.approveUser(${user.id}, 'reject')" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-red-500/10 hover:text-red-500 dark:hover:bg-red-500/10 text-slate-500 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors">
-                    <span class="material-symbols-outlined text-sm">close</span> Reject
-                </button>
-            </div>
-            `;
-                    pendingContainer.appendChild(card);
-                });
-
-                // Render Directory
-                active.forEach(user => {
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors";
-
-
-                    tr.innerHTML = `
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-3">
-                    <a href="/profile" class="size-8 rounded-full overflow-hidden bg-primary/20 text-primary flex justify-center items-center font-bold text-xs">
-                        ${(user.name || '??').substring(0, 2).toUpperCase()}
-                    </a>
-                    <div>
-                        <p class="text-sm font-bold dark:text-white">${user.name || 'Unknown'}</p>
-                        <p class="text-xs text-slate-500">${user.email}</p>
-                    </div>
-                </div>
-            </td>
-            <td class="px-6 py-4">
-                <div class="flex flex-wrap gap-1.5 max-w-[220px]">
-                    ${(user.roles || []).map(r => `
-                        <span class="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-[10px] font-bold border border-primary/20 flex items-center gap-1 cursor-pointer hover:bg-primary/20" 
-                              onclick="window.toggleRoleMenu(${user.id}, event)">
-                            ${r}
-                        </span>
-                    `).join('')}
-                    ${(!user.roles || user.roles.length === 0) ? '<span class="text-slate-400 italic text-[10px]">No roles</span>' : ''}
-                    <button onclick="window.toggleRoleMenu(${user.id}, event)" class="size-5 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 hover:text-primary transition-colors ml-1">
-                        <span class="material-symbols-outlined text-[14px]">add</span>
-                    </button>
-                </div>
-            </td>
-            <td class="px-6 py-4">
-                <span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded select-all cursor-help" title="Click to select password">${user.password_plain || 'N/A'}</span>
-            </td>
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-1.5">
-                    <div class="size-2 rounded-full bg-emerald-500"></div>
-                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
-                </div>
-            </td>
-            <td class="px-6 py-4 text-xs dark:text-slate-400 font-mono">${user.join_date || 'N/A'}</td>
-            <td class="px-6 py-4 text-xs font-bold text-primary text-center">${user.matches_scouted || 0}</td>
-            <td class="px-6 py-4 text-xs dark:text-slate-400 italic">${user.last_active || 'Never'}</td>
-            <td class="px-6 py-4 text-xs dark:text-slate-400 italic">${user.last_login || 'Never'}</td>
-            <td class="px-6 py-4 text-right">
-                <button onclick="window.approveUser(${user.id}, 'reject')" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors" title="Revoke Access">
-                    <span class="material-symbols-outlined text-lg">person_remove</span>
-                </button>
-            </td>
-            `;
-                    directoryTbody.appendChild(tr);
-                });
-
-                // Update assignment dropdowns with active members
-                const matchScoutSelect = document.getElementById('assign-scout');
-                const pitScoutSelect = document.getElementById('assign-pit-scout');
-
-                if (matchScoutSelect) {
-                    matchScoutSelect.innerHTML = '<option value="">Select Scout...</option>';
-                    active.forEach(user => {
-                        const opt = document.createElement('option');
-                        opt.value = user.id;
-                        opt.textContent = user.name || 'Unknown';
-                        matchScoutSelect.appendChild(opt);
-                    });
-                }
-
-                if (pitScoutSelect) {
-                    pitScoutSelect.innerHTML = '';
-                    active.forEach(user => {
-                        const opt = document.createElement('option');
-                        opt.value = user.id;
-                        opt.textContent = user.name || 'Unknown';
-                        pitScoutSelect.appendChild(opt);
-                    });
-                }
-            }
-
-            const filterMembers = (e) => {
-                const term = e.target.value.toLowerCase();
-                const filtered = allMembersData.filter(m =>
-                    (m.name || '').toLowerCase().includes(term) ||
-                    (m.email || '').toLowerCase().includes(term) ||
-                    (m.role || '').toLowerCase().includes(term)
-                );
-                renderMembers(filtered);
-            };
-
-            if (headerSearchInput) headerSearchInput.addEventListener('input', filterMembers);
-            if (memberSearchInput) memberSearchInput.addEventListener('input', filterMembers);
-
-            inviteBtn.addEventListener('click', () => {
-                navigator.clipboard.writeText(teamAccessCode).then(() => {
-                    inviteText.textContent = `Copied: ${teamAccessCode}`;
-                    inviteBtn.classList.remove('bg-primary');
-                    inviteBtn.classList.add('bg-emerald-500');
-                    setTimeout(() => {
-                        inviteText.textContent = "Invite Member";
-                        inviteBtn.classList.add('bg-primary');
-                        inviteBtn.classList.remove('bg-emerald-500');
-                    }, 3000);
-                }).catch(err => {
-                    console.error('Failed to copy text: ', err);
-                    inviteText.textContent = `Code: ${teamAccessCode}`;
-                });
-            });
-
-            // Attach to window so inline onclicks can reach them
-            window.approveUser = approveUser;
-            window.changeRole = changeRole;
-
-            // --- Scout Assignment Logic ---
-            const assignmentForm = document.getElementById('assignment-form');
-            const assignMatchSelect = document.getElementById('assign-match');
-            const assignTeamSelect = document.getElementById('assign-team');
-            const assignAllianceSelect = document.getElementById('assign-alliance');
-            const gridContainer = document.getElementById('match-grid-container');
-            const gridSubtitle = document.getElementById('match-grid-subtitle');
-            const toggleAllBtn = document.getElementById('toggle-all-matches-btn');
-            const toggleAllText = document.getElementById('toggle-all-matches-text');
-
-            // Parse users and assignments from Jinja context
-            let usersData = [];
-            let assignmentsData = [];
-            try { usersData = JSON.parse(document.getElementById('users-data-script').textContent); } catch (e) { console.error('Failed to parse users:', e); }
-            try { assignmentsData = JSON.parse(document.getElementById('assignments-data-script').textContent); } catch (e) { console.error('Failed to parse assignments:', e); }
-
-            let allMatches = [];
-            let showingAll = false;
-
-            // ---- Fetch matches from API ----
-            async function fetchAndRenderMatches(showAll) {
-                try {
-                    const yearSelect = document.getElementById('season-select');
-                    const selectedYear = yearSelect ? yearSelect.value : '2026';
-                    const url = `/api/event/matches?year=${selectedYear}${showAll ? '&show_all=true' : ''}`;
-                    const res = await window.apiFetch(url);
-                    if (!res.ok) {
-                        gridContainer.innerHTML = '<p class="text-center py-8 text-red-500 text-sm font-bold">Error loading matches. Please refresh the page.</p>';
-                        return;
-                    }
-                    const data = await res.json();
-                    allMatches = data.matches || [];
-                    const total = data.total || 0;
-                    const fallbackYear = data.fallback_year;
-
-                    // Populate dropdown
-                    assignMatchSelect.innerHTML = '<option value="">Select Match...</option>';
-                    allMatches.forEach(m => {
-                        const opt = document.createElement('option');
-                        opt.value = m.key;
-                        opt.textContent = `${m.comp_level.toUpperCase()} ${m.match_number}`;
-                        assignMatchSelect.appendChild(opt);
-                    });
-
-                    // Fallback year notice
-                    let fallbackNotice = '';
-                    if (fallbackYear) {
-                        fallbackNotice = ` <span class="text-amber-400 font-bold">(Fallback: showing ${fallbackYear} data)</span>`;
-                    }
-
-                    // Show/hide toggle button
-                    if (data.filtered && allMatches.length === 0 && total > 0) {
-                        toggleAllBtn.classList.remove('hidden');
-                        toggleAllText.textContent = `Show All ${total} Matches`;
-                        gridSubtitle.innerHTML = 'No upcoming matches found.' + fallbackNotice;
-                    } else if (data.filtered && allMatches.length > 0 && allMatches.length < total) {
-                        toggleAllBtn.classList.remove('hidden');
-                        toggleAllText.textContent = `Show All ${total} Matches`;
-                        gridSubtitle.innerHTML = `Showing ${allMatches.length} upcoming matches.` + fallbackNotice;
-                    } else {
-                        if (showAll) {
-                            toggleAllBtn.classList.remove('hidden');
-                            toggleAllText.textContent = 'Show Upcoming Only';
-                        } else {
-                            toggleAllBtn.classList.add('hidden');
-                        }
-                        gridSubtitle.innerHTML = `Showing all ${allMatches.length} matches.` + fallbackNotice;
-                    }
-
-                    renderMatchGrid(allMatches);
-                } catch (e) {
-                    console.error("Error fetching matches:", e);
-                    gridContainer.innerHTML = '<p class="text-center py-8 text-red-400">Failed to load matches.</p>';
-                }
-            }
-
-            // Toggle show all
-            toggleAllBtn.addEventListener('click', () => {
-                showingAll = !showingAll;
-                fetchAndRenderMatches(showingAll);
-            });
-
-            // Auto Assign All
-            const autoAssignBtn = document.getElementById('auto-assign-btn');
-            if (autoAssignBtn) {
-                autoAssignBtn.addEventListener('click', async () => {
-                    const originalHTML = autoAssignBtn.innerHTML;
-                    autoAssignBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">autorenew</span><span>Assigning...</span>';
-                    autoAssignBtn.disabled = true;
-
-                    try {
-                        const res = await window.apiFetch('/api/admin/auto-assign', { method: 'POST' });
-                        const data = await res.json();
-
-                        if (res.ok) {
-                            autoAssignBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check_circle</span><span>Done</span>';
-                            autoAssignBtn.classList.replace('bg-emerald-500', 'bg-green-600');
-                            alert(data.message || "Auto-assignment complete!");
-                            setTimeout(() => window.location.reload(), 1000);
-                        } else {
-                            alert(data.error || "Failed to auto-assign");
-                            autoAssignBtn.innerHTML = originalHTML;
-                            autoAssignBtn.disabled = false;
-                        }
-                    } catch (e) {
-                        alert("Network error during auto-assignment.");
-                        autoAssignBtn.innerHTML = originalHTML;
-                        autoAssignBtn.disabled = false;
-                    }
-                });
-            }
-
-            // ---- Render Match Grid ----
-            function renderMatchGrid(matches) {
-                if (!matches.length) {
-                    gridContainer.innerHTML = '<p class="text-center py-8 text-slate-400 text-sm">No matches to display.</p>';
-                    return;
-                }
-
-                // Build a lookup: matchKey+teamKey -> assignment
-                const assignMap = {};
-                assignmentsData.forEach(a => {
-                    assignMap[`${a.match_key}__${a.team_key}`] = a;
-                });
-
-                // User lookup by id
-                const userMap = {};
-                usersData.forEach(u => { userMap[u.id] = u; });
-
-                let html = '<div class="space-y-3">';
-
-                matches.forEach(match => {
-                    const label = `${match.comp_level.toUpperCase()} ${match.match_number}`;
-                    const redTeams = (match.alliances?.red?.team_keys) || [];
-                    const blueTeams = (match.alliances?.blue?.team_keys) || [];
-
-                    html += `
-                    <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
-                        <div class="bg-slate-50 dark:bg-slate-900/50 px-4 py-2 flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
-                            <span class="material-symbols-outlined text-sm text-primary">sports_score</span>
-                            <span class="text-sm font-bold dark:text-white">${label}</span>
-                            <span class="text-xs text-slate-400 ml-auto">${match.key}</span>
-                        </div>
-                        <div class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-800">
-                            <!-- Red Alliance -->
-                            <div class="p-3">
-                                <div class="text-[10px] uppercase font-black text-red-500 tracking-wider mb-2 flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Red Alliance
-                                </div>
-                                <div class="grid grid-cols-3 gap-2">
-                                    ${redTeams.map(tk => renderTeamSlot(tk, match.key, 'Red', assignMap, userMap)).join('')}
-                                </div>
-                            </div>
-                            <!-- Blue Alliance -->
-                            <div class="p-3">
-                                <div class="text-[10px] uppercase font-black text-blue-500 tracking-wider mb-2 flex items-center gap-1">
-                                    <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Blue Alliance
-                                </div>
-                                <div class="grid grid-cols-3 gap-2">
-                                    ${blueTeams.map(tk => renderTeamSlot(tk, match.key, 'Blue', assignMap, userMap)).join('')}
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                });
-
-                html += '</div>';
-                gridContainer.innerHTML = html;
-            }
-
-            function renderTeamSlot(teamKey, matchKey, alliance, assignMap, userMap) {
-                const teamNum = teamKey.replace('frc', '');
-                const assignment = assignMap[`${matchKey}__${teamKey}`];
-                const colorBorder = alliance === 'Red' ? 'border-red-500/30' : 'border-blue-500/30';
-                const colorBg = alliance === 'Red' ? 'bg-red-500/5' : 'bg-blue-500/5';
-
-                if (assignment) {
-                    const user = userMap[assignment.user_id];
-                    const userName = (user && user.name) ? user.name : 'Unknown';
-                    const initials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                    const profilePic = user?.profile_picture;
-
-                    return `
-                    <div class="flex flex-col items-center gap-1 p-2 rounded-lg border ${colorBorder} ${colorBg}">
-                        <span class="text-xs font-bold dark:text-white">${teamNum}</span>
-                        <div class="size-8 rounded-full bg-primary/20 border-2 border-primary/50 flex items-center justify-center overflow-hidden">
-                            ${profilePic
-                            ? `<img src="${profilePic}" class="w-full h-full object-cover">`
-                            : `<span class="text-[10px] font-bold text-primary">${initials}</span>`}
-                        </div>
-                        <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium text-center leading-tight truncate w-full">${userName.split(' ')[0]}</span>
-                    </div>`;
-                } else {
-                    return `
-                    <div class="flex flex-col items-center gap-1 p-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary/50 transition-colors group">
-                        <span class="text-xs font-bold dark:text-white">${teamNum}</span>
-                        <button onclick="quickAssign('${matchKey}', '${teamKey}', '${alliance}')"
-                            class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-primary/20 transition-colors cursor-pointer">
-                            <span class="material-symbols-outlined text-sm text-slate-400 group-hover:text-primary transition-colors">person_add</span>
-                        </button>
-                        <span class="text-[10px] text-slate-400 font-medium">Assign</span>
-                    </div>`;
-                }
-            }
-
-            // ---- Quick Assign (from grid) ----
-            window.quickAssign = (matchKey, teamKey, alliance) => {
-                // Pre-fill the form and scroll to it
-                assignMatchSelect.value = matchKey;
-                // Trigger change to populate team dropdown
-                assignMatchSelect.dispatchEvent(new Event('change'));
-
-                // Wait a tick for the team dropdown to populate, then select
-                setTimeout(() => {
-                    assignTeamSelect.value = teamKey;
-                    assignAllianceSelect.value = alliance;
-                    // Scroll to form
-                    assignmentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Flash the form
-                    assignmentForm.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'dark:ring-offset-[#161e2b]');
-                    setTimeout(() => assignmentForm.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'dark:ring-offset-[#161e2b]'), 2000);
-                }, 100);
-            };
-
-            // ---- Match Selection -> Populate Teams ----
-            if (assignMatchSelect) {
-                assignMatchSelect.addEventListener('change', (e) => {
-                    const selectedMatchKey = e.target.value;
-                    assignTeamSelect.innerHTML = '<option value="">Select Team...</option>';
-
-                    if (!selectedMatchKey) {
-                        assignTeamSelect.disabled = true;
-                        return;
-                    }
-
-                    const matchData = allMatches.find(m => m.key === selectedMatchKey);
-                    if (matchData && matchData.alliances) {
-                        assignTeamSelect.disabled = false;
-
-                        if (matchData.alliances.red && matchData.alliances.red.team_keys) {
-                            const optGroup = document.createElement('optgroup');
-                            optGroup.label = "Red Alliance";
-                            matchData.alliances.red.team_keys.forEach(tk => {
-                                const opt = document.createElement('option');
-                                opt.value = tk;
-                                opt.textContent = tk;
-                                opt.dataset.alliance = "Red";
-                                optGroup.appendChild(opt);
-                            });
-                            assignTeamSelect.appendChild(optGroup);
-                        }
-
-                        if (matchData.alliances.blue && matchData.alliances.blue.team_keys) {
-                            const optGroup = document.createElement('optgroup');
-                            optGroup.label = "Blue Alliance";
-                            matchData.alliances.blue.team_keys.forEach(tk => {
-                                const opt = document.createElement('option');
-                                opt.value = tk;
-                                opt.textContent = tk;
-                                opt.dataset.alliance = "Blue";
-                                optGroup.appendChild(opt);
-                            });
-                            assignTeamSelect.appendChild(optGroup);
-                        }
-                    } else {
-                        assignTeamSelect.disabled = true;
-                    }
-                });
-            }
-
-            // Auto-select Alliance Color when Team is chosen
-            if (assignTeamSelect) {
-                assignTeamSelect.addEventListener('change', (e) => {
-                    const selectedOption = e.target.options[e.target.selectedIndex];
-                    if (selectedOption && selectedOption.dataset.alliance) {
-                        assignAllianceSelect.value = selectedOption.dataset.alliance;
-                    }
-                });
-            }
-
-            // ---- Form Submit ----
-            if (assignmentForm) {
-                assignmentForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-
-                    const userId = document.getElementById('assign-scout').value;
-                    const matchKey = document.getElementById('assign-match').value;
-                    const teamKey = document.getElementById('assign-team').value;
-                    const allianceColor = document.getElementById('assign-alliance').value;
-
-                    if (!userId || !matchKey || !teamKey || !allianceColor) {
-                        alert("Please fill in all assignment fields.");
-                        return;
-                    }
-
-                    try {
-                        const res = await window.apiFetch('/api/admin/assignments', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                user_id: userId,
-                                match_key: matchKey,
-                                team_key: teamKey,
-                                alliance_color: allianceColor
-                            })
-                        });
-
-                        if (res.ok) {
-                            window.location.reload();
-                        } else {
-                            const data = await res.json();
-                            alert(data.error || "Failed to create assignment");
-                        }
-                    } catch (err) {
-                        console.error("Assignment error:", err);
-                        alert("A network error occurred.");
-                    }
-                });
-            }
-
-            window.revokeAssignment = async (assignmentId) => {
-                if (!confirm("Are you sure you want to revoke this assignment?")) return;
-
-                try {
-                    const res = await fetch(`/api/admin/assignments/${assignmentId}`, {
-                        method: 'DELETE'
-                    });
-                    if (res.ok) {
-                        window.location.reload();
-                    } else {
-                        alert("Failed to revoke assignment.");
-                    }
-                } catch (err) {
-                    console.error("Revoke error:", err);
-                }
-            };
-
-            window.toggleRoleMenu = (userId, event) => {
-                const user = allMembersData.find(m => m.id === userId);
-                if (!user) return;
-
-                const modal = document.getElementById('role-modal');
-                const title = document.getElementById('role-modal-subtitle');
-                const container = document.getElementById('role-checkbox-container');
-                const saveBtn = document.getElementById('save-roles-btn');
-
-                title.textContent = `Assign roles to ${user.name}`;
-                container.innerHTML = '';
-
-                roleOptions.forEach(role => {
-                    const isChecked = user.roles && user.roles.includes(role);
-                    const div = document.createElement('label');
-                    div.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-all border border-transparent hover:border-primary/20";
-                    div.innerHTML = `
-                        <span class="text-sm font-bold dark:text-slate-200">${role}</span>
-                        <input type="checkbox" value="${role}" ${isChecked ? 'checked' : ''} class="rounded text-primary focus:ring-primary bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
-                    `;
-                    container.appendChild(div);
-                });
-
-                saveBtn.onclick = () => window.confirmRoleUpdate(userId);
-                modal.classList.remove('hidden');
-                setTimeout(() => modal.firstElementChild?.classList.replace('scale-95', 'scale-100'), 10);
-            };
-
-            window.closeRoleModal = () => {
-                const modal = document.getElementById('role-modal');
-                modal.firstElementChild?.classList.replace('scale-100', 'scale-95');
-                setTimeout(() => modal.classList.add('hidden'), 200);
-            };
-
-            window.confirmRoleUpdate = async (userId) => {
-                const container = document.getElementById('role-checkbox-container');
-                const selectedRoles = Array.from(container.querySelectorAll('input:checked')).map(i => i.value);
-                
-                try {
-                    const res = await fetch(`/api/admin/role/${userId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ roles: selectedRoles })
-                    });
-                    if (res.ok) {
-                        window.closeRoleModal();
-                        loadMembers();
-                    } else {
-                        const err = await res.json();
-                        alert(`Error: ${err.error || 'Failed to update roles'}`);
-                    }
-                } catch (e) {
-                    console.error(e);
-                    alert("Network error updating roles");
-                }
-            };
-
-            window.submitPitAssignment = async (e) => {
-                e.preventDefault();
-                const btn = document.getElementById('pit-assign-btn');
-                const scoutSelect = document.getElementById('assign-pit-scout');
-                const teamInput = document.getElementById('assign-pit-team');
-
-                const userIds = Array.from(scoutSelect.selectedOptions).map(opt => opt.value);
-                const teamNumber = teamInput.value;
-
-                if (userIds.length === 0 || !teamNumber) {
-                    alert("Please select at least one scout and enter a team number.");
-                    return;
-                }
-
-                btn.disabled = true;
-                btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">progress_activity</span> Assigning...';
-
-                try {
-                    const res = await window.apiFetch('/api/admin/assign-pit', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            user_ids: userIds,
-                            team_key: `frc${teamNumber}`
-                        })
-                    });
-
-                    if (res.ok) {
-                        location.reload();
-                    } else {
-                        const data = await res.json();
-                        alert(`Error: ${data.error || 'Failed to assign'}`);
-                        btn.disabled = false;
-                        btn.innerHTML = '<span class="material-symbols-outlined text-sm">add</span> Assign Pit';
-                    }
-                } catch (err) {
-                    console.error(err);
-                    alert("Error creating assignment");
-                    btn.disabled = false;
-                    btn.innerHTML = '<span class="material-symbols-outlined text-sm">add</span> Assign Pit';
-                }
-            };
-
-            const changeRole = async (userId, roles) => {
-                try {
-                    await window.apiFetch(`/api/admin/role/${userId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ roles: Array.isArray(roles) ? roles : [roles] })
-                    });
-                    loadMembers();
-                } catch (e) {
-                    console.error(e);
-                }
-            }
-
-            // ---- Initial Load ----
-            const seasonSelect = document.getElementById('season-select');
-            if (seasonSelect) {
-                seasonSelect.addEventListener('change', () => {
-                    // Update URL and reload if we want full page reload for members etc,
-                    // or just re-fetch matches. User said "voir en fonction des saisons avec les datas",
-                    // so maybe a full reload is better to refresh Jinja data?
-                    // But we want it to be smooth.
-                    const newYear = seasonSelect.value;
-                    window.location.href = `/admin-hub?year=${newYear}`;
-                });
-            }
-
-            fetchAndRenderMatches(false);
-
-            loadMembers();
-
-            window.autoAssignPit = async () => {
-                if (!confirm("Auto-assign pit scouting for all valid teams to all active Pit Scouts? This might take a few seconds.")) {
-                    return;
-                }
-                const btn = document.getElementById('auto-assign-pit-btn');
-                const origHtml = btn.innerHTML;
-                btn.innerHTML = `<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span> Assigning...`;
-                btn.disabled = true;
-
-                try {
-                    const res = await window.apiFetch('/api/admin/auto-assign-pit', { method: 'POST' });
-                    const data = await res.json();
-
-                    if (res.ok) {
-                        alert(data.message || `Assigned ${data.count} teams.`);
-                        window.location.reload();
-                    } else {
-                        alert(data.error || "Failed to auto-assign pit scouts.");
-                        btn.innerHTML = origHtml;
-                        btn.disabled = false;
-                    }
-                } catch (e) {
-                    console.error("Auto-assign pit error:", e);
-                    alert("A network error occurred.");
-                    btn.innerHTML = origHtml;
-                    btn.disabled = false;
-                }
-            };
-
-            window.revokeAllAssignments = async () => {
-                if (!confirm("Are you SURE you want to revoke ALL assignments for ALL scouts? This action cannot be undone.")) {
-                    return;
-                }
-
-                try {
-                    const res = await window.apiFetch('/api/admin/assignments/all', {
-                        method: 'DELETE'
-                    });
-                    if (res.ok) {
-                        window.location.reload();
-                    } else {
-                        const data = await res.json();
-                        alert(data.error || "Failed to revoke assignments.");
-                    }
-                } catch (err) {
-                    console.error("Revoke All error:", err);
-                    alert("A network error occurred.");
-                }
-            };
-        });
-    </script>
-</body>
-
-</html>
+        </section>

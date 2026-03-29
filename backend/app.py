@@ -360,7 +360,6 @@ def admin_hub_view():
         return redirect(url_for('events_view'))
     
     from models import User, ScoutAssignment, MatchScoutData, Event
-    from models import User, ScoutAssignment, MatchScoutData, Event
     
     selected_year = request.args.get('year', 2026, type=int)
     seasons = [2026, 2025, 2024]
@@ -408,7 +407,27 @@ def admin_hub_view():
     # Placeholder for match list from the most recent event of the year
     curr_events = Event.query.filter(Event.date.like(f"%{selected_year}%")).order_by(Event.date.desc()).all()
     event_matches = []
-    # Implementation of TBA match fetching if needed...
+    
+    import frc_api
+    import requests
+    team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+    
+    try:
+        e_res = requests.get(f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{selected_year}/simple", headers={'X-TBA-Auth-Key': frc_api.TBA_API_KEY}, timeout=5)
+        if e_res.status_code == 200 and e_res.json():
+            events = sorted(e_res.json(), key=lambda x: x['end_date'], reverse=True)
+            for ev in events:
+                em = frc_api.get_event_matches(ev['key'])
+                if em:
+                    event_matches = [m for m in em if m.get('time')]
+                    event_matches.sort(key=lambda x: x['time'])
+                    break
+    except Exception as e:
+        print(f"Error fetching matches in admin_hub_view: {e}")
+    
+    assignments = ScoutAssignment.query.filter(ScoutAssignment.user_id.in_(team_member_ids)).all() if team_member_ids else []
+    assignment_map = {f"{a.match_key}__{a.team_key}": a for a in assignments if a.match_key}
+    user_map = {m['id']: m for m in members_data}
     
     return render_template('admin.html', 
                          stats=stats, 
@@ -417,6 +436,8 @@ def admin_hub_view():
                          team_members=members_data,
                          users_json=json.dumps(members_data),
                          assignments=assignments,
+                         assignment_map=assignment_map,
+                         user_map=user_map,
                          event_matches=event_matches,
                          **get_common_data(user))
 
