@@ -81,15 +81,15 @@
                 Members Directory
             </a>
             <div class="h-6 w-px bg-slate-200 dark:border-slate-800"></div>
-            {% if user.role in ['Admin', 'Head Scout'] %}
-            <div class="hidden md:flex items-center gap-1">
-                <a href="/picklist"
-                    class="text-xs font-bold px-3 py-1.5 rounded-full bg-blue-500/10 text-primary border border-primary/20 hover:bg-primary hover:text-white transition-all flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[14px]">drag_indicator</span>
-                    Pick List
-                </a>
+            <!-- Season Selector -->
+            <div class="flex items-center gap-2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 shadow-sm transition-all hover:border-primary/50">
+                <span class="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
+                <select id="season-select" onchange="window.location.href='/dashboard?year='+this.value" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
+                    {% for year in seasons %}
+                    <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>Season {{ year }}</option>
+                    {% endfor %}
+                </select>
             </div>
-            {% endif %}
         </div>
         <div
             class="absolute left-1/2 -translate-x-1/2 flex items-center gap-4 bg-primary/10 border border-primary/20 px-6 py-2 rounded-full">
@@ -102,10 +102,9 @@
                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">{{ user.role }}</p>
             </div>
             <a href="/profile/edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
-                <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
-                    data-alt="Circular profile picture of user {{ user.name }}"
-                    style="background-image: url('{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuAnp9GOlcDa8yzzLYbNH-rZvRzXCOhGowYtsQLEwSiFWlli3IaU7AHu9_97kWBlOit0r8unOBUNcb1sviDjjS-2wJcHmKmORqedn9EjHp5EvTQdCWjG5bGAUm2L3v1IZZU2t0S8wQQjF-EPgUcs9U6ru9xKGgwWQiqgMhCIpZm7SDFjdLyhQPlWlwP80kUNonmdKgIqFqxP3cF3KVh-lMnYK3WSedOVb4La5S1umlOMTVV4iPbc3R8zgtHbl5h5YBtoUpUN6gV-O5rZ' }}')">
-                </div>
+                <img class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden object-cover"
+                    alt="Profile picture of {{ user.name }}"
+                    src="{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuAnp9GOlcDa8yzzLYbNH-rZvRzXCOhGowYtsQLEwSiFWlli3IaU7AHu9_97kWBlOit0r8unOBUNcb1sviDjjS-2wJcHmKmORqedn9EjHp5EvTQdCWjG5bGAUm2L3v1IZZU2t0S8wQQjF-EPgUcs9U6ru9xKGgwWQiqgMhCIpZm7SDFjdLyhQPlWlwP80kUNonmdKgIqFqxP3cF3KVh-lMnYK3WSedOVb4La5S1umlOMTVV4iPbc3R8zgtHbl5h5YBtoUpUN6gV-O5rZ' }}">
                 <div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
                 </div>
             </a>
@@ -164,13 +163,13 @@
                     <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
                         <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Matches Scouted</p>
                         <div class="flex items-end gap-2">
-                            <span class="text-3xl font-black text-white">{{ user_performance.matches_scouted }}</span>
+                            <span class="text-3xl font-black text-white">{{ stats.matches_scouted }}</span>
                         </div>
                     </div>
                     <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
                         <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Accuracy</p>
                         <div class="flex items-center gap-2">
-                            <span class="text-3xl font-black text-primary">{{ user_performance.accuracy }}</span>
+                            <span class="text-3xl font-black text-primary">{{ stats.accuracy }}</span>
                         </div>
                     </div>
                 </div>
@@ -249,13 +248,13 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div
                         class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-2">
-                        <span class="text-3xl font-black text-white">80%</span>
+                        <span class="text-3xl font-black text-white">{{ stats.coverage }}</span>
                         <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Scouting
                             Coverage</span>
                     </div>
                     <div
                         class="bg-slate-800/30 p-4 rounded-xl border border-slate-700/50 flex flex-col items-center justify-center gap-2">
-                        <span class="text-3xl font-black text-white">12</span>
+                        <span class="text-3xl font-black text-white">{{ stats.active_now }}</span>
                         <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Scouts</span>
                     </div>
                 </div>
@@ -353,7 +352,7 @@
                             </td>
                             <td class="px-4 py-3 text-right text-slate-500 font-bold whitespace-nowrap">
                                 {% if match.time %}
-                                <script>document.write(new Date({{ match.time }} * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));</script>
+                                <span class="match-time" data-timestamp="{{ match.time }}">--:--</span>
                                 {% else %}
                                 TBD
                                 {% endif %}
@@ -387,5 +386,15 @@
         class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
         <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}</p>
     </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.match-time').forEach(el => {
+                const ts = el.getAttribute('data-timestamp');
+                if (ts) {
+                    el.textContent = new Date(ts * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+            });
+        });
+    </script>
 </body>
 </html>

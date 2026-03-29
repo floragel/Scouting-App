@@ -211,7 +211,7 @@ def auto_assign():
         return jsonify({'error': 'Unauthorized'}), 401
     
     user = User.query.get(session['user_id'])
-    if not user or user.role not in ['Admin', 'Head Scout']:
+    if not user or not user.is_admin:
         return jsonify({'error': 'Unauthorized role'}), 403
         
     team_members = []
@@ -329,7 +329,7 @@ def create_assignment():
         return jsonify({'error': 'Unauthorized'}), 401
     
     admin_user = User.query.get(session['user_id'])
-    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+    if not admin_user or not admin_user.is_admin:
         return jsonify({'error': 'Forbidden'}), 403
         
     data = request.json
@@ -358,7 +358,7 @@ def create_pit_assignment():
         return jsonify({'error': 'Unauthorized'}), 401
     
     admin_user = User.query.get(session['user_id'])
-    if not admin_user or (not admin_user.has_role('Admin') and not admin_user.has_role('Head Scout')):
+    if not admin_user or not admin_user.is_admin:
         return jsonify({'error': 'Forbidden'}), 403
         
     data = request.json
@@ -400,7 +400,7 @@ def auto_assign_pit():
         return jsonify({'error': 'Unauthorized'}), 401
     
     user = User.query.get(session['user_id'])
-    if not user or user.role not in ['Admin', 'Head Scout']:
+    if not user or not user.is_admin:
         return jsonify({'error': 'Unauthorized role'}), 403
         
     team_members = []
@@ -485,7 +485,7 @@ def delete_all_assignments():
         return jsonify({'error': 'Unauthorized'}), 401
         
     admin_user = User.query.get(session['user_id'])
-    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+    if not admin_user or not admin_user.is_admin:
         return jsonify({'error': 'Forbidden'}), 403
         
     try:
@@ -502,7 +502,7 @@ def delete_assignment(assignment_id):
         return jsonify({'error': 'Unauthorized'}), 401
         
     admin_user = User.query.get(session['user_id'])
-    if not admin_user or admin_user.role not in ['Admin', 'Head Scout']:
+    if not admin_user or not admin_user.is_admin:
         return jsonify({'error': 'Forbidden'}), 403
         
     assignment = ScoutAssignment.query.get_or_404(assignment_id)

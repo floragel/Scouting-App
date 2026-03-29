@@ -9,7 +9,7 @@ def check_admin():
     if 'user_id' not in session:
         return None, jsonify({'error': 'Not logged in'}), 401
     user = User.query.get(session['user_id'])
-    if not user or (not user.has_role('Admin') and not user.has_role('Head Scout')) or not user.team_id:
+    if not user or not user.is_admin or not user.team_id:
         return None, jsonify({'error': 'Unauthorized'}), 403
     return user, None, None
 
@@ -46,7 +46,8 @@ def get_team_members():
     admin, err_resp, err_code = check_admin()
     if err_resp: return err_resp, err_code
 
-    members = User.query.filter_by(team_id=admin.team_id).all()
+    # Return members in team OR users with no team assigned (for Admin approval)
+    members = User.query.filter((User.team_id == admin.team_id) | (User.team_id == None)).all()
 
     members_data = []
     for m in members:

@@ -43,6 +43,7 @@
             },
         }
     </script>
+    <script id="admin-status" type="application/json">{{ is_admin | tojson }}</script>
 </head>
 
 <body data-user-role="{{ user.role }}"
@@ -132,7 +133,7 @@
                         placeholder="Search events, teams..." type="text" />
                 </div>
                 <!-- Scout Management Mobile Button -->
-                {% if user.role == 'Admin' or user.role == 'Head Scout' %}
+                {% if is_admin %}
                 <a href="/admin-hub"
                     class="md:hidden flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-card-dark text-slate-600 dark:text-slate-400 hover:text-primary transition-colors glass">
                     <span class="material-symbols-outlined text-[24px]">manage_accounts</span>
@@ -150,10 +151,9 @@
                     <span class="hidden lg:inline">New Report</span>
                 </button>
                 <a href="/profile" class="relative block hover:scale-105 transition-transform cursor-pointer">
-                    <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
-                        data-alt="Circular profile picture of user {{ user.name }}"
-                        style="background-image: url('{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuAt0LTwXrSF2sHICD94v7fWbijvk3vrr7qLMfQtvwUUJBTpG2N1u5Rg2s0EB3ircDVNlyVhqPSgjm5ZU1L6y5YNyPbErCWuE4V2-9HIPDE6rnZMlpW3_Rw8kbVqq6UwX3-fImQfI3VRZ0TJ3HTu7kEdzs5OlymZ26lSH_uXH5kYeaXrY7QBq3_vVoImnJgVg7zHUPhSfhji-FLRws880p7yfB_PDHFoZK8KbxjCD9ecpg3S002jVdTrl4kY0ugU0LxyPio7Dg8Ivben' }}')">
-                    </div>
+                    <img class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden object-cover"
+                        alt="Profile picture of {{ user.name }}"
+                        src="{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuAt0LTwXrSF2sHICD94v7fWbijvk3vrr7qLMfQtvwUUJBTpG2N1u5Rg2s0EB3ircDVNlyVhqPSgjm5ZU1L6y5YNyPbErCWuE4V2-9HIPDE6rnZMlpW3_Rw8kbVqq6UwX3-fImQfI3VRZ0TJ3HTu7kEdzs5OlymZ26lSH_uXH5kYeaXrY7QBq3_vVoImnJgVg7zHUPhSfhji-FLRws880p7yfB_PDHFoZK8KbxjCD9ecpg3S002jVdTrl4kY0ugU0LxyPio7Dg8Ivben' }}">
                     <div
                         class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
                     </div>
@@ -586,8 +586,9 @@
 
             const fetchScoutingDuty = async () => {
                 const dutyContainer = document.getElementById('scouting-duty-content');
+                const isAdmin = JSON.parse(document.getElementById('admin-status').textContent);
 
-                if (USER_ROLE === 'Admin' || USER_ROLE === 'Head Scout') {
+                if (isAdmin) {
                     dutyContainer.innerHTML = `
                         <p class="text-slate-400 text-sm mb-4">Go to the admin hub to assign scouts or see scouting data.</p>
                         <a href="/admin-hub" class="block w-full py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-500 transition shadow-lg shadow-indigo-500/20">Admin Hub</a>

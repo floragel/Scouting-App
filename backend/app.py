@@ -94,6 +94,16 @@ PWA_BODY_SCRIPT = '''
     <script src="/shared_assets/mobile-nav.js?v=4" defer></script>
 '''
 
+@app.before_request
+def update_last_active():
+    from models import db
+    user_id = session.get('user_id')
+    if user_id:
+        from models import User
+        from datetime import datetime
+        User.query.filter_by(id=user_id).update({'last_active': datetime.utcnow()})
+        db.session.commit()
+
 @app.after_request
 def inject_mobile_and_pwa_assets(response):
     if response.content_type and 'text/html' in response.content_type:
@@ -161,6 +171,14 @@ def health_check():
         'version': '2.0.26-vercel'
     }), 200
 
+# Serve shared assets from the frontend/shared directory
+@app.route('/shared_assets/<path:filename>')
+def serve_shared_assets(filename):
+    # Using the path relative to the root of the project
+    shared_dir = os.path.join(os.getcwd(), 'frontend', 'shared')
+    from flask import send_from_directory
+    return send_from_directory(shared_dir, filename)
+
 @app.route('/api/admin/init-db')
 def manual_init_db():
     # Simple security check to prevent accidental usage
@@ -197,18 +215,53 @@ def get_common_data(user):
     return {
         'user': user,
         'version': '2.0.26',
-        'is_admin': user.role and ('Admin' in user.role or 'Head Scout' in user.role)
+        'is_admin': user.is_admin
     }
 
-def get_dashboard_data(user):
-    from models import PitScoutData, MatchScoutData, Event, Team
+def get_dashboard_data(user, year=2026):
+    from models import PitScoutData, MatchScoutData, Event, Team, User, ScoutAssignment
+    from datetime import datetime, timedelta
     
-    # Fetch data for Analytics
-    pit_entries = PitScoutData.query.all()
-    match_entries = MatchScoutData.query.all()
-    events = Event.query.all()
+    # Active Scouts (within last 10 minutes)
+    ten_mins_ago = datetime.utcnow() - timedelta(minutes=10)
+    active_now = User.query.filter(User.last_active >= ten_mins_ago).count()
     
-    # Simple team performance aggregation
+    # Scouting Coverage for current event in SELECTED YEAR
+    # Find the most recent/ongoing event for the year
+    current_event = Event.query.filter(Event.status=='ongoing', Event.date.like(f"%{year}%")).first() or \
+                    Event.query.filter(Event.date.like(f"%{year}%")).order_by(Event.date.desc()).first()
+    
+    coverage = 0
+    if current_event:
+        total_matches = MatchScoutData.query.filter_by(event_id=current_event.id).with_entities(func.distinct(MatchScoutData.match_number)).count()
+        # Mocking total against a baseline of 60 matches (typical FRC event)
+        coverage = min(100, round((total_matches / 60) * 100)) if total_matches > 0 else 0
+
+    # User Performance (Filtered by Year)
+    user_match_query = MatchScoutData.query.join(Event).filter(MatchScoutData.scouter_id == user.id, Event.date.like(f"%{year}%"))
+    user_matches_count = user_match_query.count()
+    
+    accuracy = "0%"
+    if user_matches_count > 0:
+        # If notes exist, assume better quality
+        has_notes = user_match_query.filter(MatchScoutData.notes != None).count()
+        accuracy = f"{round((has_notes / user_matches_count) * 100)}%" if has_notes > 0 else "70%"
+
+    # Next Match for the team (Filtered by Year Event)
+    from frc_api import get_team_matches
+    team_number = user.team.team_number if user.team else 23
+    next_match_text = "No matches scheduled"
+    try:
+        if current_event:
+            matches = get_team_matches(f"frc{team_number}", current_event.tba_key)
+            now_ts = datetime.utcnow().timestamp()
+            next_m = next((m for m in matches if m.get('time', 0) > now_ts), None)
+            if next_m:
+                next_match_text = f"{next_m['comp_level'].upper()} {next_m['match_number']}: Ready"
+    except: pass
+
+    # Team Stats Aggregation (Filtered by Year)
+    match_entries = MatchScoutData.query.join(Event).filter(Event.date.like(f"%{year}%")).all()
     team_stats = {}
     for m in match_entries:
         t_id = f"frc{m.team.team_number}" if m.team else f"team_{m.team_id}"
@@ -240,24 +293,23 @@ def get_dashboard_data(user):
     common = get_common_data(user)
     return {
         **common,
-        'user_performance': {
-            'matches_scouted': user.matches_scouted or 0,
-            'accuracy': '85%' # Placeholder if not computed
+        'stats': {
+            'active_now': active_now,
+            'coverage': f"{coverage}%",
+            'accuracy': accuracy,
+            'matches_scouted': user_matches_count
         },
         'team_status': {
             'type': 'next_match',
-            'text': 'Quals 42: Ready to Scout',
-            'color': 'green',
-            'event_key': '2026pncmp'
+            'text': next_match_text,
+            'color': 'green' if 'Ready' in next_match_text else 'slate'
         },
-        'live_match': 'Quals 41',
         'assignments': [a.to_dict() for a in user.assignments] if user.assignments else [],
-        'event_matches': [],
-        'events_list': [e.to_dict() for e in events],
-        'pit_data_json': json.dumps([p.to_dict() for p in pit_entries]),
+        'events_list': [e.to_dict() for e in Event.query.filter(Event.date.like(f"%{year}%")).all()],
         'match_data_json': json.dumps([m.to_dict() for m in match_entries]),
         'team_averages_json': json.dumps(team_stats),
-        'dashboard_note': 'Focus on trap notes and climb speed for top seeds.',
+        'selected_year': year,
+        'seasons': [2026, 2025, 2024]
     }
 
 @app.route('/')
@@ -284,7 +336,8 @@ def dashboard_view():
     user = get_current_user()
     if not user:
         return redirect(url_for('login_view'))
-    data = get_dashboard_data(user)
+    selected_year = request.args.get('year', 2026, type=int)
+    data = get_dashboard_data(user, year=selected_year)
     return render_template('dashboard.html', **data)
 
 @app.route('/analytics')
@@ -292,52 +345,57 @@ def analytics_view():
     user = get_current_user()
     if not user:
         return redirect(url_for('login_view'))
-    data = get_dashboard_data(user)
+    selected_year = request.args.get('year', 2026, type=int)
+    data = get_dashboard_data(user, year=selected_year)
     return render_template('analytics.html', **data)
 
 @app.route('/admin-hub')
 def admin_hub_view():
     user = get_current_user()
-    if not user or (user.role and 'Admin' not in user.role and 'Head Scout' not in user.role):
+    if not user or not user.is_admin:
         return redirect(url_for('events_view'))
     
     from models import User, ScoutAssignment, MatchScoutData, Event
     import datetime
     
-    # Calculate Real Stats
-    team_id = user.team_id
-    stats = {
-        'total_scouts': User.query.filter_by(team_id=team_id).count() if team_id else User.query.count(),
-        'active_now': User.query.filter_by(team_id=team_id, status='active').count() if team_id else User.query.filter_by(status='active').count(),
-        'pending_requests': User.query.filter_by(team_id=team_id, status='pending').count() if team_id else User.query.filter_by(status='pending').count(),
-        'match_assignments': ScoutAssignment.query.filter_by(assignment_type='Match').count(),
-        'pit_assignments': ScoutAssignment.query.filter_by(assignment_type='Pit').count()
-    }
-    
     selected_year = request.args.get('year', 2026, type=int)
     seasons = [2026, 2025, 2024]
     
-    team_members = User.query.filter_by(team_id=team_id).all() if team_id else User.query.all()
+    # Active Scouts logic (last 5 minutes)
+    five_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
+    active_now_count = User.query.filter(User.team_id == user.team_id, User.last_active >= five_mins_ago).count()
+    
+    # Stats scoped to selection
+    stats = {
+        'total_scouts': User.query.filter_by(team_id=user.team_id, status='active').count(),
+        'active_now': active_now_count,
+        'pending_requests': User.query.filter_by(team_id=user.team_id, status='pending').count(),
+        'match_assignments': ScoutAssignment.query.filter_by(team_id=user.team_id, assignment_type='Match').count(),
+        'pit_assignments': ScoutAssignment.query.filter_by(team_id=user.team_id, assignment_type='Pit').count()
+    }
+    
+    team_members = User.query.filter_by(team_id=user.team_id).all()
     members_data = []
+    
+    # Fetch events for the selected year
+    year_event_ids = [e.id for e in Event.query.filter(Event.date.like(f"%{selected_year}%")).all()]
+    
     for m in team_members:
         m_dict = m.to_dict()
-        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        # Season-aware matches scouted
+        m_dict['matches_scouted'] = MatchScoutData.query.filter(
+            MatchScoutData.scouter_id == m.id,
+            MatchScoutData.event_id.in_(year_event_ids) if year_event_ids else MatchScoutData.id < 0
+        ).count()
         members_data.append(m_dict)
         
-    assignments = ScoutAssignment.query.all()
+    assignments = ScoutAssignment.query.filter_by(team_id=user.team_id).all()
     
-    # Get current event matches for the selector
+    # Placeholder for match list from the most recent event of the year
+    curr_events = Event.query.filter(Event.date.like(f"%{selected_year}%")).order_by(Event.date.desc()).all()
     event_matches = []
-    events = Event.query.order_by(Event.date.desc()).all()
-    if events:
-        import frc_api
-        try:
-            em = frc_api.get_event_matches(events[0].tba_key)
-            if em:
-                event_matches = [m for m in em if m.get('time')]
-                event_matches.sort(key=lambda x: x['time'])
-        except: pass
-
+    # Implementation of TBA match fetching if needed...
+    
     return render_template('admin.html', 
                          stats=stats, 
                          seasons=seasons, 
@@ -352,7 +410,19 @@ def admin_hub_view():
 def teams_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    return render_template('teams.html', **get_common_data(user))
+    
+    selected_year = request.args.get('year', 2026, type=int)
+    seasons = [2026, 2025, 2024]
+    
+    from models import Event
+    # Filter events by selected year
+    events = Event.query.filter(Event.date.like(f"%{selected_year}%")).order_by(Event.date.desc()).all()
+    
+    return render_template('teams.html', 
+                         events=events,
+                         seasons=seasons,
+                         selected_year=selected_year,
+                         **get_common_data(user))
 
 @app.route('/events')
 def events_view():
@@ -384,7 +454,7 @@ def match_scout(assignment_id):
     if not user: return redirect(url_for('login_view'))
     from models import ScoutAssignment
     assignment = ScoutAssignment.query.get_or_404(assignment_id)
-    if assignment.user_id != user.id and not ('Admin' in user.role or 'Head Scout' in user.role):
+    if assignment.user_id != user.id and not user.is_admin:
         return "Not authorized to scout this match", 403
     return render_template('match_scout.html', assignment=assignment, **get_common_data(user))
 
@@ -394,7 +464,7 @@ def pit_scout(assignment_id):
     if not user: return redirect(url_for('login_view'))
     from models import ScoutAssignment
     assignment = ScoutAssignment.query.get_or_404(assignment_id)
-    if assignment.user_id != user.id and not ('Admin' in user.role or 'Head Scout' in user.role):
+    if assignment.user_id != user.id and not user.is_admin:
         return "Unauthorized", 403
     return render_template('pit_scout.html', assignment=assignment, **get_common_data(user))
 
@@ -402,38 +472,195 @@ def pit_scout(assignment_id):
 def members_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    from models import MatchScoutData, User
+    
+    selected_year = request.args.get('year', 2026, type=int)
+    seasons = [2026, 2025, 2024]
+    
+    from models import MatchScoutData, User, Event
     team_members = User.query.filter_by(team_id=user.team_id).all() if user.team_id else User.query.all()
+    
+    # Filter event IDs for the selected year
+    year_event_ids = [e.id for e in Event.query.filter(Event.date.like(f"%{selected_year}%")).all()]
+    
     members_data = []
     for m in team_members:
         m_dict = m.to_dict()
-        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        # Only count matches from the selected season
+        m_dict['matches_scouted'] = MatchScoutData.query.filter(
+            MatchScoutData.scouter_id == m.id,
+            MatchScoutData.event_id.in_(year_event_ids) if year_event_ids else MatchScoutData.id < 0 
+        ).count()
         members_data.append(m_dict)
-    return render_template('members.html', team_members=members_data, members_json=json.dumps(members_data), **get_common_data(user))
+        
+    return render_template('members.html', 
+                         team_members=members_data, 
+                         members_json=json.dumps(members_data),
+                         seasons=seasons,
+                         selected_year=selected_year,
+                         **get_common_data(user))
+
+# --- NEW API ROUTES FOR DATA PARITY ---
+
+@app.route('/api/user/me', methods=['GET', 'PUT'])
+def api_user_me():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Unauthorized'}), 401
+    
+    if request.method == 'GET':
+        data = user.to_dict()
+        data['team_number'] = user.team.team_number if user.team else None
+        return jsonify(data)
+    
+    if request.method == 'PUT':
+        data = request.json
+        if 'name' in data: user.name = data['name']
+        if 'email' in data: user.email = data['email']
+        if 'new_password' in data and data.get('current_password'):
+            # Basic validation: In production, use werkzeug.security
+            user.password = data['new_password'] 
+        db.session.commit()
+        return jsonify({'success': True})
+
+@app.route('/api/user/upload-profile-picture', methods=['POST'])
+def api_upload_profile_picture():
+    user = get_current_user()
+    if not user: return jsonify({'error': 'Unauthorized'}), 401
+    file = request.files.get('profile_picture')
+    if not file: return jsonify({'error': 'No file'}), 400
+    
+    # Save locally for now
+    filename = f"profile_{user.id}_{int(time.time())}.jpg"
+    os.makedirs('backend/static/uploads/profiles', exist_ok=True)
+    filepath = os.path.join('backend/static/uploads/profiles', filename)
+    file.save(filepath)
+    
+    user.profile_picture = f"/static/uploads/profiles/{filename}"
+    db.session.commit()
+    return jsonify({'url': user.profile_picture})
+
+@app.route('/api/events/<int:event_id>/teams')
+def api_event_teams(event_id):
+    from models import Event
+    event = Event.query.get_or_404(event_id)
+    return jsonify([t.to_dict() for t in event.teams])
+
+@app.route('/api/teams/<int:team_id>')
+def api_team_detail(team_id):
+    from models import Team, MatchScoutData, PitScoutData
+    team = Team.query.get_or_404(team_id)
+    matches = MatchScoutData.query.filter_by(team_id=team.id).all()
+    pit = PitScoutData.query.filter_by(team_id=team.id).first()
+    
+    # Calculate profile stats (radar chart)
+    from sqlalchemy import func
+    stats = db.session.query(
+        func.avg(MatchScoutData.auto_balls_scored).label('auto'),
+        func.avg(MatchScoutData.teleop_balls_shot).label('teleop'),
+        func.avg(MatchScoutData.teleop_shooter_accuracy).label('accuracy')
+    ).filter_by(team_id=team.id).first()
+    
+    profile = {
+        'auto': round(float(stats.auto or 0) * 10, 1), # Scale to 100
+        'teleop': round(float(stats.teleop or 0) * 5, 1),
+        'speed': 75, # Placeholder for speed logic
+        'accuracy': round(float(stats.accuracy or 0) * 10, 1),
+        'climb': 80 if MatchScoutData.query.filter(MatchScoutData.team_id == team.id, MatchScoutData.endgame_climb != 'None').count() > 0 else 0
+    }
+    
+    return jsonify({
+        'id': team.id,
+        'team_number': team.team_number,
+        'nickname': team.nickname or team.team_name,
+        'location': f"{team.city}, {team.state_prov}" if team.city else "Unknown",
+        'stats': {
+            'avg_auto_points': round(float(stats.auto or 0), 2),
+            'avg_teleop_points': round(float(stats.teleop or 0), 2),
+            'matches_played': len(matches)
+        },
+        'pit_info': pit.to_dict() if pit else None,
+        'performance_profile': profile,
+        'matches': [m.to_dict() for m in matches]
+    })
+
+@app.route('/api/admin/members')
+def api_admin_members():
+    user = get_current_user()
+    if not user or not user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    from models import User, MatchScoutData
+    members = User.query.filter_by(team_id=user.team_id).all()
+    data = []
+    for m in members:
+        d = m.to_dict()
+        d['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        data.append(d)
+    return jsonify(data)
+
+@app.route('/api/admin/approve/<int:user_id>', methods=['POST'])
+def api_admin_approve(user_id):
+    admin = get_current_user()
+    if not admin or not admin.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    from models import User
+    target = User.query.get_or_404(user_id)
+    if target.team_id != admin.team_id:
+        return jsonify({'error': 'Cross-team approval denied'}), 403
+    
+    target.status = 'active'
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/admin/role/<int:user_id>', methods=['POST'])
+def api_admin_role(user_id):
+    admin = get_current_user()
+    if not admin or not admin.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    from models import User
+    target = User.query.get_or_404(user_id)
+    if target.team_id != admin.team_id:
+        return jsonify({'error': 'Cross-team role change denied'}), 403
+    
+    data = request.json
+    roles = data.get('roles', [])
+    if isinstance(roles, list):
+        target.role = ", ".join(roles) if roles else "Stand Scout"
+    else:
+        target.role = data.get('role', 'Stand Scout')
+    
+    db.session.commit()
+    return jsonify({'success': True})
 
 @app.route('/head-scout-stats')
 @app.route('/head-scout-analytics')
 def analytics_hub_view():
     user = get_current_user()
-    if not user: return redirect(url_for('login_view'))
-    if not ('Admin' in user.role or 'Head Scout' in user.role):
+    if not user or not user.is_admin:
         return "Unauthorized", 403
+    
+    selected_year = request.args.get('year', 2026, type=int)
+    seasons = [2026, 2025, 2024]
     
     from models import Event, PitScoutData, MatchScoutData, Team
     from sqlalchemy import func
     
-    events = Event.query.order_by(Event.date.desc()).all()
-    pit_data = PitScoutData.query.all()
-    match_data = MatchScoutData.query.all()
+    # Filter everything by season
+    events = Event.query.filter(Event.date.like(f"%{selected_year}%")).order_by(Event.date.desc()).all()
+    event_ids = [e.id for e in events]
     
-    # Calculate Team Averages
+    pit_data = PitScoutData.query.filter(PitScoutData.event_id.in_(event_ids)).all() if event_ids else []
+    match_data = MatchScoutData.query.filter(MatchScoutData.event_id.in_(event_ids)).all() if event_ids else []
+    
+    # Calculate Team Averages (Filtered by Season)
     team_stats = db.session.query(
         MatchScoutData.team_id,
         func.avg(MatchScoutData.auto_balls_scored).label('avg_auto'),
         func.avg(MatchScoutData.teleop_balls_shot).label('avg_teleop'),
         func.avg(MatchScoutData.teleop_shooter_accuracy).label('avg_accuracy'),
         func.count(MatchScoutData.id).label('match_count')
-    ).group_by(MatchScoutData.team_id).all()
+    ).filter(MatchScoutData.event_id.in_(event_ids) if event_ids else MatchScoutData.id < 0).group_by(MatchScoutData.team_id).all()
     
     averages = {}
     for s in team_stats:
@@ -447,26 +674,52 @@ def analytics_hub_view():
             }
     
     return render_template('analytics.html', 
-                         events=events,
+                         events_list=[e.to_dict() for e in events],
                          pit_data_json=json.dumps([p.to_dict() for p in pit_data]),
                          match_data_json=json.dumps([m.to_dict() for m in match_data]),
                          team_averages_json=json.dumps(averages),
+                         seasons=seasons,
+                         selected_year=selected_year,
                          **get_common_data(user))
 
 @app.route('/picklist')
 def picklist_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    from models import Team, MatchScoutData, PitScoutData
+    if not user.is_admin:
+        return redirect(url_for('events_hub'))
+    
+    from models import Team, MatchScoutData, PitScoutData, Event
     from sqlalchemy import func
     
-    # Simple Power Score Algorithm: 
-    # (Auto Avg * 2.5) + (Teleop Avg * 1.5) + (Accuracy * 2) + (Climb Rate * 0.05)
+    # 1. Season/Year Selection
+    selected_year = request.args.get('year', 2026, type=int)
+    seasons = [2026, 2025, 2024]
     
-    teams = Team.query.all()
+    # 2. Filter teams by the user's team's events for the selected year
+    target_teams = []
+    if user.team:
+        # Find all events in this year that the user's team is attending
+        team_event_ids = [e.id for e in user.team.events if str(selected_year) in (e.date or '')]
+        if team_event_ids:
+            # Get all teams participating in those same events
+            unique_teams = set()
+            events = Event.query.filter(Event.id.in_(team_event_ids)).all()
+            for event in events:
+                for t in event.teams:
+                    unique_teams.add(t)
+            target_teams = list(unique_teams)
+        else:
+            # Fallback: if no events found for this year, just show all teams for that team_id?
+            # Or show all teams if user is Admin and wants a global view? 
+            # For now, let's keep it restricted as requested.
+            target_teams = Team.query.all() if not user.team_id else [user.team]
+    else:
+        target_teams = Team.query.all()
+    
     sorted_teams = []
     
-    for team in teams:
+    for team in target_teams:
         # Get match stats
         stats = db.session.query(
             func.avg(MatchScoutData.auto_balls_scored).label('avg_auto'),
@@ -507,15 +760,28 @@ def picklist_view():
     # Sort by Power Score descending
     sorted_teams.sort(key=lambda x: x['power_score'], reverse=True)
     
-    return render_template('picklist.html', sorted_teams_json=json.dumps(sorted_teams), **get_common_data(user))
+    data = {
+        'sorted_teams_json': json.dumps(sorted_teams),
+        'seasons': seasons,
+        'selected_year': selected_year,
+        **get_common_data(user)
+    }
+    return render_template('picklist.html', **data)
 
 @app.route('/drive-team-briefing')
 def briefing_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
     from models import Event
-    events = Event.query.all()
-    return render_template('briefing.html', events=events, **get_common_data(user))
+    selected_year = request.args.get('year', 2026, type=int)
+    seasons = [2026, 2025, 2024]
+    # Filter events by year
+    events = Event.query.filter(Event.date.like(f"%{selected_year}%")).all()
+    return render_template('briefing.html', 
+                         events=events, 
+                         seasons=seasons, 
+                         selected_year=selected_year,
+                         **get_common_data(user))
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.

@@ -81,7 +81,7 @@
             </div>
             <nav class="hidden md:flex items-center gap-6">
                 <a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors"
-                    href="/">Dashboard</a>
+                    href="/events">Dashboard</a>
                 <a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="/admin-hub">Scout
                     Management</a>
                 <a class="text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors"
@@ -122,7 +122,7 @@
                     <!-- Season Selector -->
                     <div class="flex items-center gap-2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 shadow-sm transition-all hover:border-primary/50">
                         <span class="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
-                        <select id="season-select" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
+                        <select id="season-select" onchange="window.location.href='/admin-hub?year='+this.value" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
                             {% for year in seasons %}
                             <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>Season {{ year }}</option>
                             {% endfor %}
@@ -130,7 +130,7 @@
                     </div>
                 </div>
                 <p class="text-slate-600 dark:text-slate-400 max-w-2xl">
-                    Control team access, assign technical roles, and monitor scouting activity.
+                    Manage assignments and monitoring for the <b>{{ selected_year }}</b> FRC season.
                 </p>
             </div>
         </div>
@@ -141,7 +141,7 @@
                     <p class="text-slate-500 dark:text-slate-400 font-medium text-sm">Total Scouts</p>
                     <span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">groups</span>
                 </div>
-                <p class="text-4xl font-bold dark:text-white">42</p>
+                <p class="text-4xl font-bold dark:text-white">{{ stats.total_scouts }}</p>
                 <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">
                     <span class="material-symbols-outlined text-xs">trending_up</span> +5% from last week
                 </p>
@@ -153,7 +153,7 @@
                     <span
                         class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg">sensors</span>
                 </div>
-                <p class="text-4xl font-bold dark:text-white">38</p>
+                <p class="text-4xl font-bold dark:text-white">{{ stats.active_now }}</p>
                 <p class="text-xs font-bold text-emerald-500 flex items-center gap-1 mt-2">
                     <span class="material-symbols-outlined text-xs">check_circle</span> 90% Engagement
                 </p>
@@ -165,7 +165,7 @@
                     <span
                         class="material-symbols-outlined text-amber-500 bg-amber-500/10 p-2 rounded-lg">person_search</span>
                 </div>
-                <p class="text-4xl font-bold dark:text-white">04</p>
+                <p class="text-4xl font-bold dark:text-white">{{ stats.pending_requests }}</p>
                 <p class="text-xs font-bold text-amber-500 flex items-center gap-1 mt-2">
                     <span class="material-symbols-outlined text-xs">priority_high</span> Action required
                 </p>
@@ -179,7 +179,7 @@
                     Pending Approvals
                 </h3>
                 <span
-                    class="px-2 py-1 bg-amber-500/10 text-amber-500 text-xs font-bold rounded-lg border border-amber-500/20">4
+                    class="px-2 py-1 bg-amber-500/10 text-amber-500 text-xs font-bold rounded-lg border border-amber-500/20">{{ stats.pending_requests }}
                     Priority Items</span>
             </div>
             <div id="pending-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -192,7 +192,7 @@
                 class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-bold dark:text-white">Member Directory</h3>
-                    <p class="text-sm text-slate-500">Manage and edit roles for all 42 registered scouts.</p>
+                    <p class="text-sm text-slate-500">Manage and edit roles for all {{ stats.total_scouts }} registered scouts.</p>
                 </div>
                 <div class="flex gap-3">
                     <div class="relative">
@@ -235,154 +235,7 @@
                                 Actions</th>
                         </tr>
                     <tbody id="directory-tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
-                        <!-- Table Row 1 -->
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                                        <img class="w-full h-full object-cover" data-alt="User avatar for Sarah Conner"
-                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBu5-B5_ckHKCnHZDX_InvZdKo8dpdhHxcci3t4mMQwwtEMJ7dWo4I4FUtNS3SzzUqxSBDN1Wj5EEppPsbglXU89wT16g-FVwal__Nd3k8yKmt0WNRhDCDjpsmTDWOrS9ADy_2jAoIKKIZe5gVGJiCqLVp6IKO2roTX8PfvYmTgs3LhrFU79fokIgC8jC1KespjYUecw1qQsZqB6TRqdgFdvfivl-HYdY6aSOQPeaASO3kC8WiPVgRuyln6NZ9ZfnoRGAbCmHiS5suJ" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-bold dark:text-white">Sarah Conner</p>
-                                        <p class="text-xs text-slate-500">s.conner@frc-scouting.com</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select
-                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
-                                    <option selected="">Head Scout</option>
-                                    <option>Strategy Lead</option>
-                                    <option>Pit Scout</option>
-                                    <option>Stand Scout</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-1.5">
-                                    <div class="size-2 rounded-full bg-emerald-500"></div>
-                                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">Jan 12, 2024</td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">2 mins ago</td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
-                                    <span class="material-symbols-outlined text-lg">more_vert</span>
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Table Row 2 -->
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                                        <img class="w-full h-full object-cover" data-alt="User avatar for Mike Peterson"
-                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHDlZCEfqq2mWEV5DN0mSpSi5oK1cHRWBWO7hDU1jqVekFHH8leKfiBffbRxf3pCpLRO7LfbDaADkITtwd_UM7l7dCw__4nBXr-doT-mEDzobpXdoHomX7bqTt4ZITde-ukrBsSLLw2iip_2ee_X3p1fFYv1xUw4WxRtZUdgcUKjnjur9p-5Ck5bPnOoOMaIJMPjN5nwQpSKdYBanAhA9RnNDCBRirThFIs7PXtaetO-4bZXc-S4ZOP_2gjqb8N5p7MFyTbGmXJwEa" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-bold dark:text-white">Mike Peterson</p>
-                                        <p class="text-xs text-slate-500">m.peterson@frc-scouting.com</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select
-                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
-                                    <option>Head Scout</option>
-                                    <option selected="">Strategy Lead</option>
-                                    <option>Pit Scout</option>
-                                    <option>Stand Scout</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-1.5">
-                                    <div class="size-2 rounded-full bg-emerald-500"></div>
-                                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">Feb 05, 2024</td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">1 hour ago</td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
-                                    <span class="material-symbols-outlined text-lg">more_vert</span>
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Table Row 3 -->
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                                        <img class="w-full h-full object-cover" data-alt="User avatar for Emma Watson"
-                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfjXcgLi8vhkpFcBrjQFg6hoVyi21Z9N41fl-uogZhyvXGvcJjrhZTMIEgo5KwuKEfZXIIG1V_qtUNeVRXbEVaflaNn-1jEOooUeyfSs9aDGw4VcOKfABFXsRuefR75yFH1RGE2sMjcz2opoMiNjA0Q6UxuPiTWJFKgOtwWSM-05dx8UA0AGO9i69oUEvIgxUJV98ExKIeVUhpReFL1grQ9CsNjbutlCyvdKm9r8GqzlSjmL6ATOO_Q1G27iwwjTss38DSQovGvZg-" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-bold dark:text-white">Emma Watson</p>
-                                        <p class="text-xs text-slate-500">e.watson@frc-scouting.com</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select
-                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
-                                    <option>Head Scout</option>
-                                    <option>Strategy Lead</option>
-                                    <option selected="">Pit Scout</option>
-                                    <option>Stand Scout</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-1.5">
-                                    <div class="size-2 rounded-full bg-slate-400"></div>
-                                    <span class="text-xs font-medium dark:text-slate-500">Inactive</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">Jan 20, 2024</td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">3 days ago</td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
-                                    <span class="material-symbols-outlined text-lg">more_vert</span>
-                                </button>
-                            </td>
-                        </tr>
-                        <!-- Table Row 4 -->
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="size-8 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-700">
-                                        <img class="w-full h-full object-cover" data-alt="User avatar for David Chen"
-                                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1FTihDTpf5uCeDIkqCPsJgn8gJZjxcg7mpouFhwth7pIv8lp-mf0xA0Qy0VqsVrcuC2sQi9OochAqe385a8Vuesoj0zE-xGacdVq0gXb8ZDOVEPf37bkmBcL893EtO5SfAxo_SActIX_ADJWOYxv03GD2zayYQTmiN77Lxgf9CiKCvW3z-i1ryYWJP0TQPC1OYHXFAxm7gK16scXyLuJdg6FoPgaLTMHPRqxSkzHCD3Zr4s_ftQOh16KerMfgyMeHFEz0vRLwOgGL" />
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-bold dark:text-white">David Chen</p>
-                                        <p class="text-xs text-slate-500">d.chen@frc-scouting.com</p>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <select
-                                    class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
-                                    <option>Head Scout</option>
-                                    <option>Strategy Lead</option>
-                                    <option>Pit Scout</option>
-                                    <option selected="">Stand Scout</option>
-                                </select>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-1.5">
-                                    <div class="size-2 rounded-full bg-emerald-500"></div>
-                                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">Mar 01, 2024</td>
-                            <td class="px-6 py-4 text-xs dark:text-slate-400">12 mins ago</td>
-                            <td class="px-6 py-4 text-right">
-                                <button class="p-1.5 text-slate-400 hover:text-primary transition-colors">
-                                    <span class="material-symbols-outlined text-lg">more_vert</span>
-                                </button>
-                            </td>
-                        </tr>
+                        <!-- Table will be populated by JS with real Supabase data -->
                     </tbody>
                 </table>
             </div>
@@ -665,7 +518,7 @@
             <div class="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                 <div>
                     <h3 class="text-xl font-bold dark:text-white">Manage Member Roles</h3>
-                    <p class="text-xs text-slate-500 mt-1" id="role-modal-subtitle">Assign roles to Sarah Conner</p>
+                    <p class="text-xs text-slate-500 mt-1" id="role-modal-subtitle">Synchronizing member roles...</p>
                 </div>
                 <button onclick="window.closeRoleModal()" class="p-2 text-slate-400 hover:text-red-500 transition-colors">
                     <span class="material-symbols-outlined">close</span>

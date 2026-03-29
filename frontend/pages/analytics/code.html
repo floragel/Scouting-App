@@ -109,10 +109,20 @@
             </div>
 
             <div class="flex flex-wrap gap-4 items-center w-full lg:w-auto">
-                <select id="season-filter" onchange="applySeasonFilter()"
+                <!-- Season Selector (Year) -->
+                <div class="flex items-center gap-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 shadow-sm transition-all hover:border-primary/50">
+                    <span class="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
+                    <select id="season-year-select" onchange="window.location.href='/analytics?year='+this.value" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
+                        {% for year in seasons %}
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>Season {{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <select id="event-filter" onchange="applySeasonFilter()"
                     class="bg-white dark:bg-card-dark border-slate-200 dark:border-slate-800 rounded-lg h-12 px-4 font-bold outline-none focus:ring-2 focus:ring-primary w-full sm:w-48">
-                    <option value="all">All Seasons</option>
-                    {% for event in events %}
+                    <option value="all">All Events</option>
+                    {% for event in events_list %}
                     <option value="{{ event.id }}">{{ event.name }}</option>
                     {% endfor %}
                 </select>
@@ -404,10 +414,13 @@
         </div>
     </div>
 
+    <script id="pit-data-json" type="application/json">{{ pit_data_json | safe if pit_data_json else '[]' }}</script>
+    <script id="match-data-json" type="application/json">{{ match_data_json | safe if match_data_json else '[]' }}</script>
+    <script id="team-per-json" type="application/json">{{ team_averages_json | safe if team_averages_json else '{}' }}</script>
     <script>
-        const pitDataAll = {{ pit_data_json | safe if pit_data_json else '[]' }};
-        const matchDataAll = {{ match_data_json | safe if match_data_json else '[]' }};
-        const teamPerformanceAll = {{ team_averages_json | safe if team_averages_json else '{}' }};
+        const pitDataAll = JSON.parse(document.getElementById('pit-data-json').textContent);
+        const matchDataAll = JSON.parse(document.getElementById('match-data-json').textContent);
+        const teamPerformanceAll = JSON.parse(document.getElementById('team-per-json').textContent);
         let pitDataRaw = [...pitDataAll];
         let matchDataRaw = [...matchDataAll];
         let teamPerformance = { ...teamPerformanceAll };

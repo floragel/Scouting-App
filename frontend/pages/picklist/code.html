@@ -102,15 +102,25 @@
                     Dynamic Pick List
                 </h1>
                 <p class="text-slate-400 mt-2 text-sm sm:text-base">
-                    Teams are natively pre-sorted by their <b>Power Score</b>. Drag and drop rows to customize your
-                    final alliance selection priorities.
+                    Teams are Natives pre-sorted by their <b>Power Score</b> for the <b>{{ selected_year }}</b> season.
                 </p>
             </div>
-            <button id="reset-list-btn"
-                class="flex items-center gap-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 transition-all active:scale-95">
-                <span class="material-symbols-outlined text-[18px]">restart_alt</span>
-                Reset Order
-            </button>
+            <div class="flex items-center gap-3">
+                <!-- Season Selector -->
+                <div class="flex items-center gap-2 bg-slate-800 border border-slate-700/50 rounded-lg px-3 py-1.5 shadow-lg transition-all hover:border-blue-500/50">
+                    <span class="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
+                    <select id="season-select" onchange="window.location.href='/picklist?year='+this.value" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-300 cursor-pointer pr-8 py-0.5">
+                        {% for year in seasons %}
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>Season {{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button id="reset-list-btn"
+                    class="flex items-center gap-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 transition-all active:scale-95">
+                    <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+                    Reset Order
+                </button>
+            </div>
         </div>
 
         <!-- Pick List Container (Export Target) -->

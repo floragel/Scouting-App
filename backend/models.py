@@ -40,6 +40,14 @@ class User(db.Model):
         """Checks if a user has a specific role."""
         return role_name in self.roles_list
 
+    @property
+    def is_admin(self):
+        """Returns True if the user has administrative or lead privileges."""
+        admin_roles = ['Admin', 'Head Scout', 'Captain']
+        # Also include any role that contains the word 'Lead' (e.g., 'Strategy Lead')
+        return any(role in self.roles_list for role in admin_roles) or \
+               any('Lead' in r for r in self.roles_list)
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -49,6 +57,7 @@ class User(db.Model):
             'profile_picture': self.profile_picture,
             'role': self.role,
             'roles': self.roles_list, # Return roles as a clean list
+            'is_admin': self.is_admin, # EXPOSE directly to JSON
             'status': self.status,
             'team_id': self.team_id,
             'team_number': self.team.team_number if self.team else None,

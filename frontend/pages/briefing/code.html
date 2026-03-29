@@ -69,7 +69,18 @@
             <button onclick="window.history.back()" class="p-2 -ml-2 text-slate-400 hover:text-white rounded-full">
                 <span class="material-symbols-outlined text-2xl">arrow_back</span>
             </button>
-            <h1 class="text-xl font-bold tracking-tight">Drive Team Briefing</h1>
+            <div class="flex items-center gap-2">
+                <h1 class="text-xl font-bold tracking-tight">Drive Team Briefing</h1>
+                <!-- Season Selector -->
+                <div class="flex items-center gap-1.5 bg-slate-800/80 border border-slate-700/50 rounded-lg px-2 py-1 shadow-sm transition-all hover:border-primary/50">
+                    <span class="material-symbols-outlined text-[14px] text-slate-400">calendar_month</span>
+                    <select id="season-select" onchange="window.location.href='/drive-team-briefing?year='+this.value" class="bg-transparent border-none focus:ring-0 text-[11px] font-bold text-slate-300 cursor-pointer pr-6 py-0.5 appearance-none">
+                        {% for year in seasons %}
+                        <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
             <div class="w-10"></div> <!-- spacer -->
         </div>
 

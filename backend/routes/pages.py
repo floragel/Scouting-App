@@ -54,7 +54,7 @@ def admin_page():
     if 'user_id' not in session:
         return redirect(url_for('pages.login_page'))
     user = User.query.get(session['user_id'])
-    if not user or (not user.has_role('Admin') and not user.has_role('Head Scout')):
+    if not user or not user.is_admin:
         return redirect(url_for('pages.scout_dashboard'))
     
     import datetime
@@ -135,7 +135,7 @@ def scout_dashboard():
         return redirect(url_for('pages.login_page'))
     
     user = User.query.get(session['user_id'])
-    is_admin = user.has_role('Admin') or user.has_role('Head Scout')
+    is_admin = user.is_admin
     
     assignments = []
     matches_scouted = 0
@@ -242,7 +242,7 @@ def match_scout(assignment_id):
     user = User.query.get(session['user_id'])
     assignment = ScoutAssignment.query.get_or_404(assignment_id)
     
-    if assignment.user_id != user.id and not user.has_role('Admin'):
+    if assignment.user_id != user.id and not user.is_admin:
         return "Not authorized to scout this match", 403
         
     template_path = os.path.join(basedir, '../frontend/pages/match_scout/code.html')
@@ -295,7 +295,7 @@ def head_scout_analytics_hub():
     if 'user_id' not in session:
         return redirect(url_for('pages.login_page'))
     user = User.query.get(session['user_id'])
-    if not user or (not user.has_role('Head Scout') and not user.has_role('Admin')):
+    if not user or not user.is_admin:
         return "Unauthorized: High-level analytics are reserved for Head Scouts and Admins.", 403
         
     pit_data = PitScoutData.query.all()
