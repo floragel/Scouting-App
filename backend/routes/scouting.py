@@ -148,16 +148,25 @@ def submit_match_scout_web():
         assignment_id = data.get('assignment_id')
         assignment = ScoutAssignment.query.get(assignment_id)
         if not assignment:
-            return jsonify({'error': 'Invalid assignment'}), 400
+            return jsonify({'error': 'Assignment not found or already completed'}), 400
             
         team = Team.query.filter_by(team_number=int(assignment.team_key.replace('frc',''))).first()
-        event = Event.query.filter_by(tba_key=assignment.match_key.split('_')[0]).first()
+        
+        # Try to find event from match_key (format: eventkey_matchtype)
+        event = None
+        if '_' in (assignment.match_key or ''):
+            event_tba_key = assignment.match_key.split('_')[0]
+            event = Event.query.filter_by(tba_key=event_tba_key).first()
+        
+        # Fallback: use most recent event
+        if not event:
+            event = Event.query.order_by(Event.date.desc()).first()
         
         if not team or not event:
             return jsonify({'error': 'Team or Event not found in local DB'}), 400
             
-        match_num_str = assignment.match_key.split('_')[1]
-        match_number = int(''.join(filter(str.isdigit, match_num_str)))
+        match_num_str = assignment.match_key.split('_')[1] if '_' in assignment.match_key else assignment.match_key
+        match_number = int(''.join(filter(str.isdigit, match_num_str)) or '0')
         
         import json
         
@@ -189,16 +198,22 @@ def submit_match_scout_web():
             passes_bump=data.get('passes_bump') == True or data.get('passes_bump') == 'true',
             passes_trench=data.get('passes_trench') == True or data.get('passes_trench') == 'true',
             endgame_climb=data.get('endgame_climb', 'None'),
-            notes=data.get('notes', ''),
-            scouter_id=session['user_id']
+            notes=data.get('notes', '')
         )
+        
+        # Set scouter_id safely (column may not exist in production DB)
+        try:
+            match_data.scouter_id = session['user_id']
+        except Exception:
+            pass
         
         db.session.add(match_data)
         db.session.delete(assignment)
         db.session.commit()
         return jsonify({'success': True, 'message': 'Match data saved', 'match_id': match_data.id})
     except Exception as e:
-        print("Error saving match data:", e)
+        import traceback
+        traceback.print_exc()
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
@@ -215,26 +230,46 @@ def submit_pit_scout_web():
     if not assignment_id or not team_key:
         return jsonify({'error': 'Missing required fields'}), 400
         
-    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    assignment = ScoutAssignment.query.get(assignment_id)
+    if not assignment:
+        return jsonify({'error': 'Assignment not found or already completed'}), 404
     if assignment.user_id != session['user_id']:
         return jsonify({'error': 'Not your assignment'}), 403
         
     user = User.query.get(session['user_id'])
+    
+    # Find the event - try multiple strategies
     event_id = None
-    if user.team:
-        event = user.team.events.first()
-        if event:
-            event_id = event.id
-            
+    try:
+        if user.team:
+            # Strategy 1: Get events from the team's event_team relationship
+            event = user.team.events.first()
+            if event:
+                event_id = event.id
+    except Exception as e:
+        print(f"Event lookup strategy 1 failed: {e}")
+    
     if not event_id:
-        tba = TBAHandler()
-        status = None
-        if user.team and user.team.team_number:
-            status = tba.get_team_status(f"frc{user.team.team_number}")
-        if status and status.get('event_key'):
-            event_obj = Event.query.filter_by(tba_key=status['event_key']).first()
-            if event_obj:
-                event_id = event_obj.id
+        try:
+            # Strategy 2: Find any ongoing/recent event from TBA
+            tba = TBAHandler()
+            if user.team and user.team.team_number:
+                status = tba.get_team_status(f"frc{user.team.team_number}")
+                if status and status.get('event_key'):
+                    event_obj = Event.query.filter_by(tba_key=status['event_key']).first()
+                    if event_obj:
+                        event_id = event_obj.id
+        except Exception as e:
+            print(f"Event lookup strategy 2 (TBA) failed: {e}")
+    
+    if not event_id:
+        try:
+            # Strategy 3: Just use the most recent event in the DB
+            latest_event = Event.query.order_by(Event.date.desc()).first()
+            if latest_event:
+                event_id = latest_event.id
+        except Exception as e:
+            print(f"Event lookup strategy 3 (latest) failed: {e}")
 
     team_number = int(team_key.replace('frc', ''))
     team = Team.query.filter_by(team_number=team_number).first()
@@ -246,17 +281,21 @@ def submit_pit_scout_web():
         team.team_name = team_name
     
     if not event_id:
-        return jsonify({'error': 'Could not determine current event'}), 400
+        return jsonify({'error': 'Could not determine current event. Please ensure at least one event exists.'}), 400
 
     # Check if pit data already exists for this team at this event
     pit_data = PitScoutData.query.filter_by(team_id=team.id, event_id=event_id).first()
 
     try:
         if not pit_data:
-            pit_data = PitScoutData(team_id=team.id, event_id=event_id, scouter_id=session['user_id'])
+            pit_data = PitScoutData(team_id=team.id, event_id=event_id)
             db.session.add(pit_data)
-        else:
+            
+        # Set scouter_id safely (column may not exist in production DB)
+        try:
             pit_data.scouter_id = session['user_id']
+        except Exception:
+            pass
             
         photo_path = ''
         if 'photo' in request.files:
@@ -272,7 +311,7 @@ def submit_pit_scout_web():
                     photo_path = upload_result['secure_url']
                 except Exception as e:
                     print(f"Cloudinary upload error: {e}")
-                    return jsonify({'error': f'Failed to upload pit photo: {str(e)}'}), 500
+                    # Don't fail the whole submission if photo upload fails
                 
         pit_data.drivetrain_type = data.get('drivetrain_type', 'Swerve')
         pit_data.weight = float(data.get('weight', 0) if data.get('weight') else 0)
@@ -298,7 +337,8 @@ def submit_pit_scout_web():
         db.session.commit()
         return jsonify({'success': True, 'message': 'Pit data saved'})
     except Exception as e:
-        print("Error saving pit data:", e)
+        import traceback
+        traceback.print_exc()
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
