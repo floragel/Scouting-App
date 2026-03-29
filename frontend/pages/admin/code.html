@@ -232,8 +232,8 @@
                                 Login</th>
                             <th
                                 class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">
-                                Actions</th>
                         </tr>
+                    </thead>
                     <tbody id="directory-tbody" class="divide-y divide-slate-100 dark:divide-slate-800">
                         <!-- Table will be populated by JS with real Supabase data -->
                     </tbody>
@@ -686,10 +686,10 @@
                     card.innerHTML = `
             <div class="flex items-center gap-3 mb-4">
                 <a href="/profile" class="size-12 rounded-full overflow-hidden bg-primary/20 text-primary flex justify-center items-center font-bold text-lg">
-                    ${user.name.substring(0, 2).toUpperCase()}
+                    ${(user.name || '??').substring(0, 2).toUpperCase()}
                 </a>
                 <div>
-                    <p class="font-bold text-sm dark:text-white">${user.name}</p>
+                    <p class="font-bold text-sm dark:text-white">${user.name || 'Unknown'}</p>
                     <p class="text-xs text-slate-500">${user.email}</p>
                 </div>
             </div>
@@ -715,10 +715,10 @@
             <td class="px-6 py-4">
                 <div class="flex items-center gap-3">
                     <a href="/profile" class="size-8 rounded-full overflow-hidden bg-primary/20 text-primary flex justify-center items-center font-bold text-xs">
-                        ${user.name.substring(0, 2).toUpperCase()}
+                        ${(user.name || '??').substring(0, 2).toUpperCase()}
                     </a>
                     <div>
-                        <p class="text-sm font-bold dark:text-white">${user.name}</p>
+                        <p class="text-sm font-bold dark:text-white">${user.name || 'Unknown'}</p>
                         <p class="text-xs text-slate-500">${user.email}</p>
                     </div>
                 </div>
@@ -768,7 +768,7 @@
                     active.forEach(user => {
                         const opt = document.createElement('option');
                         opt.value = user.id;
-                        opt.textContent = user.name;
+                        opt.textContent = user.name || 'Unknown User';
                         matchScoutSelect.appendChild(opt);
                     });
                 }
@@ -778,7 +778,7 @@
                     active.forEach(user => {
                         const opt = document.createElement('option');
                         opt.value = user.id;
-                        opt.textContent = user.name;
+                        opt.textContent = user.name || 'Unknown User';
                         pitScoutSelect.appendChild(opt);
                     });
                 }
@@ -787,9 +787,9 @@
             const filterMembers = (e) => {
                 const term = e.target.value.toLowerCase();
                 const filtered = allMembersData.filter(m =>
-                    m.name.toLowerCase().includes(term) ||
-                    m.email.toLowerCase().includes(term) ||
-                    m.role.toLowerCase().includes(term)
+                    (m.name || '').toLowerCase().includes(term) ||
+                    (m.email || '').toLowerCase().includes(term) ||
+                    (m.role || '').toLowerCase().includes(term)
                 );
                 renderMembers(filtered);
             };
@@ -842,8 +842,11 @@
                     const yearSelect = document.getElementById('season-select');
                     const selectedYear = yearSelect ? yearSelect.value : '2026';
                     const url = `/api/event/matches?year=${selectedYear}${showAll ? '&show_all=true' : ''}`;
-                    const res = await fetch(url);
-                    if (!res.ok) return;
+                    const res = await window.apiFetch(url);
+                    if (!res.ok) {
+                        gridContainer.innerHTML = '<p class="text-center py-8 text-red-500 text-sm font-bold">Error loading matches. Please refresh the page.</p>';
+                        return;
+                    }
                     const data = await res.json();
                     allMatches = data.matches || [];
                     const total = data.total || 0;
@@ -992,7 +995,7 @@
 
                 if (assignment) {
                     const user = userMap[assignment.user_id];
-                    const userName = user ? user.name : 'Unknown';
+                    const userName = (user && user.name) ? user.name : 'Unknown';
                     const initials = userName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                     const profilePic = user?.profile_picture;
 
