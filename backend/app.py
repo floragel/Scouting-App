@@ -62,6 +62,15 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key_scouting_app')
 from datetime import timedelta
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=31)
 
+# Production Session Security
+if os.environ.get('FLASK_ENV') == 'production' or os.environ.get('VERCEL'):
+    app.config.update(
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        PERMANENT_SESSION_LIFETIME=timedelta(days=31)
+    )
+
 # File upload configuration
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 # 16 MB max upload size
 
