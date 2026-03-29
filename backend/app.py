@@ -193,6 +193,13 @@ def get_current_user():
     from models import User
     return User.query.get(session['user_id'])
 
+def get_common_data(user):
+    return {
+        'user': user,
+        'version': '2.0.26',
+        'is_admin': user.role and ('Admin' in user.role or 'Head Scout' in user.role)
+    }
+
 def get_dashboard_data(user):
     from models import PitScoutData, MatchScoutData, Event, Team
     
@@ -230,7 +237,9 @@ def get_dashboard_data(user):
             s['teleop_balls_avg'] = round(s['teleop_balls_avg'] / s['match_count'], 2)
             s['climb_rate'] = round((s['climb_rate'] / s['match_count']) * 100, 1)
 
+    common = get_common_data(user)
     return {
+        **common,
         'user_performance': {
             'matches_scouted': user.matches_scouted or 0,
             'accuracy': '85%' # Placeholder if not computed
@@ -242,27 +251,25 @@ def get_dashboard_data(user):
             'event_key': '2026pncmp'
         },
         'live_match': 'Quals 41',
-        'is_admin': user.role and ('Admin' in user.role or 'Head Scout' in user.role),
         'assignments': [a.to_dict() for a in user.assignments] if user.assignments else [],
         'event_matches': [],
-        'events': [e.to_dict() for e in events],
+        'events_list': [e.to_dict() for e in events],
         'pit_data_json': json.dumps([p.to_dict() for p in pit_entries]),
         'match_data_json': json.dumps([m.to_dict() for m in match_entries]),
         'team_averages_json': json.dumps(team_stats),
         'dashboard_note': 'Focus on trap notes and climb speed for top seeds.',
-        'version': '2.0.26'
     }
 
 @app.route('/')
 def index():
     user = get_current_user()
     if user:
-        return redirect(url_for('analytics_view'))
-    return render_template('login.html')
+        return redirect(url_for('events_view'))
+    return render_template('login.html', **get_common_data(None) if not user else {})
 
 @app.route('/login')
 def login_view():
-    return render_template('login.html')
+    return render_template('login.html', version='2.0.26')
 
 @app.route('/dashboard')
 def dashboard_view():
@@ -270,7 +277,7 @@ def dashboard_view():
     if not user:
         return redirect(url_for('login_view'))
     data = get_dashboard_data(user)
-    return render_template('dashboard.html', user=user, **data)
+    return render_template('dashboard.html', **data)
 
 @app.route('/analytics')
 def analytics_view():
@@ -278,45 +285,44 @@ def analytics_view():
     if not user:
         return redirect(url_for('login_view'))
     data = get_dashboard_data(user)
-    # Analytics page might need extra data, but for now we reuse dashboard logic
-    return render_template('analytics.html', user=user, **data)
+    return render_template('analytics.html', **data)
 
 @app.route('/admin-hub')
 def admin_hub_view():
     user = get_current_user()
-    if not user or user.role not in ['Admin', 'Head Scout']:
-        return redirect(url_for('dashboard_view'))
-    return render_template('admin.html', user=user)
+    if not user or (user.role and 'Admin' not in user.role and 'Head Scout' not in user.role):
+        return redirect(url_for('events_view'))
+    return render_template('admin.html', **get_common_data(user))
 
 @app.route('/teams-dir')
 def teams_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    return render_template('teams.html', user=user)
+    return render_template('teams.html', **get_common_data(user))
 
 @app.route('/events')
 def events_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    return render_template('events.html', user=user)
+    return render_template('events.html', **get_common_data(user))
 
 @app.route('/onboarding')
 def onboarding_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    return render_template('onboarding.html', user=user)
+    return render_template('onboarding.html', **get_common_data(user))
 
 @app.route('/profile')
 def profile_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    return render_template('profile.html', user=user)
+    return render_template('profile.html', **get_common_data(user))
 
 @app.route('/profile-edit')
 def profile_edit_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
-    return render_template('profile_edit.html', user=user)
+    return render_template('profile_edit.html', **get_common_data(user))
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.
