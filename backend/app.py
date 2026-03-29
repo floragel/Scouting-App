@@ -580,7 +580,9 @@ def pit_scout(assignment_id):
     if not user.is_admin and not user.has_role('Pit Scout'):
         return "You need the Pit Scout role to pit scout", 403
     try:
-        return render_template('pit_scout.html', assignment=assignment, **get_common_data(user))
+        from models import Team
+        team = Team.query.filter_by(tba_key=assignment.team_key).first()
+        return render_template('pit_scout.html', assignment=assignment, team=team, **get_common_data(user))
     except Exception as e:
         import traceback
         traceback.print_exc()

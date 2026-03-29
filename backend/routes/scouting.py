@@ -291,11 +291,12 @@ def submit_pit_scout_web():
             pit_data = PitScoutData(team_id=team.id, event_id=event_id)
             db.session.add(pit_data)
             
-        # Set scouter_id safely (column may not exist in production DB)
-        try:
-            pit_data.scouter_id = session['user_id']
-        except Exception:
-            pass
+        def safe_set(obj, attr, val):
+            if hasattr(obj, attr):
+                setattr(obj, attr, val)
+
+        # Set scouter_id safely
+        safe_set(pit_data, 'scouter_id', session['user_id'])
             
         photo_path = ''
         if 'photo' in request.files:
@@ -311,27 +312,26 @@ def submit_pit_scout_web():
                     photo_path = upload_result['secure_url']
                 except Exception as e:
                     print(f"Cloudinary upload error: {e}")
-                    # Don't fail the whole submission if photo upload fails
                 
-        pit_data.drivetrain_type = data.get('drivetrain_type', 'Swerve')
-        pit_data.weight = float(data.get('weight', 0) if data.get('weight') else 0)
-        pit_data.motor_type = data.get('motor_type', 'Kraken X60')
-        pit_data.motor_count = int(data.get('motor_count', 4) if data.get('motor_count') else 4)
-        pit_data.dimensions_l = float(data.get('dim_l', 0) if data.get('dim_l') else 0)
-        pit_data.dimensions_w = float(data.get('dim_w', 0) if data.get('dim_w') else 0)
-        pit_data.max_fuel_capacity = int(data.get('max_fuel', 50) if data.get('max_fuel') else 50)
-        pit_data.climb_level = data.get('climb_level', 'None')
-        pit_data.scoring_preference = data.get('scoring_pref', 'Both')
-        pit_data.intake_type = data.get('intake_type', 'Both')
-        pit_data.auto_leave = (data.get('auto_leave') == 'true')
-        pit_data.auto_score_fuel = (data.get('auto_score_fuel') == 'true')
-        pit_data.auto_collect_fuel = (data.get('auto_collect_fuel') == 'true')
-        pit_data.auto_climb_l1 = (data.get('auto_climb_l1') == 'true')
-        pit_data.auto_pickup = (data.get('auto_pickup') == 'true')
-        pit_data.notes = data.get('notes', '').strip()
+        safe_set(pit_data, 'drivetrain_type', data.get('drivetrain_type', 'Swerve'))
+        safe_set(pit_data, 'weight', float(data.get('weight', 0) if data.get('weight') else 0))
+        safe_set(pit_data, 'motor_type', data.get('motor_type', 'Kraken X60'))
+        safe_set(pit_data, 'motor_count', int(data.get('motor_count', 4) if data.get('motor_count') else 4))
+        safe_set(pit_data, 'dimensions_l', float(data.get('dim_l', 0) if data.get('dim_l') else 0))
+        safe_set(pit_data, 'dimensions_w', float(data.get('dim_w', 0) if data.get('dim_w') else 0))
+        safe_set(pit_data, 'max_fuel_capacity', int(data.get('max_fuel', 50) if data.get('max_fuel') else 50))
+        safe_set(pit_data, 'climb_level', data.get('climb_level', 'None'))
+        safe_set(pit_data, 'scoring_preference', data.get('scoring_pref', 'Both'))
+        safe_set(pit_data, 'intake_type', data.get('intake_type', 'Both'))
+        safe_set(pit_data, 'auto_leave', (data.get('auto_leave') == 'true'))
+        safe_set(pit_data, 'auto_score_fuel', (data.get('auto_score_fuel') == 'true'))
+        safe_set(pit_data, 'auto_collect_fuel', (data.get('auto_collect_fuel') == 'true'))
+        safe_set(pit_data, 'auto_climb_l1', (data.get('auto_climb_l1') == 'true'))
+        safe_set(pit_data, 'auto_pickup', (data.get('auto_pickup') == 'true'))
+        safe_set(pit_data, 'notes', data.get('notes', '').strip())
         
         if photo_path:
-            pit_data.photo_path = photo_path
+            safe_set(pit_data, 'photo_path', photo_path)
         
         db.session.delete(assignment)
         db.session.commit()
@@ -340,7 +340,7 @@ def submit_pit_scout_web():
         import traceback
         traceback.print_exc()
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': f"Database error: {str(e)}"}), 500
 
 @scouting_bp.route('/api/import-scout-data', methods=['POST'])
 def import_scout_data():

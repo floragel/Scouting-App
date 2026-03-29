@@ -133,9 +133,10 @@
                         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
                             <span class="material-symbols-outlined text-[20px]">tag</span>
                         </span>
-                        <input
+                        <input id="team_number"
                             class="w-full bg-white dark:bg-input-dark border-slate-300 dark:border-transparent text-slate-900 dark:text-white rounded-lg pl-10 pr-4 py-3.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-display text-lg placeholder-slate-400 dark:placeholder-slate-600"
-                            placeholder="254" type="number" />
+                            placeholder="254" type="number" 
+                            value="{{ assignment.team_key | replace('frc', '') if assignment else '' }}" />
                     </div>
                 </div>
                 <div class="col-span-1 md:col-span-2">
@@ -146,7 +147,8 @@
                         </span>
                         <input id="team_name"
                             class="w-full bg-white dark:bg-input-dark border-slate-300 dark:border-transparent text-slate-900 dark:text-white rounded-lg pl-10 pr-4 py-3.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-display text-lg placeholder-slate-400 dark:placeholder-slate-600"
-                            placeholder="Optional name" type="text" />
+                            placeholder="Optional name" type="text"
+                            value="{{ team.team_name if team else '' }}" />
                     </div>
                 </div>
             </div>
