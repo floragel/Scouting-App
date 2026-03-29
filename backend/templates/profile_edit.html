@@ -237,7 +237,7 @@
                 const user = await res.json();
 
                 // Split name if space exists
-                const nameParts = user.name.split(' ');
+                const nameParts = (user.name || '').split(' ');
                 firstNameInput.value = nameParts[0] || '';
                 lastNameInput.value = nameParts.slice(1).join(' ') || '';
                 emailInput.value = user.email || '';

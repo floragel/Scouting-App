@@ -111,7 +111,7 @@
                     <div class="flex items-center gap-4 mb-4">
                         <img src="${profilePic}" class="size-12 rounded-full border-2 border-slate-700 object-cover shrink-0" alt="${m.name}'s profile">
                         <div class="min-w-0">
-                            <h3 class="font-bold text-white truncate group-hover:text-primary transition-colors">${m.name}</h3>
+                            <h3 class="font-bold text-white truncate group-hover:text-primary transition-colors">${m.name || 'Unknown'}</h3>
                             <span class="inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter border ${roleColor}">${memberRole}</span>
                         </div>
                     </div>
@@ -132,7 +132,7 @@
         searchInput.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase();
             const filtered = membersData.filter(m => 
-                m.name.toLowerCase().includes(term) || 
+                (m.name || '').toLowerCase().includes(term) || 
                 (m.email && m.email.toLowerCase().includes(term)) ||
                 (m.role && m.role.toLowerCase().includes(term))
             );

@@ -215,7 +215,7 @@
                     headerInitials.classList.remove('p-2', 'bg-primary');
                     headerInitials.classList.add('overflow-hidden');
                 } else {
-                    const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    const initials = (user.name || 'Unknown').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
                     document.getElementById('nav-initials').textContent = initials;
                     document.getElementById('header-initials').textContent = initials;
                 }
