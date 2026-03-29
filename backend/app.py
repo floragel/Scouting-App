@@ -226,7 +226,6 @@ def get_common_data(user):
 
 def get_dashboard_data(user, year=2026):
     from models import PitScoutData, MatchScoutData, Event, Team, User, ScoutAssignment
-    from models import PitScoutData, MatchScoutData, Event, Team, User, ScoutAssignment
     
     # Active Scouts (within last 10 minutes)
     # Using naive UTC to match PostgreSQL TIMESTAMP WITHOUT TIME ZONE
@@ -234,41 +233,49 @@ def get_dashboard_data(user, year=2026):
     active_now = User.query.filter(User.last_active >= ten_mins_ago).count()
     
     # Scouting Coverage for current event in SELECTED YEAR
-    # Find the most recent/ongoing event for the year
     current_event = Event.query.filter(Event.status=='ongoing', Event.date.like(f"%{year}%")).first() or \
                     Event.query.filter(Event.date.like(f"%{year}%")).order_by(Event.date.desc()).first()
     
     coverage = 0
     if current_event:
         total_matches = MatchScoutData.query.filter_by(event_id=current_event.id).with_entities(func.distinct(MatchScoutData.match_number)).count()
-        # Mocking total against a baseline of 60 matches (typical FRC event)
         coverage = min(100, round((total_matches / 60) * 100)) if total_matches > 0 else 0
 
-    # User Performance (Filtered by Year)
-    user_match_query = MatchScoutData.query.join(Event).filter(MatchScoutData.scouter_id == user.id, Event.date.like(f"%{year}%"))
-    user_matches_count = user_match_query.count()
-    
+    # User Performance (Filtered by Year) - resilient to missing scouter_id column
+    user_matches_count = 0
     accuracy = "0%"
-    if user_matches_count > 0:
-        # If notes exist, assume better quality
-        has_notes = user_match_query.filter(MatchScoutData.notes != None).count()
-        accuracy = f"{round((has_notes / user_matches_count) * 100)}%" if has_notes > 0 else "70%"
+    try:
+        user_match_query = MatchScoutData.query.join(Event).filter(MatchScoutData.scouter_id == user.id, Event.date.like(f"%{year}%"))
+        user_matches_count = user_match_query.count()
+        if user_matches_count > 0:
+            has_notes = user_match_query.filter(MatchScoutData.notes != None).count()
+            accuracy = f"{round((has_notes / user_matches_count) * 100)}%" if has_notes > 0 else "70%"
+    except Exception:
+        db.session.rollback()
 
-    # Next Match for the team (Filtered by Year Event)
-    from frc_api import get_team_matches
+    # Next Match for the team
     team_number = user.team.team_number if user.team else 23
     next_match_text = "No matches scheduled"
+    live_match = "TBD"
     try:
-        if current_event:
+        from frc_api import get_team_matches
+        if current_event and current_event.tba_key:
             matches = get_team_matches(f"frc{team_number}", current_event.tba_key)
-            now_ts = datetime.utcnow().timestamp()
+            now_ts = datetime.datetime.utcnow().timestamp()
             next_m = next((m for m in matches if m.get('time', 0) > now_ts), None)
             if next_m:
                 next_match_text = f"{next_m['comp_level'].upper()} {next_m['match_number']}: Ready"
-    except: pass
+                live_match = f"{next_m['comp_level'].upper()} {next_m['match_number']}"
+    except Exception:
+        pass
 
     # Team Stats Aggregation (Filtered by Year)
-    match_entries = MatchScoutData.query.join(Event).filter(Event.date.like(f"%{year}%")).all()
+    match_entries = []
+    try:
+        match_entries = MatchScoutData.query.join(Event).filter(Event.date.like(f"%{year}%")).all()
+    except Exception:
+        db.session.rollback()
+        
     team_stats = {}
     for m in match_entries:
         t_id = f"frc{m.team.team_number}" if m.team else f"team_{m.team_id}"
@@ -297,6 +304,14 @@ def get_dashboard_data(user, year=2026):
             s['teleop_balls_avg'] = round(s['teleop_balls_avg'] / s['match_count'], 2)
             s['climb_rate'] = round((s['climb_rate'] / s['match_count']) * 100, 1)
 
+    # Assignments for the user
+    user_assignments = []
+    try:
+        assigns = ScoutAssignment.query.filter_by(user_id=user.id, status='Pending').all()
+        user_assignments = [a.to_dict() for a in assigns]
+    except Exception:
+        pass
+
     common = get_common_data(user)
     return {
         **common,
@@ -311,7 +326,8 @@ def get_dashboard_data(user, year=2026):
             'text': next_match_text,
             'color': 'green' if 'Ready' in next_match_text else 'slate'
         },
-        'assignments': [a.to_dict() for a in user.assignments] if user.assignments else [],
+        'live_match': live_match,
+        'assignments': user_assignments,
         'events_list': [e.to_dict() for e in Event.query.filter(Event.date.like(f"%{year}%")).all()],
         'match_data_json': json.dumps([m.to_dict() for m in match_entries]),
         'team_averages_json': json.dumps(team_stats),
