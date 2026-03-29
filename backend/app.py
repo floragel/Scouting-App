@@ -443,10 +443,16 @@ def admin_hub_view():
     
     for m in team_members:
         m_dict = m.to_dict()
-        # Lifetime stats (ignore year for these counts as requested by user)
+        # Season-aware matches scouted (resilient if scouter_id column not yet in DB)
         try:
-            m_dict['matches_scouted'] = MatchScoutData.query.filter(MatchScoutData.scouter_id == m.id).count()
-            m_dict['pit_scouted'] = PitScoutData.query.filter(PitScoutData.scouter_id == m.id).count()
+            m_dict['matches_scouted'] = MatchScoutData.query.filter(
+                MatchScoutData.scouter_id == m.id,
+                MatchScoutData.event_id.in_(year_event_ids) if year_event_ids else MatchScoutData.id < 0
+            ).count()
+            m_dict['pit_scouted'] = PitScoutData.query.filter(
+                PitScoutData.scouter_id == m.id,
+                PitScoutData.event_id.in_(year_event_ids) if year_event_ids else PitScoutData.id < 0
+            ).count()
         except Exception:
             db.session.rollback()
             m_dict['matches_scouted'] = 0
@@ -602,9 +608,15 @@ def members_view():
     members_data = []
     for m in team_members:
         m_dict = m.to_dict()
-        # Lifetime stats for the member directory
-        m_dict['matches_scouted'] = MatchScoutData.query.filter(MatchScoutData.scouter_id == m.id).count()
-        m_dict['pit_scouted'] = PitScoutData.query.filter(PitScoutData.scouter_id == m.id).count()
+        # Only count matches from the selected season
+        m_dict['matches_scouted'] = MatchScoutData.query.filter(
+            MatchScoutData.scouter_id == m.id,
+            MatchScoutData.event_id.in_(year_event_ids) if year_event_ids else MatchScoutData.id < 0 
+        ).count()
+        m_dict['pit_scouted'] = PitScoutData.query.filter(
+            PitScoutData.scouter_id == m.id,
+            PitScoutData.event_id.in_(year_event_ids) if year_event_ids else PitScoutData.id < 0
+        ).count()
         members_data.append(m_dict)
         
     return render_template('members.html', 
