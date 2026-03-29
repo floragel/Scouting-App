@@ -13,8 +13,11 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/backend/app.py" },
     { "source": "/login", "destination": "/backend/app.py" },
+    { "source": "/register", "destination": "/backend/app.py" },
+    { "source": "/reset-password", "destination": "/backend/app.py" },
     { "source": "/", "destination": "/backend/app.py" },
     { "source": "/dashboard", "destination": "/backend/app.py" },
+    { "source": "/scout-dashboard", "destination": "/backend/app.py" },
     { "source": "/analytics", "destination": "/backend/app.py" },
     { "source": "/admin-hub", "destination": "/backend/app.py" },
     { "source": "/teams-dir", "destination": "/backend/app.py" },
