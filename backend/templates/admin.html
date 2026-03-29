@@ -186,8 +186,12 @@
                             <td class="px-6 py-4">
                                 <select onchange="changeRole({{ teamUser.id }}, this.value)" class="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-lg px-2 py-1 focus:ring-primary focus:border-primary">
                                     <option {% if teamUser.role == 'Admin' %}selected{% endif %}>Admin</option>
+                                    <option {% if teamUser.role == 'Captain' %}selected{% endif %}>Captain</option>
                                     <option {% if teamUser.role == 'Head Scout' %}selected{% endif %}>Head Scout</option>
                                     <option {% if teamUser.role == 'Strategy Lead' %}selected{% endif %}>Strategy Lead</option>
+                                    <option {% if teamUser.role == 'Dev Lead' %}selected{% endif %}>Dev Lead</option>
+                                    <option {% if teamUser.role == 'Construction Lead' %}selected{% endif %}>Construction Lead</option>
+                                    <option {% if teamUser.role == 'Media' %}selected{% endif %}>Media</option>
                                     <option {% if teamUser.role == 'Pit Scout' %}selected{% endif %}>Pit Scout</option>
                                     <option {% if teamUser.role == 'Stand Scout' %}selected{% endif %}>Stand Scout</option>
                                 </select>

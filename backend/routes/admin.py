@@ -96,6 +96,9 @@ def change_role(user_id):
 
     data = request.json
     new_roles = data.get('roles', [])
+    if not new_roles and 'role' in data:
+        new_roles = [data['role']]
+        
     if not new_roles:
         return jsonify({'error': 'Missing roles'}), 400
 
