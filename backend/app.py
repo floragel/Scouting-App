@@ -243,13 +243,18 @@ def get_dashboard_data(user, year=2026):
 
     # User Performance (Lifetime) - resilient to missing scouter_id column
     user_matches_count = 0
+    user_pit_count = 0
     accuracy = "0%"
     try:
+        from models import PitScoutData
         user_match_query = MatchScoutData.query.filter(MatchScoutData.scouter_id == user.id)
         user_matches_count = user_match_query.count()
         if user_matches_count > 0:
             has_notes = user_match_query.filter(MatchScoutData.notes != None, MatchScoutData.notes != '').count()
             accuracy = f"{round((has_notes / user_matches_count) * 100)}%"
+            
+        # Count pit scouted entries
+        user_pit_count = PitScoutData.query.filter(PitScoutData.scouter_id == user.id).count()
     except Exception:
         db.session.rollback()
 
@@ -339,7 +344,8 @@ def get_dashboard_data(user, year=2026):
             'active_now': active_now,
             'coverage': f"{coverage}%",
             'accuracy': accuracy,
-            'matches_scouted': user_matches_count
+            'matches_scouted': user_matches_count,
+            'pit_scouted': user_pit_count
         },
         'team_status': {
             'type': 'next_match',

@@ -161,18 +161,18 @@
                     <span class="material-symbols-outlined text-sm">analytics</span>
                     My Performance
                 </h4>
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
-                        <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Matches Scouted</p>
-                        <div class="flex items-end gap-2">
-                            <span class="text-3xl font-black text-white">{{ stats.matches_scouted }}</span>
-                        </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                        <p class="text-slate-400 text-[9px] font-bold uppercase mb-1 whitespace-nowrap">Matches</p>
+                        <span class="text-2xl font-black text-white">{{ stats.matches_scouted }}</span>
                     </div>
-                    <div class="bg-slate-800/50 p-4 rounded-lg border border-slate-700/50">
-                        <p class="text-slate-400 text-[10px] font-bold uppercase mb-1">Accuracy</p>
-                        <div class="flex items-center gap-2">
-                            <span class="text-3xl font-black text-primary">{{ stats.accuracy }}</span>
-                        </div>
+                    <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                        <p class="text-slate-400 text-[9px] font-bold uppercase mb-1 whitespace-nowrap">Pit Scouted</p>
+                        <span class="text-2xl font-black text-green-400">{{ stats.pit_scouted }}</span>
+                    </div>
+                    <div class="bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                        <p class="text-slate-400 text-[9px] font-bold uppercase mb-1 whitespace-nowrap">Accuracy</p>
+                        <span class="text-2xl font-black text-primary">{{ stats.accuracy }}</span>
                     </div>
                 </div>
             </div>

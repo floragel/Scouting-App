@@ -148,7 +148,7 @@
                         <input id="team_name"
                             class="w-full bg-white dark:bg-input-dark border-slate-300 dark:border-transparent text-slate-900 dark:text-white rounded-lg pl-10 pr-4 py-3.5 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-display text-lg placeholder-slate-400 dark:placeholder-slate-600"
                             placeholder="Optional name" type="text"
-                            value="{{ team.team_name if team else '' }}" />
+                            value="{{ (team.nickname if team.nickname else team.team_name) if team else '' }}" />
                     </div>
                 </div>
             </div>
