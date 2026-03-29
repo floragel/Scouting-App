@@ -215,10 +215,13 @@ def get_current_user():
     return User.query.get(session['user_id'])
 
 def get_common_data(user):
+    # Admin, Head Scout, Captain, any Lead -> admin-hub. Everyone else -> scout-dashboard
+    scout_mgmt_url = '/admin-hub' if user.is_admin else '/scout-dashboard'
     return {
         'user': user,
         'version': '2.0.26',
-        'is_admin': user.is_admin
+        'is_admin': user.is_admin,
+        'scout_management_url': scout_mgmt_url
     }
 
 def get_dashboard_data(user, year=2026):
@@ -321,7 +324,7 @@ def index():
     user = get_current_user()
     if not user:
         return redirect(url_for('login_view'))
-    return render_template('events.html', **get_common_data(user))
+    return redirect(url_for('events_view'))
 
 @app.route('/login')
 def login_view():
@@ -359,7 +362,7 @@ def admin_hub_view():
     if not user or not user.is_admin:
         return redirect(url_for('events_view'))
     
-    from models import User, ScoutAssignment, MatchScoutData, Event
+    from models import User, ScoutAssignment, MatchScoutData, PitScoutData, Event
     
     selected_year = request.args.get('year', 2026, type=int)
     seasons = [2026, 2025, 2024]
@@ -468,6 +471,15 @@ def events_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
     return render_template('events.html', **get_common_data(user))
+
+@app.route('/scout-dashboard')
+def scout_dashboard_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    selected_year = request.args.get('year', 2026, type=int)
+    seasons = [2026, 2025, 2024]
+    data = get_dashboard_data(user, year=selected_year)
+    return render_template('dashboard.html', **data)
 
 @app.route('/onboarding')
 def onboarding_view():
