@@ -22,7 +22,7 @@ def get_seasons():
         abort(500, description=str(e))
 
 
-@events_bp.route('/events', methods=['GET'])
+@events_bp.route('/api/events_list', methods=['GET'])
 def get_events():
     try:
         import datetime

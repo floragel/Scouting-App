@@ -416,7 +416,7 @@
                 if (seasonTitle) seasonTitle.textContent = `${year} ${gameName} Season (Loading...)`;
 
                 try {
-                    const response = await fetch(`/events?year=${year}`);
+                    const response = await fetch(`/api/events_list?year=${year}`);
                     currentEvents = await response.json();
 
                     eventsLoader.classList.add("hidden");

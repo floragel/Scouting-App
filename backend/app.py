@@ -263,12 +263,20 @@ def get_dashboard_data(user):
 @app.route('/')
 def index():
     user = get_current_user()
-    if user:
-        return redirect(url_for('events_view'))
-    return render_template('login.html', **get_common_data(None) if not user else {})
+    if not user:
+        return redirect(url_for('login_view'))
+    return render_template('events.html', **get_common_data(user))
 
 @app.route('/login')
 def login_view():
+    return render_template('login.html', version='2.0.26')
+
+@app.route('/register')
+def register_view():
+    return render_template('login.html', version='2.0.26') # uses the same unified auth template
+
+@app.route('/reset-password')
+def reset_password_view():
     return render_template('login.html', version='2.0.26')
 
 @app.route('/dashboard')
@@ -323,6 +331,39 @@ def profile_edit_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
     return render_template('profile_edit.html', **get_common_data(user))
+
+@app.route('/match-scout/<int:assignment_id>')
+def match_scout(assignment_id):
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    from models import ScoutAssignment
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    if assignment.user_id != user.id and not ('Admin' in user.role or 'Head Scout' in user.role):
+        return "Not authorized to scout this match", 403
+    return render_template('match_scout.html', assignment=assignment, **get_common_data(user))
+
+@app.route('/pit-scout/<int:assignment_id>')
+def pit_scout(assignment_id):
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    from models import ScoutAssignment
+    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    if assignment.user_id != user.id and not ('Admin' in user.role or 'Head Scout' in user.role):
+        return "Unauthorized", 403
+    return render_template('pit_scout.html', assignment=assignment, **get_common_data(user))
+
+@app.route('/members')
+def members_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    from models import MatchScoutData, User
+    team_members = User.query.filter_by(team_id=user.team_id).all() if user.team_id else []
+    members_data = []
+    for m in team_members:
+        m_dict = m.to_dict()
+        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        members_data.append(m_dict)
+    return render_template('members.html', team_members=members_data, members_json=json.dumps(members_data), **get_common_data(user))
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.

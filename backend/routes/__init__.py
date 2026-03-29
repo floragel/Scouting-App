@@ -26,7 +26,6 @@ ALL_BLUEPRINTS = [
     analytics_bp,
     picklist_bp,
     briefing_bp,
-    # pages_bp,
     pwa_bp,
 ]
 
