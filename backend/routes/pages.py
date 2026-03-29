@@ -86,7 +86,7 @@ def admin_page():
         m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
         members_data.append(m_dict)
     
-    assignments = ScoutAssignment.query.all()
+    assignments = ScoutAssignment.query.filter(ScoutAssignment.match_key.like(f"{selected_year}%")).all()
     assignments_data = [a.to_dict() for a in assignments]
     
     event_matches = []
@@ -137,19 +137,36 @@ def scout_dashboard():
     user = User.query.get(session['user_id'])
     is_admin = user.is_admin
     
+    tba = TBAHandler()
+    team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+    seasons = [2026, 2025, 2024]
+    try:
+        import requests
+        from frc_api import BASE_URL, HEADERS
+        y_res = requests.get(f"{BASE_URL}/team/{team_key}/years_participated", headers=HEADERS, timeout=5)
+        if y_res.status_code == 200:
+            seasons = sorted(y_res.json(), reverse=True)
+    except: pass
+    
+    selected_year = request.args.get('year', 2026, type=int)
+
     assignments = []
     matches_scouted = 0
     if not is_admin:
         assignment_type_filter = 'Pit' if user.has_role('Pit Scout') else 'Match'
-        assign_records = ScoutAssignment.query.filter_by(user_id=user.id, status='Pending', assignment_type=assignment_type_filter).all()
+        assign_records = ScoutAssignment.query.filter(
+            ScoutAssignment.user_id == user.id,
+            ScoutAssignment.status == 'Pending',
+            ScoutAssignment.assignment_type == assignment_type_filter,
+            ScoutAssignment.match_key.like(f"{selected_year}%")
+        ).all()
         assignments = [a.to_dict() for a in assign_records]
         
         if user.has_role('Pit Scout'):
             matches_scouted = PitScoutData.query.filter_by(scouter_id=user.id).count() if hasattr(PitScoutData, 'scouter_id') else 0
         else:
             matches_scouted = MatchScoutData.query.filter_by(scouter_id=user.id).count()
-        
-    tba = TBAHandler()
+
     team_status = None
     if user.team and user.team.team_number:
         home_team_tba_key = f"frc{user.team.team_number}"
@@ -163,24 +180,37 @@ def scout_dashboard():
         
     event_matches = []
     live_match = "TBD"
-    dashboard_note = f"Welcome to the FRC Scouting App. Have a great event, {user.name.split()[0] if user.name else 'Scout'}!"
+    dashboard_note = f"Welcome to clear the field! Have a great event, {user.name.split()[0] if user.name else 'Scout'}!"
     
-    if team_status and team_status.get('event_key'):
-        em = frc_api.get_event_matches(team_status['event_key'])
-        if em:
-            valid_matches = [m for m in em if m.get('time')]
-            valid_matches.sort(key=lambda x: x['time'])
-            
-            current_unix = int(time.time())
-            future_matches = [m for m in valid_matches if m['time'] > (current_unix - 600)]
-            event_matches = future_matches
-            
-            if future_matches:
-                live_m = future_matches[0]
-                live_match = f"{live_m.get('comp_level', '').upper()} {live_m.get('match_number', '')}"
-            elif valid_matches:
-                live_m = valid_matches[-1]
-                live_match = f"{live_m.get('comp_level', '').upper()} {live_m.get('match_number', '')} (Done)"
+    try:
+        import requests
+        from frc_api import BASE_URL, HEADERS
+        e_res = requests.get(f"{BASE_URL}/team/{team_key}/events/{selected_year}/simple", headers=HEADERS, timeout=5)
+        if e_res.status_code == 200 and e_res.json():
+            events = sorted(e_res.json(), key=lambda x: x['end_date'], reverse=True)
+            if events:
+                for e in events:
+                    em = frc_api.get_event_matches(e['key'])
+                    if em:
+                        valid_matches = [m for m in em if m.get('time')]
+                        valid_matches.sort(key=lambda x: x['time'])
+                        # If viewing the current year, filter by time
+                        if selected_year == 2026:
+                            current_unix = int(time.time())
+                            future_matches = [m for m in valid_matches if m['time'] > (current_unix - 600)]
+                            event_matches = future_matches if future_matches else valid_matches
+                        else:
+                            event_matches = valid_matches
+                        
+                        if event_matches:
+                            if selected_year == 2026:
+                                live_m = event_matches[0]
+                                live_match = f"{live_m.get('comp_level', '').upper()} {live_m.get('match_number', '')}"
+                            else:
+                                live_match = "Season Ended"
+                        break
+    except Exception as e:
+        print(f"Error fetching scout dashboard matches: {e}")
 
     is_pit_scout = user.has_role('Pit Scout')
     template_name = 'dashboard_pit' if is_pit_scout else 'dashboard'
@@ -198,6 +228,8 @@ def scout_dashboard():
         dashboard_note=dashboard_note,
         event_matches=event_matches,
         live_match=live_match,
+        seasons=seasons,
+        selected_year=selected_year,
         version=APP_VERSION
     )
 
@@ -268,6 +300,8 @@ def members_directory():
     if 'user_id' not in session:
         return redirect(url_for('pages.login_page'))
     user = User.query.get(session['user_id'])
+    if not user or not user.is_admin:
+        return redirect(url_for('pages.scout_dashboard'))
     
     team_members = []
     if user.team_id:

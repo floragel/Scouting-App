@@ -75,16 +75,18 @@
                 </div>
                 <h1 class="text-xl font-bold tracking-tight">FRC Scouting App</h1>
             </a>
+            {% if is_admin %}
             <a href="/members"
                 class="text-xs font-bold px-3 py-1.5 rounded-full bg-slate-800 text-slate-400 hover:bg-primary hover:text-white transition-all flex items-center gap-2">
                 <span class="material-symbols-outlined text-[14px]">group</span>
                 Members Directory
             </a>
             <div class="h-6 w-px bg-slate-200 dark:border-slate-800"></div>
+            {% endif %}
             <!-- Season Selector -->
             <div class="flex items-center gap-2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 shadow-sm transition-all hover:border-primary/50">
                 <span class="material-symbols-outlined text-sm text-slate-400">calendar_month</span>
-                <select id="season-select" onchange="window.location.href='/dashboard?year='+this.value" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
+                <select id="season-select" onchange="const url = new URL(window.location.href); url.searchParams.set('year', this.value); window.location.href = url.href;" class="bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-700 dark:text-slate-200 cursor-pointer pr-8 py-0.5">
                     {% for year in seasons %}
                     <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>Season {{ year }}</option>
                     {% endfor %}
