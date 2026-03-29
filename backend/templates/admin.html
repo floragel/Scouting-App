@@ -542,6 +542,10 @@
             © Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}
         </p>
     </footer>
+
+    <script id="users-data-script" type="application/json">{{ users_json | safe }}</script>
+    <script id="assignments-data-script" type="application/json">{{ assignments_json | safe }}</script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
 
@@ -830,8 +834,8 @@
             // Parse users and assignments from Jinja context
             let usersData = [];
             let assignmentsData = [];
-            try { usersData = JSON.parse('{{ users_json | safe }}'); } catch (e) { }
-            try { assignmentsData = JSON.parse('{{ assignments_json | safe }}'); } catch (e) { }
+            try { usersData = JSON.parse(document.getElementById('users-data-script').textContent); } catch (e) { console.error('Failed to parse users:', e); }
+            try { assignmentsData = JSON.parse(document.getElementById('assignments-data-script').textContent); } catch (e) { console.error('Failed to parse assignments:', e); }
 
             let allMatches = [];
             let showingAll = false;
