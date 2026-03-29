@@ -602,7 +602,7 @@ def members_view():
     selected_year = request.args.get('year', 2026, type=int)
     seasons = [2026, 2025, 2024]
     
-    from models import MatchScoutData, User, Event
+    from models import MatchScoutData, PitScoutData, User, Event
     team_members = User.query.filter_by(team_id=user.team_id).all() if user.team_id else User.query.all()
     
     # Filter event IDs for the selected year
@@ -615,6 +615,10 @@ def members_view():
         m_dict['matches_scouted'] = MatchScoutData.query.filter(
             MatchScoutData.scouter_id == m.id,
             MatchScoutData.event_id.in_(year_event_ids) if year_event_ids else MatchScoutData.id < 0 
+        ).count()
+        m_dict['pit_scouted'] = PitScoutData.query.filter(
+            PitScoutData.scouter_id == m.id,
+            PitScoutData.event_id.in_(year_event_ids) if year_event_ids else PitScoutData.id < 0
         ).count()
         members_data.append(m_dict)
         
