@@ -551,20 +551,40 @@ def match_scout(assignment_id):
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
     from models import ScoutAssignment
-    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    assignment = ScoutAssignment.query.get(assignment_id)
+    if not assignment:
+        return "Assignment not found or already completed", 404
     if assignment.user_id != user.id and not user.is_admin:
         return "Not authorized to scout this match", 403
-    return render_template('match_scout.html', assignment=assignment, **get_common_data(user))
+    # Role check: user must have 'Stand Scout' role or be admin
+    if not user.is_admin and not user.has_role('Stand Scout'):
+        return "You need the Stand Scout role to match scout", 403
+    try:
+        return render_template('match_scout.html', assignment=assignment, **get_common_data(user))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Error rendering match scout page: {str(e)}", 500
 
 @app.route('/pit-scout/<int:assignment_id>')
 def pit_scout(assignment_id):
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
     from models import ScoutAssignment
-    assignment = ScoutAssignment.query.get_or_404(assignment_id)
+    assignment = ScoutAssignment.query.get(assignment_id)
+    if not assignment:
+        return "Assignment not found or already completed", 404
     if assignment.user_id != user.id and not user.is_admin:
         return "Unauthorized", 403
-    return render_template('pit_scout.html', assignment=assignment, **get_common_data(user))
+    # Role check: user must have 'Pit Scout' role or be admin
+    if not user.is_admin and not user.has_role('Pit Scout'):
+        return "You need the Pit Scout role to pit scout", 403
+    try:
+        return render_template('pit_scout.html', assignment=assignment, **get_common_data(user))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return f"Error rendering pit scout page: {str(e)}", 500
 
 @app.route('/members')
 def members_view():

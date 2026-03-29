@@ -248,6 +248,9 @@ def submit_pit_scout_web():
     if not event_id:
         return jsonify({'error': 'Could not determine current event'}), 400
 
+    # Check if pit data already exists for this team at this event
+    pit_data = PitScoutData.query.filter_by(team_id=team.id, event_id=event_id).first()
+
     try:
         if not pit_data:
             pit_data = PitScoutData(team_id=team.id, event_id=event_id, scouter_id=session['user_id'])
