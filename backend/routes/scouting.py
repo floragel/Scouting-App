@@ -49,7 +49,8 @@ def submit_pit_data():
             drivetrain_type=drivetrain_type,
             weight=float(weight) if weight else None,
             notes=notes,
-            photo_path=photo_path
+            photo_path=photo_path,
+            scouter_id=session.get('user_id')
         )
 
         db.session.add(pit_data)
@@ -82,7 +83,8 @@ def submit_match_data():
             auto_balls_scored=data.get('auto_points', 0),
             teleop_balls_shot=data.get('teleop_points', 0),
             endgame_climb=data.get('climb_status', 'None'),
-            notes=data.get('notes')
+            notes=data.get('notes'),
+            scouter_id=session.get('user_id')
         )
 
         db.session.add(match_data)
@@ -247,10 +249,11 @@ def submit_pit_scout_web():
         return jsonify({'error': 'Could not determine current event'}), 400
 
     try:
-        pit_data = PitScoutData.query.filter_by(team_id=team.id, event_id=event_id).first()
         if not pit_data:
-            pit_data = PitScoutData(team_id=team.id, event_id=event_id)
+            pit_data = PitScoutData(team_id=team.id, event_id=event_id, scouter_id=session['user_id'])
             db.session.add(pit_data)
+        else:
+            pit_data.scouter_id = session['user_id']
             
         photo_path = ''
         if 'photo' in request.files:

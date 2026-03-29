@@ -160,7 +160,10 @@
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Member</th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Assigned Role</th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Password</th>
-                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-center">Matches Scouted</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Status</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Join Date</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-center">Matches / Pit Scouted</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Last Active</th>
                             <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">Actions</th>
                         </tr>
                     </thead>
@@ -199,7 +202,15 @@
                             <td class="px-6 py-4">
                                 <span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded select-all cursor-help" title="Password">{{ teamUser.password_plain or 'N/A' }}</span>
                             </td>
-                            <td class="px-6 py-4 text-xs font-bold text-primary text-center">{{ teamUser.matches_scouted or 0 }}</td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-1.5">
+                                    <div class="size-2 rounded-full bg-emerald-500"></div>
+                                    <span class="text-xs font-medium dark:text-slate-300">Active</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400 font-mono">{{ teamUser.join_date or 'N/A' }}</td>
+                            <td class="px-6 py-4 text-xs font-bold text-primary text-center">{{ teamUser.matches_scouted or 0 }} / {{ teamUser.pit_scouted or 0 }}</td>
+                            <td class="px-6 py-4 text-xs dark:text-slate-400 italic">{{ teamUser.last_active or 'Never' }}</td>
                             <td class="px-6 py-4 text-right">
                                 <button onclick="approveUser({{ teamUser.id }}, 'reject')" class="p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors" title="Revoke Access">
                                     <span class="material-symbols-outlined text-lg">person_remove</span>
@@ -272,3 +283,344 @@
                 </form>
             </div>
         </section>
+
+        <!-- Pit Assignments Section -->
+        <section class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">engineering</span> Pit Assignments
+                    </h3>
+                </div>
+                <button id="auto-assign-pit-btn" onclick="autoAssignPit()" class="px-4 py-2 bg-gradient-to-r from-primary to-indigo-600 hover:opacity-90 text-white text-sm font-bold rounded-lg shadow-lg flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">auto_awesome</span> Auto-Assign All
+                </button>
+            </div>
+            <div class="p-6 bg-slate-50 dark:bg-slate-900/30 border-b border-slate-200 dark:border-slate-800">
+                <form id="pit-assignment-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end" onsubmit="submitPitAssignment(event)">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
+                        <select id="assign-pit-scout" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
+                            <option value="">Select Scout...</option>
+                            {% for teamUser in team_members %}
+                            {% if teamUser.status == 'active' %}
+                            <option value="{{ teamUser.id }}">{{ teamUser.name }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team Number</label>
+                        <input id="assign-pit-team" type="number" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" placeholder="e.g. 254" required />
+                    </div>
+                    <div>
+                        <button type="submit" id="pit-assign-btn" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">add</span> Assign Pit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- Match Schedule Grid -->
+        <section class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">calendar_month</span> Match Schedule
+                    </h3>
+                </div>
+            </div>
+            <div id="match-grid-container" class="p-4 overflow-x-auto custom-scrollbar">
+                {% if event_matches %}
+                <div class="space-y-3">
+                    {% for match in event_matches %}
+                    <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                        <div class="bg-slate-50 dark:bg-slate-900/50 px-4 py-2 flex items-center gap-2 border-b border-slate-200 dark:border-slate-800">
+                            <span class="material-symbols-outlined text-sm text-primary">sports_score</span>
+                            <span class="text-sm font-bold dark:text-white">{{ match.comp_level | upper }} {{ match.match_number }}</span>
+                            <span class="text-xs text-slate-400 ml-auto">{{ match.key }}</span>
+                        </div>
+                        <div class="grid grid-cols-2 divide-x divide-slate-200 dark:divide-slate-800">
+                            <div class="p-3">
+                                <div class="text-[10px] uppercase font-black text-red-500 tracking-wider mb-2 flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Red Alliance
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    {% for tk in match.alliances.red.team_keys %}
+                                    {% set assignment = assignment_map.get(match.key ~ "__" ~ tk) %}
+                                    {% if assignment %}
+                                        {% set u = user_map.get(assignment.user_id) %}
+                                        <div class="flex flex-col items-center gap-1 p-2 rounded-lg border border-red-500/30 bg-red-500/5">
+                                            <span class="text-xs font-bold dark:text-white">{{ tk | replace('frc', '') }}</span>
+                                            <div class="size-8 rounded-full bg-primary/20 border-2 border-primary/50 flex items-center justify-center overflow-hidden">
+                                                {% if u and u.profile_picture %}
+                                                <img src="{{ u.profile_picture }}" class="w-full h-full object-cover">
+                                                {% else %}
+                                                <span class="text-[10px] font-bold text-primary">{{ u.name[:2] | upper if u and u.name else "?" }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium text-center leading-tight truncate w-full">{{ u.name.split(' ')[0] if u and u.name else "" }}</span>
+                                        </div>
+                                    {% else %}
+                                    <div class="flex flex-col items-center gap-1 p-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary/50 transition-colors group">
+                                        <span class="text-xs font-bold dark:text-white">{{ tk | replace('frc', '') }}</span>
+                                        <button onclick="quickAssign('{{ match.key }}', '{{ tk }}', 'Red')" class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-primary/20 transition-colors cursor-pointer">
+                                            <span class="material-symbols-outlined text-sm text-slate-400 group-hover:text-primary transition-colors">person_add</span>
+                                        </button>
+                                        <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap">Assign</span>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <div class="text-[10px] uppercase font-black text-blue-500 tracking-wider mb-2 flex items-center gap-1">
+                                    <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Blue Alliance
+                                </div>
+                                <div class="grid grid-cols-3 gap-2">
+                                    {% for tk in match.alliances.blue.team_keys %}
+                                    {% set assignment = assignment_map.get(match.key ~ "__" ~ tk) %}
+                                    {% if assignment %}
+                                        {% set u = user_map.get(assignment.user_id) %}
+                                        <div class="flex flex-col items-center gap-1 p-2 rounded-lg border border-blue-500/30 bg-blue-500/5">
+                                            <span class="text-xs font-bold dark:text-white">{{ tk | replace('frc', '') }}</span>
+                                            <div class="size-8 rounded-full bg-primary/20 border-2 border-primary/50 flex items-center justify-center overflow-hidden">
+                                                {% if u and u.profile_picture %}
+                                                <img src="{{ u.profile_picture }}" class="w-full h-full object-cover">
+                                                {% else %}
+                                                <span class="text-[10px] font-bold text-primary">{{ u.name[:2] | upper if u and u.name else "?" }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium text-center leading-tight truncate w-full">{{ u.name.split(' ')[0] if u and u.name else "" }}</span>
+                                        </div>
+                                    {% else %}
+                                    <div class="flex flex-col items-center gap-1 p-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 hover:border-primary/50 transition-colors group">
+                                        <span class="text-xs font-bold dark:text-white">{{ tk | replace('frc', '') }}</span>
+                                        <button onclick="quickAssign('{{ match.key }}', '{{ tk }}', 'Blue')" class="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-primary/20 transition-colors cursor-pointer">
+                                            <span class="material-symbols-outlined text-sm text-slate-400 group-hover:text-primary transition-colors">person_add</span>
+                                        </button>
+                                        <span class="text-[10px] text-slate-400 font-medium whitespace-nowrap">Assign</span>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="flex flex-col items-center justify-center py-12 text-slate-400">
+                    <span class="material-symbols-outlined text-4xl mb-4 opacity-50">block</span>
+                    <p>No upcoming matches found for the {{ selected_year }} season.</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- Active Assignments Table -->
+        <section class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-bold dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">checklist</span> Active Assignments
+                    </h3>
+                </div>
+                <button onclick="revokeAllAssignments()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-bold rounded-lg shadow-lg flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">delete_sweep</span> Revoke All
+                </button>
+            </div>
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 dark:bg-slate-900/50">
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Scout</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Match</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Team</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider">Alliance</th>
+                            <th class="px-6 py-4 text-[10px] uppercase font-black text-slate-500 tracking-wider text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        {% for assignment in assignments %}
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                            <td class="px-6 py-4">
+                                <span class="text-sm font-bold dark:text-white">
+                                    {% set u = user_map.get(assignment.user_id) %}
+                                    {{ u.name if u else "Unknown" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-medium dark:text-slate-300">
+                                {% if assignment.assignment_type == "Match" %} {{ assignment.match_key }} {% else %} <span class="text-slate-500 italic">Pit</span> {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-sm font-bold dark:text-white">{{ assignment.team_key }}</td>
+                            <td class="px-6 py-4">
+                                {% if assignment.alliance_color == "Red" %}
+                                <span class="px-2 py-1 rounded text-xs font-bold bg-red-500/10 text-red-500">Red</span>
+                                {% elif assignment.alliance_color == "Blue" %}
+                                <span class="px-2 py-1 rounded text-xs font-bold bg-blue-500/10 text-blue-500">Blue</span>
+                                {% else %}
+                                <span class="px-2 py-1 rounded text-xs font-bold bg-slate-500/10 text-slate-500">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button onclick="revokeAssignment({{ assignment.id }})" class="p-1 px-3 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors text-xs font-bold">Revoke</button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="px-6 py-8 text-center text-slate-500 text-sm">No active assignments found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="mt-auto p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#161e2b]">
+        <p class="text-xs text-slate-500 flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-sm">precision_manufacturing</span>
+            © Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}
+        </p>
+    </footer>
+
+    <script id="event-matches-data" type="application/json">
+        {{ event_matches | tojson | safe }}
+    </script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const memberSearchInput = document.getElementById('member-search-input');
+            if (memberSearchInput) {
+                memberSearchInput.addEventListener('input', (e) => {
+                    const term = e.target.value.toLowerCase();
+                    const rows = document.querySelectorAll('.member-row');
+                    rows.forEach(r => {
+                        const searchData = r.getAttribute('data-search') || '';
+                        r.style.display = searchData.includes(term) ? '' : 'none';
+                    });
+                });
+            }
+        });
+
+        window.approveUser = async (userId, action) => {
+            try {
+                await fetch(`/api/admin/approve/${userId}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action }) });
+                window.location.reload();
+            } catch(e) { console.error(e); }
+        };
+
+        window.changeRole = async (userId, role) => {
+            try {
+                await fetch(`/api/admin/role/${userId}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ role }) });
+            } catch(e) { console.error(e); }
+        };
+
+        let allMatches = [];
+        try { allMatches = JSON.parse(document.getElementById('event-matches-data').textContent || '[]'); } catch(e) {}
+
+        window.matchSelected = (matchKey) => {
+            const assignTeamSelect = document.getElementById('assign-team');
+            assignTeamSelect.innerHTML = '<option value="">Select Team...</option>';
+            if (!matchKey) {
+                assignTeamSelect.disabled = true;
+                return;
+            }
+            const matchData = allMatches.find(m => m.key === matchKey);
+            if (matchData && matchData.alliances) {
+                assignTeamSelect.disabled = false;
+                if (matchData.alliances.red?.team_keys) {
+                    const group = document.createElement('optgroup'); group.label = "Red Alliance";
+                    matchData.alliances.red.team_keys.forEach(tk => {
+                        const opt = document.createElement('option'); opt.value = tk; opt.textContent = tk; opt.dataset.alliance = 'Red'; group.appendChild(opt);
+                    });
+                    assignTeamSelect.appendChild(group);
+                }
+                if (matchData.alliances.blue?.team_keys) {
+                    const group = document.createElement('optgroup'); group.label = "Blue Alliance";
+                    matchData.alliances.blue.team_keys.forEach(tk => {
+                        const opt = document.createElement('option'); opt.value = tk; opt.textContent = tk; opt.dataset.alliance = 'Blue'; group.appendChild(opt);
+                    });
+                    assignTeamSelect.appendChild(group);
+                }
+            }
+        };
+
+        window.teamSelected = (selectElem) => {
+            const selectedOption = selectElem.options[selectElem.selectedIndex];
+            if (selectedOption && selectedOption.dataset.alliance) {
+                document.getElementById('assign-alliance').value = selectedOption.dataset.alliance;
+            }
+        };
+
+        window.quickAssign = (matchKey, teamKey, alliance) => {
+            const assignMatch = document.getElementById('assign-match');
+            assignMatch.value = matchKey;
+            window.matchSelected(matchKey);
+            setTimeout(() => {
+                document.getElementById('assign-team').value = teamKey;
+                document.getElementById('assign-alliance').value = alliance;
+                const form = document.getElementById('assignment-form');
+                form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                form.classList.add('ring-2', 'ring-primary');
+                setTimeout(()=>form.classList.remove('ring-2','ring-primary'), 2000);
+            }, 50);
+        };
+
+        window.submitAssignment = async (e) => {
+            e.preventDefault();
+            const payload = {
+                user_id: document.getElementById('assign-scout').value,
+                match_key: document.getElementById('assign-match').value,
+                team_key: document.getElementById('assign-team').value,
+                alliance_color: document.getElementById('assign-alliance').value
+            };
+            try {
+                const res = await fetch('/api/admin/assignments', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                if(res.ok) window.location.reload();
+                else { const data = await res.json(); alert(data.error || "Failed"); }
+            } catch(err) { alert("Network error"); }
+        };
+
+        window.submitPitAssignment = async (e) => {
+            e.preventDefault();
+            const payload = {
+                user_id: document.getElementById('assign-pit-scout').value,
+                team_key: 'frc' + document.getElementById('assign-pit-team').value
+            };
+            try {
+                const res = await fetch('/api/admin/assign-pit', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+                if(res.ok) window.location.reload();
+                else { const data = await res.json(); alert(data.error || "Failed"); }
+            } catch(err) { alert("Network error"); }
+        };
+
+        window.revokeAssignment = async (id) => {
+            if(!confirm("Revoke this assignment?")) return;
+            const res = await fetch(`/api/admin/assignments/${id}`, { method: 'DELETE' });
+            if(res.ok) window.location.reload();
+        };
+
+        window.revokeAllAssignments = async () => {
+            if(!confirm("Revoke ALL assignments? Cannot be undone.")) return;
+            const res = await fetch('/api/admin/assignments/all', { method: 'DELETE' });
+            if(res.ok) window.location.reload();
+        };
+
+        window.autoAssignAll = async () => {
+            const btn = document.getElementById('auto-assign-btn');
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">autorenew</span> Assigning...`;
+            const res = await fetch('/api/admin/auto-assign', { method: 'POST' });
+            if(res.ok) window.location.reload();
+            else { alert("Failed to auto-assign"); btn.innerHTML = `Auto-Assign All`; }
+        };
+        
+        window.autoAssignPit = async () => {
+            if(!confirm("Auto-assign pit scouting for all valid teams?")) return;
+            const res = await fetch('/api/admin/auto-assign-pit', { method: 'POST' });
+            if(res.ok) window.location.reload();
+            else alert("Failed to auto assign pits");
+        };
+    </script>
+</body>
+</html>

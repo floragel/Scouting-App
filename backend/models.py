@@ -149,12 +149,16 @@ class PitScoutData(db.Model):
     notes = db.Column(db.Text)
     photo_path = db.Column(db.String(255))
     
+    # Scouter Tracking
+    scouter_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    
     # Ensure one pit scout entry per team per event
     __table_args__ = (UniqueConstraint('team_id', 'event_id', name='_team_event_pit_uc'),)
     
-    # Relationships to Team and Event models
+    # Relationships to Team, Event, and User models
     team = db.relationship('Team', backref=db.backref('pit_data', lazy=True))
     event = db.relationship('Event', backref=db.backref('pit_data', lazy=True))
+    scouter = db.relationship('User', backref=db.backref('pit_data', lazy=True))
 
     def to_dict(self):
         return {
@@ -180,7 +184,8 @@ class PitScoutData(db.Model):
             'target_tower_level': self.target_tower_level,
             'fuel_capacity': self.fuel_capacity,
             'notes': self.notes,
-            'photo_path': self.photo_path
+            'photo_path': self.photo_path,
+            'scouter_id': self.scouter_id
         }
 
 class MatchScoutData(db.Model):
