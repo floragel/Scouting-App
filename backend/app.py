@@ -300,7 +300,53 @@ def admin_hub_view():
     user = get_current_user()
     if not user or (user.role and 'Admin' not in user.role and 'Head Scout' not in user.role):
         return redirect(url_for('events_view'))
-    return render_template('admin.html', **get_common_data(user))
+    
+    from models import User, ScoutAssignment, MatchScoutData, Event
+    import datetime
+    
+    # Calculate Real Stats
+    team_id = user.team_id
+    stats = {
+        'total_scouts': User.query.filter_by(team_id=team_id).count() if team_id else User.query.count(),
+        'active_now': User.query.filter_by(team_id=team_id, status='active').count() if team_id else User.query.filter_by(status='active').count(),
+        'pending_requests': User.query.filter_by(team_id=team_id, status='pending').count() if team_id else User.query.filter_by(status='pending').count(),
+        'match_assignments': ScoutAssignment.query.filter_by(assignment_type='Match').count(),
+        'pit_assignments': ScoutAssignment.query.filter_by(assignment_type='Pit').count()
+    }
+    
+    selected_year = request.args.get('year', 2026, type=int)
+    seasons = [2026, 2025, 2024]
+    
+    team_members = User.query.filter_by(team_id=team_id).all() if team_id else User.query.all()
+    members_data = []
+    for m in team_members:
+        m_dict = m.to_dict()
+        m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
+        members_data.append(m_dict)
+        
+    assignments = ScoutAssignment.query.all()
+    
+    # Get current event matches for the selector
+    event_matches = []
+    events = Event.query.order_by(Event.date.desc()).all()
+    if events:
+        import frc_api
+        try:
+            em = frc_api.get_event_matches(events[0].tba_key)
+            if em:
+                event_matches = [m for m in em if m.get('time')]
+                event_matches.sort(key=lambda x: x['time'])
+        except: pass
+
+    return render_template('admin.html', 
+                         stats=stats, 
+                         seasons=seasons, 
+                         selected_year=selected_year,
+                         team_members=members_data,
+                         users_json=json.dumps(members_data),
+                         assignments=assignments,
+                         event_matches=event_matches,
+                         **get_common_data(user))
 
 @app.route('/teams-dir')
 def teams_view():
@@ -357,13 +403,119 @@ def members_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
     from models import MatchScoutData, User
-    team_members = User.query.filter_by(team_id=user.team_id).all() if user.team_id else []
+    team_members = User.query.filter_by(team_id=user.team_id).all() if user.team_id else User.query.all()
     members_data = []
     for m in team_members:
         m_dict = m.to_dict()
         m_dict['matches_scouted'] = MatchScoutData.query.filter_by(scouter_id=m.id).count()
         members_data.append(m_dict)
     return render_template('members.html', team_members=members_data, members_json=json.dumps(members_data), **get_common_data(user))
+
+@app.route('/head-scout-stats')
+@app.route('/head-scout-analytics')
+def analytics_hub_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    if not ('Admin' in user.role or 'Head Scout' in user.role):
+        return "Unauthorized", 403
+    
+    from models import Event, PitScoutData, MatchScoutData, Team
+    from sqlalchemy import func
+    
+    events = Event.query.order_by(Event.date.desc()).all()
+    pit_data = PitScoutData.query.all()
+    match_data = MatchScoutData.query.all()
+    
+    # Calculate Team Averages
+    team_stats = db.session.query(
+        MatchScoutData.team_id,
+        func.avg(MatchScoutData.auto_balls_scored).label('avg_auto'),
+        func.avg(MatchScoutData.teleop_balls_shot).label('avg_teleop'),
+        func.avg(MatchScoutData.teleop_shooter_accuracy).label('avg_accuracy'),
+        func.count(MatchScoutData.id).label('match_count')
+    ).group_by(MatchScoutData.team_id).all()
+    
+    averages = {}
+    for s in team_stats:
+        team = Team.query.get(s.team_id)
+        if team:
+            averages[team.team_number] = {
+                'avg_auto': round(float(s.avg_auto or 0), 2),
+                'avg_teleop': round(float(s.avg_teleop or 0), 2),
+                'avg_accuracy': round(float(s.avg_accuracy or 0), 2),
+                'match_count': s.match_count
+            }
+    
+    return render_template('analytics.html', 
+                         events=events,
+                         pit_data_json=json.dumps([p.to_dict() for p in pit_data]),
+                         match_data_json=json.dumps([m.to_dict() for m in match_data]),
+                         team_averages_json=json.dumps(averages),
+                         **get_common_data(user))
+
+@app.route('/picklist')
+def picklist_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    from models import Team, MatchScoutData, PitScoutData
+    from sqlalchemy import func
+    
+    # Simple Power Score Algorithm: 
+    # (Auto Avg * 2.5) + (Teleop Avg * 1.5) + (Accuracy * 2) + (Climb Rate * 0.05)
+    
+    teams = Team.query.all()
+    sorted_teams = []
+    
+    for team in teams:
+        # Get match stats
+        stats = db.session.query(
+            func.avg(MatchScoutData.auto_balls_scored).label('avg_auto'),
+            func.avg(MatchScoutData.teleop_balls_shot).label('avg_teleop'),
+            func.avg(MatchScoutData.teleop_shooter_accuracy).label('avg_accuracy'),
+            func.count(MatchScoutData.id).label('match_count')
+        ).filter(MatchScoutData.team_id == team.id).first()
+        
+        # Get climb rate
+        climb_matches = MatchScoutData.query.filter(
+            MatchScoutData.team_id == team.id,
+            MatchScoutData.endgame_climb != 'None'
+        ).count()
+        climb_rate = (climb_matches / stats.match_count * 100) if (stats.match_count and stats.match_count > 0) else 0
+        
+        # Power Score
+        auto_val = float(stats.avg_auto or 0)
+        tele_val = float(stats.avg_teleop or 0)
+        acc_val = float(stats.avg_accuracy or 0)
+        power_score = round((auto_val * 2.5) + (tele_val * 1.5) + (acc_val * 2) + (climb_rate * 0.05), 2)
+        
+        pit = PitScoutData.query.filter_by(team_id=team.id).first()
+        
+        sorted_teams.append({
+            'team_number': team.team_number,
+            'auto_balls_avg': round(auto_val, 2),
+            'teleop_balls_avg': round(tele_val, 2),
+            'accuracy_avg': round(acc_val, 1),
+            'climb_rate': round(climb_rate, 1),
+            'match_count': stats.match_count or 0,
+            'power_score': power_score,
+            'pit': {
+                'drivetrain': pit.drivetrain_type or 'Unknown',
+                'motors': pit.motor_type or 'Unknown'
+            } if pit else None
+        })
+    
+    # Sort by Power Score descending
+    sorted_teams.sort(key=lambda x: x['power_score'], reverse=True)
+    
+    return render_template('picklist.html', sorted_teams_json=json.dumps(sorted_teams), **get_common_data(user))
+
+@app.route('/drive-team-briefing')
+def briefing_view():
+    user = get_current_user()
+    if not user: return redirect(url_for('login_view'))
+    from models import Event
+    events = Event.query.all()
+    return render_template('briefing.html', events=events, **get_common_data(user))
 
 if __name__ == '__main__':
     # In production, use Gunicorn or Waitress.

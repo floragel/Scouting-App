@@ -52,7 +52,7 @@ def get_events():
         abort(500, description=str(e))
 
 
-@events_bp.route('/events/<int:event_id>/teams', methods=['GET'])
+@events_bp.route('/api/events/<int:event_id>/teams', methods=['GET'])
 def get_event_teams(event_id):
     try:
         event = Event.query.get_or_404(event_id, description="Event not found")

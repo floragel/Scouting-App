@@ -13,7 +13,7 @@ basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 APP_VERSION = "2.0.26"
 
 
-@teams_bp.route('/teams/<int:team_id>', methods=['GET'])
+@teams_bp.route('/api/teams/<int:team_id>', methods=['GET'])
 def get_team_details(team_id):
     try:
         team = Team.query.get_or_404(team_id, description="Team not found")

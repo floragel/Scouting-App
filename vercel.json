@@ -22,6 +22,11 @@
     { "source": "/onboarding", "destination": "/backend/app.py" },
     { "source": "/profile", "destination": "/backend/app.py" },
     { "source": "/profile-edit", "destination": "/backend/app.py" },
+    { "source": "/members", "destination": "/backend/app.py" },
+    { "source": "/head-scout-stats", "destination": "/backend/app.py" },
+    { "source": "/head-scout-analytics", "destination": "/backend/app.py" },
+    { "source": "/picklist", "destination": "/backend/app.py" },
+    { "source": "/drive-team-briefing", "destination": "/backend/app.py" },
     { "source": "/match-scout/(.*)", "destination": "/backend/app.py" },
     { "source": "/pit-scout/(.*)", "destination": "/backend/app.py" },
     {

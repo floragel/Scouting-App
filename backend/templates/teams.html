@@ -136,7 +136,7 @@
                 <p class="text-sm font-bold leading-tight">Hi, {{ user.name.split()[0] if user.name else 'Scout' }}</p>
                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">{{ user.role }}</p>
             </div>
-            <a href="/profile/edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
+            <a href="/profile-edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
                 <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
                     data-alt="Circular profile picture of user {{ user.name }}"
                     style="background-image: url('{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuA803XpE2v25qTbQNZkC9Jy96HI8b63bTYEE_7hvUMpuC587x35z-5Z7eXSCB1U0am99XygRrAHdfbiMUbVa9QxvraFR-r7gumvM6v3ykq0hOkgoMu9aifgQY-sgOFP6ruOt9XgDpd1cyRiEOpAQ5x0whyh6rEssokO0S7kHiw5jyFeTpfcqjnDB73Hz3XIm5Ru_SBHFOriwBTQtR8AlNfj7Hd6dFuRrAEkmu5B5Rxdg0YVyDaGGgK3RzKD9Jlxxt0DICDNbZ-rC2u0' }}')">

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <script src="/shared_assets/translator.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Member Directory - FRC Scouting App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0a0c10",
+                    },
+                    fontFamily: { "display": ["Space Grotesk", "sans-serif"] },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-display">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6 py-4 sticky top-0 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm z-50">
+        <div class="flex items-center gap-4">
+            <a href="/" class="text-primary hover:opacity-80 transition-opacity">
+                <span class="material-symbols-outlined text-3xl">group</span>
+            </a>
+            <h1 class="text-xl font-bold tracking-tight">Member Directory</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="/" class="px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-800 text-sm font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">home</span>
+                Dashboard
+            </a>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full max-w-5xl mx-auto p-6 md:p-10">
+        <div class="mb-10 text-center md:text-left">
+            <h2 class="text-3xl font-black text-white mb-2">Meet the Team</h2>
+            <p class="text-slate-400">Discover your fellow scouts and their contributions to the 2026 season.</p>
+        </div>
+
+        <div class="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+            <!-- Search Bar -->
+            <div class="p-6 border-b border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="relative w-full md:w-96">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">search</span>
+                    <input id="directory-search" type="text" placeholder="Search members by name or role..." 
+                        class="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" />
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Members:</span>
+                    <span class="text-sm font-black text-primary">{{ team_members|length }}</span>
+                </div>
+            </div>
+
+            <!-- Members Grid -->
+            <div id="members-grid" class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-6 text-center border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-black/20">
+        <p class="text-xs text-slate-500 font-medium">© Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}</p>
+    </footer>
+
+    <script>
+        const membersData = {{ members_json | safe }};
+        const grid = document.getElementById('members-grid');
+        const searchInput = document.getElementById('directory-search');
+
+        function renderMembers(data) {
+            grid.innerHTML = '';
+            if (data.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-20 text-center text-slate-500 italic">No members found matching your search.</div>';
+                return;
+            }
+
+            data.forEach(m => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-800/40 border border-slate-700/50 p-5 rounded-2xl hover:border-primary/40 hover:bg-slate-800/60 transition-all group";
+                
+                const profilePic = m.profile_picture || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAnp9GOlcDa8yzzLYbNH-rZvRzXCOhGowYtsQLEwSiFWlli3IaU7AHu9_97kWBlOit0r8unOBUNcb1sviDjjS-2wJcHmKmORqedn9EjHp5EvTQdCWjG5bGAUm2L3v1IZZU2t0S8wQQjF-EPgUcs9U6ru9xKGgwWQiqgMhCIpZm7SDFjdLyhQPlWlwP80kUNonmdKgIqFqxP3cF3KVh-lMnYK3WSedOVb4La5S1umlOMTVV4iPbc3R8zgtHbl5h5YBtoUpUN6gV-O5rZ';
+                
+                const memberRole = m.role || 'Scout';
+                const roleColor = memberRole === 'Admin' || memberRole === 'Head Scout' ? 'text-primary bg-primary/10 border-primary/20' : 'text-slate-400 bg-slate-900 border-slate-800';
+
+                card.innerHTML = `
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="size-12 rounded-full border-2 border-slate-700 overflow-hidden bg-cover bg-center shrink-0" style="background-image: url('${profilePic}')"></div>
+                        <div class="min-w-0">
+                            <h3 class="font-bold text-white truncate group-hover:text-primary transition-colors">${m.name}</h3>
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter border ${roleColor}">${memberRole}</span>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-500">Matches Scouted</span>
+                            <span class="font-bold text-white">${m.matches_scouted || 0}</span>
+                        </div>
+                        <div class="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                            <div class="h-full bg-primary rounded-full transition-all duration-500" style="width: ${Math.min(100, (m.matches_scouted || 0) * 10)}%"></div>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = membersData.filter(m => 
+                m.name.toLowerCase().includes(term) || 
+                (m.email && m.email.toLowerCase().includes(term)) ||
+                (m.role && m.role.toLowerCase().includes(term))
+            );
+            renderMembers(filtered);
+        });
+
+        // Initial render
+        renderMembers(membersData);
+    </script>
+</body>
+</html>
