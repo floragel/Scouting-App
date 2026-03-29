@@ -241,15 +241,15 @@ def get_dashboard_data(user, year=2026):
         total_matches = MatchScoutData.query.filter_by(event_id=current_event.id).with_entities(func.distinct(MatchScoutData.match_number)).count()
         coverage = min(100, round((total_matches / 60) * 100)) if total_matches > 0 else 0
 
-    # User Performance (Filtered by Year) - resilient to missing scouter_id column
+    # User Performance (Lifetime) - resilient to missing scouter_id column
     user_matches_count = 0
     accuracy = "0%"
     try:
-        user_match_query = MatchScoutData.query.join(Event).filter(MatchScoutData.scouter_id == user.id, Event.date.like(f"%{year}%"))
+        user_match_query = MatchScoutData.query.filter(MatchScoutData.scouter_id == user.id)
         user_matches_count = user_match_query.count()
         if user_matches_count > 0:
-            has_notes = user_match_query.filter(MatchScoutData.notes != None).count()
-            accuracy = f"{round((has_notes / user_matches_count) * 100)}%" if has_notes > 0 else "70%"
+            has_notes = user_match_query.filter(MatchScoutData.notes != None, MatchScoutData.notes != '').count()
+            accuracy = f"{round((has_notes / user_matches_count) * 100)}%"
     except Exception:
         db.session.rollback()
 
