@@ -11,6 +11,8 @@ from flask_cors import CORS
 import cloudinary
 import cloudinary.uploader
 from sqlalchemy import text, func
+import datetime
+from datetime import timedelta
 
 from models import db
 from routes import register_blueprints
@@ -220,10 +222,10 @@ def get_common_data(user):
 
 def get_dashboard_data(user, year=2026):
     from models import PitScoutData, MatchScoutData, Event, Team, User, ScoutAssignment
-    from datetime import datetime, timedelta
+    from models import PitScoutData, MatchScoutData, Event, Team, User, ScoutAssignment
     
     # Active Scouts (within last 10 minutes)
-    ten_mins_ago = datetime.utcnow() - timedelta(minutes=10)
+    ten_mins_ago = datetime.datetime.now(datetime.timezone.utc) - timedelta(minutes=10)
     active_now = User.query.filter(User.last_active >= ten_mins_ago).count()
     
     # Scouting Coverage for current event in SELECTED YEAR
@@ -356,7 +358,7 @@ def admin_hub_view():
         return redirect(url_for('events_view'))
     
     from models import User, ScoutAssignment, MatchScoutData, Event
-    import datetime
+    from models import User, ScoutAssignment, MatchScoutData, Event
     
     selected_year = request.args.get('year', 2026, type=int)
     seasons = [2026, 2025, 2024]
@@ -687,7 +689,7 @@ def picklist_view():
     user = get_current_user()
     if not user: return redirect(url_for('login_view'))
     if not user.is_admin:
-        return redirect(url_for('events_hub'))
+        return redirect(url_for('events_view'))
     
     from models import Team, MatchScoutData, PitScoutData, Event
     # Fetch from Event
