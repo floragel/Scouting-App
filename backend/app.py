@@ -185,6 +185,7 @@ def manual_init_db():
 # Removed db.create_all() from global scope to prevent cold start crashes.
 
 # ─── Navigation & Template Routes ───
+import json
 
 def get_current_user():
     if 'user_id' not in session:
@@ -193,11 +194,46 @@ def get_current_user():
     return User.query.get(session['user_id'])
 
 def get_dashboard_data(user):
-    # Mock or fetch real performance data
+    from models import PitScoutData, MatchScoutData, Event, Team
+    
+    # Fetch data for Analytics
+    pit_entries = PitScoutData.query.all()
+    match_entries = MatchScoutData.query.all()
+    events = Event.query.all()
+    
+    # Simple team performance aggregation
+    team_stats = {}
+    for m in match_entries:
+        t_id = f"frc{m.team.team_number}" if m.team else f"team_{m.team_id}"
+        if t_id not in team_stats:
+            team_stats[t_id] = {
+                'team_number': m.team.team_number if m.team else 0,
+                'match_count': 0,
+                'accuracy_avg': 0,
+                'climb_rate': 0,
+                'auto_balls_avg': 0,
+                'teleop_balls_avg': 0
+            }
+        s = team_stats[t_id]
+        s['match_count'] += 1
+        s['accuracy_avg'] += (m.teleop_shooter_accuracy or 0)
+        s['auto_balls_avg'] += (m.auto_balls_scored or 0)
+        s['teleop_balls_avg'] += (m.teleop_balls_shot or 0)
+        if m.endgame_climb and m.endgame_climb != 'None':
+            s['climb_rate'] += 1
+
+    for t_id in team_stats:
+        s = team_stats[t_id]
+        if s['match_count'] > 0:
+            s['accuracy_avg'] = round(s['accuracy_avg'] / s['match_count'], 2)
+            s['auto_balls_avg'] = round(s['auto_balls_avg'] / s['match_count'], 2)
+            s['teleop_balls_avg'] = round(s['teleop_balls_avg'] / s['match_count'], 2)
+            s['climb_rate'] = round((s['climb_rate'] / s['match_count']) * 100, 1)
+
     return {
         'user_performance': {
-            'matches_scouted': 12,
-            'accuracy': '85%'
+            'matches_scouted': user.matches_scouted or 0,
+            'accuracy': '85%' # Placeholder if not computed
         },
         'team_status': {
             'type': 'next_match',
@@ -206,9 +242,13 @@ def get_dashboard_data(user):
             'event_key': '2026pncmp'
         },
         'live_match': 'Quals 41',
-        'is_admin': user.role in ['Admin', 'Head Scout'],
-        'assignments': [],
+        'is_admin': user.role and ('Admin' in user.role or 'Head Scout' in user.role),
+        'assignments': [a.to_dict() for a in user.assignments] if user.assignments else [],
         'event_matches': [],
+        'events': [e.to_dict() for e in events],
+        'pit_data_json': json.dumps([p.to_dict() for p in pit_entries]),
+        'match_data_json': json.dumps([m.to_dict() for m in match_entries]),
+        'team_averages_json': json.dumps(team_stats),
         'dashboard_note': 'Focus on trap notes and climb speed for top seeds.',
         'version': '2.0.26'
     }
