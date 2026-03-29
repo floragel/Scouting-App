@@ -10,7 +10,7 @@ from flask import Flask, jsonify, request, render_template, session, redirect, u
 from flask_cors import CORS
 import cloudinary
 import cloudinary.uploader
-from sqlalchemy import text
+from sqlalchemy import text, func
 
 from models import db
 from routes import register_blueprints
@@ -362,7 +362,7 @@ def admin_hub_view():
     seasons = [2026, 2025, 2024]
     
     # Active Scouts logic (last 5 minutes)
-    five_mins_ago = (datetime.datetime.now() - datetime.timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
+    five_mins_ago = datetime.datetime.now() - datetime.timedelta(minutes=5)
     active_now_count = User.query.filter(User.team_id == user.team_id, User.last_active >= five_mins_ago).count()
     
     # Stats scoped to selection
@@ -690,7 +690,7 @@ def picklist_view():
         return redirect(url_for('events_hub'))
     
     from models import Team, MatchScoutData, PitScoutData, Event
-    from sqlalchemy import func
+    # Fetch from Event
     
     # 1. Season/Year Selection
     selected_year = request.args.get('year', 2026, type=int)
