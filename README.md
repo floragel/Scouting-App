@@ -1,67 +1,70 @@
-# 🤖 FRC Scouting App — Team 6622 "StanRobotix"
+# 🤖 StanRobotix Scouting Ecosystem v2.0 — Team 6622
 
-A **premium, elite-tier full-stack scouting ecosystem** engineered for the **FIRST Robotics Competition (FRC)**. This application centralizes match data, pit specifications, and advanced team analytics into a unified, high-performance platform.
+A **premium, high-performance scouting platform** engineered for the **FIRST Robotics Competition (FRC)**. This application centralizes match intelligence, pit specifications, and strategic heatmaps into a unified, elite-tier ecosystem.
 
-Built with passion and precision by **Team 6622 — StanRobotix** for the **2026 FRC Season**.
+Designed and refined by **Team 6622 — StanRobotix** for the **2026 FRC Season**.
 
 ---
 
 ## ⚡ 2026 Season: RECHARGED
-The app has been architected to handle the dynamic requirements of the **2026 FRC Game**:
-- 📊 **Dynamic Objective Tracking**: Real-time scoring for game-specific pieces and auto-calibration for various scoring zones.
-- 🔄 **Intelligent Data Fallback**: Integrated Statbotics v3 logic that falls back to 2025 historic data when early-season 2026 data is sparse.
-- 📱 **Enhanced PWA v2**: Fully offline-capable field scouting with automated sync protocols for low-connectivity arenas.
+The platform is built to handle the precision and speed of the **2026 FRC Game**:
+- 🎨 **Visual Trajectory Tracking**: Advanced canvas interface for recording autonomous paths with high-fidelity background mapping.
+- 📉 **Autonomous Heatmaps**: Aggregated analysis of team paths across multiple matches to identify "Power Lanes" and high-risk zones.
+- 🕒 **Season-Aware Persistence**: One-click switching between current and historical seasons, with data isolation and cross-year analytics.
+- 📱 **True PWA Capability**: Field-ready offline scouting with intelligent synchronization for high-interference arenas.
 
 ---
 
-## 🏗️ Core Ecosystem Features
+## 🏗️ Core Platform Features
 
-### 🏢 Elite Admin Hub
-The nerve center for team management and oversight:
-- **Multi-Role Flexible System**: Support for users holding multiple roles simultaneously (e.g., *Captain + Driver + Admin*).
-- **Modern Tag-Based Interface**: Elite UI for managing scout roles with interactive tags and a streamlined selection modal.
-- **Binôme Pit Scouting**: Integrated support for paired scouting (assigning two scouts per robot) to maximize data accuracy and engagement.
-- **Automated Team Initialization**: Rapidly deploy the entire team roster with default secure credentials.
-- **Scout Progress Monitoring**: Real-time dashboard showing match-by-match completion rates and data quality.
-- **Fleet Access Control**: Transparent role management for all technical and tactical positions.
+### 🏢 Elite Admin Hub & Fleet Management
+The nerve center for mission control and user oversight:
+- **Assignment Engine**: Automated and manual distribution of match and pit scouting duties to available scouts.
+- **Multi-Role Flexible System**: Custom role arrays allowing members to hold multiple simultaneous permissions (e.g., *Captain + Head Scout + Driver*).
+- **Real-Time Member Directory**: Live monitoring of scout contributions with "Lifetime" and "Season-Specific" performance metrics.
+- **Access Control**: One-click approval/revocation and plain-password overrides for rapid field support.
 
-### 📈 Precision Analytics & Strategy
-Move beyond raw data into actionable intelligence:
-- **Extended Role Ecosystem**: Specialized roles for **Construction Lead**, **Captain**, **Driver**, and **Media** teams to centralize all 2026 season activities.
-- **Briefing System**: Dedicated reports for drive teams and strategists, summarizing opponent weaknesses and ally strengths.
-- **Dynamic Picklist Tool**: Drag-and-drop alliance selection interface with live-updating statistical rankings.
-- **API Powerhouse**: Seamless bi-directional integration with **The Blue Alliance** and **Statbotics** (v3 logic).
+### 📈 Tactical Analytics & Scouting
+Decision-making powered by objective, high-quality data:
+- **Match Scouting**: Real-time scoring interface with integrated autonomous strategy tracking.
+- **Pit Scouting**: Intelligent pre-filling system using existing team keys and nicknames to minimize data entry errors.
+- **Teams Directory**: Deep-dive profile for every team at the event, featuring historical performance and trajectory overlays.
+- **Briefing Hub**: Automated pre-match reports summarizing ally strengths and opponent weaknesses for the drive team.
 
-### 👤 Member Portfolios
-Empowering scouts to track their own contribution:
-- **Personal Metrics**: Automated tracking of matches scouted and team tenure (`join_date`).
-- **Profile Customization**: Individualized settings for regional preferences and scouting focus with profile picture uploads.
+### 👤 Personal Performance Portfolios
+Empowering scouts to manage their own digital presence:
+- **Progress Tracking**: Personal dashboard showing Matches vs. Pits scouted and data accuracy scores.
+- **Profile Cloud Sync**: Profile customization with secure image uploads via **Cloudinary**.
+- **Onboarding Key System**: Secure, invitation-based registration to protect team data integrity.
 
 ---
 
-## 🛠️ Performance Tech Stack
-
-- **Backend**: Python 3.10+ | Flask | SQLAlchemy | PostgreSQL
-- **Frontend**: High-Performance Vanilla JS | HTML5 | CSS3 | Tailwind CSS
-- **APIs**: The Blue Alliance (v3) | Statbotics (v3)
-- **Deployment**: Render-optimized with fully managed Docker orchestration (`render.yaml`).
+## 🛠️ Performance Architecture
+- **Backend Core**: Python 3.10+ | Flask | SQLAlchemy (PostgreSQL)
+- **Persistence Layer**: Resilient `safe_set` logic to handle production schema drift without interruption.
+- **Frontend Engine**: Vanilla High-Performance JS | Tailwind CSS | HTML5 Semantic Structure
+- **Global Data Hub**: Bi-directional syncing with **The Blue Alliance** and **Statbotics** v3.
+- **Deployment**: Enterprise-ready Docker orchestration via `render.yaml`.
 
 ---
 
 ## 🚀 Deployment & Initialization
 
-### 1. Cloud Infrastructure
-Optimized for **Render**. Ensure your `DATABASE_URL` points to a production PostgreSQL instance and all environment variables from `.env.example` are populated.
+### 1. Production Environment
+Configured for **Render**. Ensure `DATABASE_URL` and `CLOUDINARY_URL` are present in your production environment variables.
 
-### 2. High-Speed Onboarding
-Use the backend initialization script to set up the **StanRobotix** roster (Danaé, Jisoo, Saulius, etc.) in seconds. Accounts follow the `firstname@scout.com` format.
+### 2. Team Initialization
+Run the specialized promote scripts to set up the **StanRobotix** roster (Danaé, Jisoo, Saulius, etc.) or promote individual admins:
+```bash
+python3 scripts/promote_admin.py someone@stanrobotix.com
+```
 
-### 3. LIVE Access
-Global Entry point: **[https://frc-scouting-app.nayl.ca/login](https://frc-scouting-app.nayl.ca/login)**
+### 3. LIVE Endpoint
+Production Hub: **[https://frc-scouting-app.nayl.ca/](https://frc-scouting-app.nayl.ca/)**
 
 ---
 
-## 🤝 The StanRobotix Philosophy
-We believe in open-source collaboration for the FRC community. Feel free to fork, enhance, and contribute to the evolution of scouting excellence.
+## 🤝 Creative Commons & Contribution
+Built with the spirit of **Gracious Professionalism**. Team 6622 encourages forks and contributions to advance the standard of FRC scouting technology.
 
 © **Nayl Lahlou** — Lead Architect, Team 6622
