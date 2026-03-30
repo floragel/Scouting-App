@@ -59,7 +59,53 @@ Run the specialized promote scripts to set up the **StanRobotix** roster (Danaé
 python3 scripts/promote_admin.py someone@stanrobotix.com
 ```
 
-### 3. LIVE Endpoint
+### 3. Local Development (MacOS/Linux/Windows)
+To run the ecosystem on your local machine with a local PostgreSQL instance:
+
+**A. Prerequisites**
+- Python 3.10+
+- PostgreSQL installed and running (`brew install postgresql` on Mac)
+
+**B. Setup Environment**
+1. Clone the repository and navigate to the root:
+   ```bash
+   cd "Scouting App"
+   ```
+2. Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install dependencies:
+   ```bash
+   pip install -r backend/requirements.txt
+   ```
+
+**C. Database Configuration**
+1. Create a local database:
+   ```bash
+   createdb frc_scouting
+   ```
+2. Create a `.env` file in the `backend/` directory:
+   ```env
+   DATABASE_URL=postgresql://localhost/frc_scouting
+   SECRET_KEY=your_secret_key_here
+   TBA_API_KEY=your_tba_key
+   CLOUDINARY_URL=your_cloudinary_url (optional for local)
+   ```
+3. Initialize the database schema:
+   ```bash
+   python3 backend/scripts/reset_and_init.py
+   ```
+
+**D. Run the Application**
+```bash
+cd backend
+flask run --port=5001
+```
+The app will be available at **[http://localhost:5001](http://localhost:5001)**.
+
+### 4. LIVE Endpoint
 Production Hub: **[https://frc-scouting-app.nayl.ca/](https://frc-scouting-app.nayl.ca/)**
 
 ---
