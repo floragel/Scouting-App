@@ -462,33 +462,29 @@ def admin_hub_view():
     assignments = ScoutAssignment.query.filter(ScoutAssignment.user_id.in_(team_member_ids)).all() if team_member_ids else []
     
     # --- Match Assignment Event Selection ---
-    # Toggle logic: To go back to 'Festival de Robotique', set forced_event_name = 'Festival' or None.
-    forced_event_name = 'Avrasya' 
+    # Pour changer d'événement, mettez la clé TBA ici (ex: '2026tuis5'). 
+    # Mettez à None pour utiliser l'événement le plus récent automatiquement.
+    forced_event_key = '2026tuis5' 
     
     event_matches = []
     import frc_api, requests
     team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
     
     try:
-        e_res = requests.get(f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{selected_year}/simple", headers={'X-TBA-Auth-Key': frc_api.TBA_API_KEY}, timeout=5)
-        if e_res.status_code == 200 and e_res.json():
-            tba_events = e_res.json()
-            # Prioritize forced event name if specified
-            selected_ev_key = None
-            if forced_event_name:
-                match_ev = next((ev for ev in tba_events if forced_event_name.lower() in ev['name'].lower()), None)
-                if match_ev:
-                    selected_ev_key = match_ev['key']
-            
-            # Fallback to most recent if no match found
-            if not selected_ev_key:
+        # Use forced key if provided, otherwise fetch from TBA for the selected year
+        selected_ev_key = forced_event_key
+        
+        if not selected_ev_key:
+            e_res = requests.get(f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{selected_year}/simple", headers={'X-TBA-Auth-Key': frc_api.TBA_API_KEY}, timeout=5)
+            if e_res.status_code == 200 and e_res.json():
+                tba_events = e_res.json()
                 sorted_evs = sorted(tba_events, key=lambda x: x.get('end_date', ''), reverse=True)
                 if sorted_evs: selected_ev_key = sorted_evs[0]['key']
 
-            if selected_ev_key:
-                em = frc_api.get_event_matches(selected_ev_key)
-                if em:
-                    event_matches = sorted([m for m in em if m.get('time')], key=lambda x: x['time'])
+        if selected_ev_key:
+            em = frc_api.get_event_matches(selected_ev_key)
+            if em:
+                event_matches = sorted([m for m in em if m.get('time')], key=lambda x: x['time'])
     except Exception as e:
         print(f"Error fetching matches in admin_hub_view: {e}")
     
