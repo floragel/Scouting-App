@@ -152,7 +152,7 @@
                 <a href="/profile" class="relative block hover:scale-105 transition-transform cursor-pointer">
                     <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden bg-cover bg-center"
                         data-alt="Circular profile picture of user {{ user.name }}"
-                        style="background-image: url('{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuAt0LTwXrSF2sHICD94v7fWbijvk3vrr7qLMfQtvwUUJBTpG2N1u5Rg2s0EB3ircDVNlyVhqPSgjm5ZU1L6y5YNyPbErCWuE4V2-9HIPDE6rnZMlpW3_Rw8kbVqq6UwX3-fImQfI3VRZ0TJ3HTu7kEdzs5OlymZ26lSH_uXH5kYeaXrY7QBq3_vVoImnJgVg7zHUPhSfhji-FLRws880p7yfB_PDHFoZK8KbxjCD9ecpg3S002jVdTrl4kY0ugU0LxyPio7Dg8Ivben' }}')">
+                        style="background-image: url('{{ user.profile_picture or "/static/images/default_avatar.svg" }}')">
                     </div>
                     <div
                         class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
@@ -625,15 +625,9 @@
                 }
             };
 
-            // New Report logic
+            // New Report logic — always open the modal instead of proxying through duty widget
             document.getElementById('newReportBtn').addEventListener('click', () => {
-                const dutyWidget = document.getElementById('scouting-duty-content');
-                const actionBtn = dutyWidget.querySelector('a');
-                if (actionBtn) {
-                    actionBtn.click();
-                } else {
-                    window.location.href = '/scout-dashboard';
-                }
+                document.getElementById('newReportModal').showModal();
             });
 
             // Initialize Widgets

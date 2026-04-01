@@ -57,9 +57,10 @@ if database_url:
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     print("LOG: Database URI set to PostgreSQL.")
 else:
-    print("LOG: No DATABASE_URL found. Check Vercel environment variables.")
-    # Fallback - intentionally not setting a path here to see if it's the culprit
-    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:' # Use memory for safety if no DB URL
+    print("LOG: No DATABASE_URL found. Using local SQLite for development.")
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'scouting.db')
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.abspath(db_path)}'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_secret_key_scouting_app')

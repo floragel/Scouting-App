@@ -139,7 +139,7 @@
             <a href="/profile-edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
                 <img class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden object-cover"
                     alt="Profile picture of {{ user.name }}"
-                    src="{{ user.profile_picture or 'https://lh3.googleusercontent.com/aida-public/AB6AXuA803XpE2v25qTbQNZkC9Jy96HI8b63bTYEE_7hvUMpuC587x35z-5Z7eXSCB1U0am99XygRrAHdfbiMUbVa9QxvraFR-r7gumvM6v3ykq0hOkgoMu9aifgQY-sgOFP6ruOt9XgDpd1cyRiEOpAQ5x0whyh6rEssokO0S7kHiw5jyFeTpfcqjnDB73Hz3XIm5Ru_SBHFOriwBTQtR8AlNfj7Hd6dFuRrAEkmu5B5Rxdg0YVyDaGGgK3RzKD9Jlxxt0DICDNbZ-rC2u0' }}">
+                    src="{{ user.profile_picture or '/static/images/default_avatar.svg' }}">
                 <div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full">
                 </div>
             </a>
@@ -206,7 +206,7 @@
                 <img alt="Robot in workshop environment"
                     class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
                     data-alt="Robot in workshop environment"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUkvigEE6L7SaRZR2HS1VK-pnLuJcoBVnWzBn7vBwgfZGUsl4s3F20WKV4y5Iwr1tbMu_YAIoRDMKxvsa3mo74lnr7D85QP-ai18a2brCaPIWEGq1eJ0yn_3QHz4pQdgn3D6X_btsFXsmYqaQjpHM9P3Oa6-LMD_oAPvLQmve_ympefy-3AbIGX8mZBFbjznLuelYNtXlFsbwqeA7X-hDZFh_61NxFPV9RX-WY9nw6BdEj7AbYKAByTLNxOt0UP50nxTIYjfFj6hoD" />
+                    src="/static/images/default_avatar.svg" />
                 <div class="absolute bottom-0 left-0 w-full p-6 z-20 flex items-end justify-between">
                     <div>
                         <div class="flex items-center gap-3 mb-1">

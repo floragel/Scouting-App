@@ -75,20 +75,34 @@ def import_scout_data_api():
                     teleo = data.get('teleop', {})
                     endge = data.get('endgame', {})
                     
+                    # Defensive parsing: handle values that may be lists (e.g., from QR starting_position)
+                    def safe_int(val, default=0):
+                        if isinstance(val, (list, dict)):
+                            return default
+                        try:
+                            return int(val)
+                        except (ValueError, TypeError):
+                            return default
+                    
+                    def safe_str(val, default='None'):
+                        if isinstance(val, (list, dict)):
+                            return default
+                        return str(val) if val is not None else default
+                    
                     new_match = MatchScoutData(
                         team_id=team.id,
                         event_id=event.id,
                         match_number=match_num,
-                        auto_start_balls=auto.get('start_balls', 0),
-                        auto_balls_shot=auto.get('balls_shot', 0),
-                        auto_balls_scored=auto.get('balls_scored', 0),
-                        auto_climb=auto.get('climb', 'None'),
-                        teleop_intake_speed=teleo.get('intake_speed', 3),
-                        teleop_shooter_accuracy=teleo.get('shooter_accuracy', 3),
-                        teleop_balls_shot=teleo.get('balls_shot', 0),
+                        auto_start_balls=safe_int(auto.get('start_balls', 0)),
+                        auto_balls_shot=safe_int(auto.get('balls_shot', 0)),
+                        auto_balls_scored=safe_int(auto.get('balls_scored', 0)),
+                        auto_climb=safe_str(auto.get('climb', 'None')),
+                        teleop_intake_speed=safe_int(teleo.get('intake_speed', 3)),
+                        teleop_shooter_accuracy=safe_int(teleo.get('shooter_accuracy', 3)),
+                        teleop_balls_shot=safe_int(teleo.get('balls_shot', 0)),
                         passes_bump=teleo.get('passes_bump', False),
                         passes_trench=teleo.get('passes_trench', False),
-                        endgame_climb=endge.get('climb', 'None'),
+                        endgame_climb=safe_str(endge.get('climb', 'None')),
                         notes=data.get('notes', ''),
                         scouter_id=metadata.get('scouter_id') or session['user_id']
                     )
@@ -223,8 +237,8 @@ def auto_assign():
         
     eligible_scouts = [m for m in team_members if (m.has_role('Stand Scout') or m.has_role('Pit Scout') or m.has_role('Strategy Lead')) and m.status == 'active']
     
-    if len(eligible_scouts) < 6:
-        return jsonify({'error': f'Need at least 6 active scouts. Only found {len(eligible_scouts)}.'}), 400
+    if len(eligible_scouts) < 1:
+        return jsonify({'error': f'No active scouts found with Stand Scout, Pit Scout, or Strategy Lead roles. Found {len(eligible_scouts)} eligible scouts.'}), 400
         
     tba = TBAHandler()
     team_key = user.team.tba_key if user.team else 'frc6622'

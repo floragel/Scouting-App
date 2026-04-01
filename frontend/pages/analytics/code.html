@@ -1223,6 +1223,8 @@
                     };
                 } else {
                     // Match Data
+                    // QR export format: a = [[sX, sY], start_balls, balls_shot, balls_scored, climb]
+                    const startPos = Array.isArray(compact.a[0]) ? compact.a[0] : null;
                     fullData = {
                         metadata: {
                             match_key: compact.m,
@@ -1231,10 +1233,11 @@
                             exported_at: new Date().toISOString()
                         },
                         autonomous: {
-                            start_balls: compact.a[0],
-                            balls_shot: compact.a[1],
-                            balls_scored: compact.a[2],
-                            climb: compact.a[3]
+                            starting_position: startPos ? { x: parseFloat(startPos[0]), y: parseFloat(startPos[1]) } : null,
+                            start_balls: compact.a[1],
+                            balls_shot: compact.a[2],
+                            balls_scored: compact.a[3],
+                            climb: compact.a[4] || 'None'
                         },
                         teleop: {
                             intake_speed: compact.tO[0],

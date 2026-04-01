@@ -102,7 +102,7 @@
                 const card = document.createElement('div');
                 card.className = "bg-slate-800/40 border border-slate-700/50 p-5 rounded-2xl hover:border-primary/40 hover:bg-slate-800/60 transition-all group";
                 
-                const profilePic = m.profile_picture || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAnp9GOlcDa8yzzLYbNH-rZvRzXCOhGowYtsQLEwSiFWlli3IaU7AHu9_97kWBlOit0r8unOBUNcb1sviDjjS-2wJcHmKmORqedn9EjHp5EvTQdCWjG5bGAUm2L3v1IZZU2t0S8wQQjF-EPgUcs9U6ru9xKGgwWQiqgMhCIpZm7SDFjdLyhQPlWlwP80kUNonmdKgIqFqxP3cF3KVh-lMnYK3WSedOVb4La5S1umlOMTVV4iPbc3R8zgtHbl5h5YBtoUpUN6gV-O5rZ';
+                const profilePic = m.profile_picture || '/static/images/default_avatar.svg';
                 
                 const roles = m.roles || (m.role ? m.role.split(',').map(r => r.trim()).filter(Boolean) : ['Scout']);
                 const roleBadges = roles.map(role => {
