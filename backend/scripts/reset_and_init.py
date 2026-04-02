@@ -19,7 +19,8 @@ def slugify(name):
 
 def init_db():
     with app.app_context():
-        print("Clearing database...")
+        print("Creating/Clearing database...")
+        db.create_all()
         # Order matters for foreign keys
         ScoutAssignment.query.delete()
         MatchScoutData.query.delete()
@@ -29,7 +30,7 @@ def init_db():
         Event.query.delete()
         
         db.session.commit()
-        print("Database cleared.")
+        print("Database initialized and cleared.")
 
         # 1. Create Team 6622
         team_6622 = Team(

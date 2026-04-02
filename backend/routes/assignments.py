@@ -493,6 +493,144 @@ def auto_assign_pit():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+@assignments_bp.route('/api/admin/auto-assign-2026', methods=['POST'])
+def auto_assign_2026():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    user = User.query.get(session['user_id'])
+    if not user or not user.is_admin:
+        return jsonify({'error': 'Unauthorized role'}), 403
+
+    # Define the 2026 Pairs
+    MATCH_PAIRS = {
+        'red1': ['Alexander', 'Raphaël A'],
+        'red2': ['Paul-Hugo', 'Clémence'],
+        'red3': ['Marcu', 'Julien'],
+        'blue1': ['Lojayen', 'Sofia'],
+        'blue2': ['El Ghali', 'Noé'],
+        'blue3': ['Saulius', 'James']
+    }
+    
+    PIT_PAIRS = [
+        ['Saulius', 'Lojayen'],
+        ['Anna', 'Pierre']
+    ]
+
+    # Map Names to User IDs (Case-insensitive matching)
+    active_users = User.query.filter_by(team_id=user.team_id, status='active').all()
+    name_to_id = {u.name.strip(): u.id for u in active_users}
+    
+    def get_user_id(name):
+        return name_to_id.get(name)
+
+    # 1. Clear existing assignments for the event
+    event_key = request.args.get('event_key', '2026tuis5')
+    
+    # Remove existing match assignments for this event 
+    ScoutAssignment.query.filter(
+        ScoutAssignment.match_key.like(f"{event_key}%")
+    ).delete(synchronize_session=False)
+    
+    # 2. Fetch matches for the event
+    em = frc_api.get_event_matches(event_key)
+    if not em:
+        return jsonify({'error': f'No matches found for event {event_key}'}), 400
+    
+    assignments_created = 0
+    
+    # 3. Process Match Assignments
+    for match in em:
+        if not match.get('time'): continue
+        match_key = match['key']
+        alliances = match.get('alliances', {})
+        
+        # Red Alliance (3 positions)
+        red_teams = alliances.get('red', {}).get('team_keys', [])
+        for i, team_key in enumerate(red_teams):
+            pos_key = f'red{i+1}'
+            scout_names = MATCH_PAIRS.get(pos_key, [])
+            for s_name in scout_names:
+                uid = get_user_id(s_name)
+                if uid:
+                    new_assign = ScoutAssignment(
+                        user_id=uid,
+                        match_key=match_key,
+                        team_key=team_key,
+                        alliance_color='Red',
+                        assignment_type='Match',
+                        status='Pending'
+                    )
+                    db.session.add(new_assign)
+                    assignments_created += 1
+        
+        # Blue Alliance (3 positions)
+        blue_teams = alliances.get('blue', {}).get('team_keys', [])
+        for i, team_key in enumerate(blue_teams):
+            pos_key = f'blue{i+1}'
+            scout_names = MATCH_PAIRS.get(pos_key, [])
+            for s_name in scout_names:
+                uid = get_user_id(s_name)
+                if uid:
+                    new_assign = ScoutAssignment(
+                        user_id=uid,
+                        match_key=match_key,
+                        team_key=team_key,
+                        alliance_color='Blue',
+                        assignment_type='Match',
+                        status='Pending'
+                    )
+                    db.session.add(new_assign)
+                    assignments_created += 1
+
+    # 4. Process Pit Assignments
+    event_teams = frc_api.get_teams_for_event(event_key)
+    if event_teams:
+        # Clear existing pit assignments for this event's teams
+        event_team_keys = [t['key'] for t in event_teams]
+        ScoutAssignment.query.filter(
+            ScoutAssignment.team_key.in_(event_team_keys),
+            ScoutAssignment.assignment_type == 'Pit'
+        ).delete(synchronize_session=False)
+        
+        # Split teams between the two pit pairs
+        mid = len(event_teams) // 2
+        groups = [event_teams[:mid], event_teams[mid:]]
+        
+        for i, team_group in enumerate(groups):
+            if i >= len(PIT_PAIRS): break
+            scout_names = PIT_PAIRS[i]
+            for team in team_group:
+                # Check if pit data already exists
+                team_num = int(team['key'].replace('frc', ''))
+                team_obj = Team.query.filter_by(team_number=team_num).first()
+                if team_obj:
+                    # Resolve event_id
+                    event_obj = Event.query.filter_by(tba_key=event_key).first()
+                    if event_obj and PitScoutData.query.filter_by(team_id=team_obj.id, event_id=event_obj.id).first():
+                        continue # Already scouted at this event
+                
+                for s_name in scout_names:
+                    uid = get_user_id(s_name)
+                    if uid:
+                        new_assign = ScoutAssignment(
+                            user_id=uid,
+                            assignment_type='Pit',
+                            match_key='',
+                            team_key=team['key'],
+                            alliance_color='',
+                            status='Pending'
+                        )
+                        db.session.add(new_assign)
+                        assignments_created += 1
+
+    db.session.commit()
+    return jsonify({
+        'success': True,
+        'message': f'Successfully auto-assigned {assignments_created} entries for the 2026 Season Pairs.'
+    })
+
+
 @assignments_bp.route('/api/admin/assignments/all', methods=['DELETE'])
 def delete_all_assignments():
     if 'user_id' not in session:

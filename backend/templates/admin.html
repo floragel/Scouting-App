@@ -230,10 +230,17 @@
                         <span class="material-symbols-outlined text-primary">assignment</span> Match Assignments
                     </h3>
                 </div>
-                <button id="auto-assign-btn" onclick="autoAssignAll()" class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
-                    <span class="material-symbols-outlined text-sm">smart_toy</span>
-                    <span>Auto-Assign All</span>
-                </button>
+                <div class="flex gap-2">
+                    <button id="auto-assign-btn-2026" onclick="autoAssign2026()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-sm">group</span>
+                        <span class="hidden sm:inline">Auto-Assign 2026 Pairs</span>
+                        <span class="sm:hidden">2026 Pairs</span>
+                    </button>
+                    <button id="auto-assign-btn" onclick="autoAssignAll()" class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
+                        <span class="material-symbols-outlined text-sm">smart_toy</span>
+                        <span>Standard Auto-Assign</span>
+                    </button>
+                </div>
             </div>
             <div class="p-6 bg-slate-50 dark:bg-slate-900/30 border-b border-slate-200 dark:border-slate-800">
                 <form id="assignment-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end" onsubmit="submitAssignment(event)">
@@ -660,6 +667,30 @@
             const res = await fetch('/api/admin/auto-assign-pit', { method: 'POST' });
             if(res.ok) window.location.reload();
             else alert("Failed to auto assign pits");
+        };
+
+        window.autoAssign2026 = async () => {
+            if(!confirm("Ceci va effacer les assignations actuelles de cet événement et créer les binômes 2026 pour TOUS les matchs. Continuer ?")) return;
+            const btn = document.getElementById('auto-assign-btn-2026');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">autorenew</span> ...`;
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/admin/auto-assign-2026', { method: 'POST' });
+                const data = await res.json();
+                if(res.ok) {
+                    window.location.reload();
+                } else {
+                    alert(data.error || "Erreur lors de l'assignation");
+                    btn.innerHTML = originalHTML;
+                    btn.disabled = false;
+                }
+            } catch(err) {
+                alert("Erreur réseau");
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+            }
         };
     </script>
 </body>

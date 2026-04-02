@@ -208,7 +208,11 @@ def submit_match_scout_web():
             pass
         
         db.session.add(match_data)
-        db.session.delete(assignment)
+        # Clear all assignments for this match and team (for both members of a pair)
+        ScoutAssignment.query.filter_by(
+            match_key=assignment.match_key,
+            team_key=assignment.team_key
+        ).delete()
         db.session.commit()
         return jsonify({'success': True, 'message': 'Match data saved', 'match_id': match_data.id})
     except Exception as e:
@@ -333,7 +337,11 @@ def submit_pit_scout_web():
         if photo_path:
             safe_set(pit_data, 'photo_path', photo_path)
         
-        db.session.delete(assignment)
+        # Clear all pit assignments for this team (for both members of a pair)
+        ScoutAssignment.query.filter_by(
+            team_key=assignment.team_key,
+            assignment_type='Pit'
+        ).delete()
         db.session.commit()
         return jsonify({'success': True, 'message': 'Pit data saved'})
     except Exception as e:
