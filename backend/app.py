@@ -463,9 +463,9 @@ def admin_hub_view():
     assignments = ScoutAssignment.query.filter(ScoutAssignment.user_id.in_(team_member_ids)).all() if team_member_ids else []
     
     # --- Match Assignment Event Selection ---
-    # Pour changer d'événement, mettez la clé TBA ici (ex: '2026tuis5'). 
+    # Pour changer d'événement, mettez la clé TBA ici (ex: '2026qcmo'). 
     # Mettez à None pour utiliser l'événement le plus récent automatiquement.
-    forced_event_key = '2026tuis5' 
+    selected_event = '2026qcmo'
     
     event_matches = []
     import frc_api, requests

@@ -503,7 +503,7 @@ def auto_assign_2026():
         return jsonify({'error': 'Unauthorized role'}), 403
 
     # Define the Event Key
-    event_key = request.args.get('event_key', '2026tuis5')
+    event_key = request.args.get('event_key', '2026qcmo')
 
     # 1. Fetch Active Scouts and Form Pairs
     # Including Stand Scout, Pit Scout, Strategy Lead for match assignment
