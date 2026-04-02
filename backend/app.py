@@ -490,7 +490,36 @@ def admin_hub_view():
         print(f"Error fetching matches in admin_hub_view: {e}")
     
     assignments = ScoutAssignment.query.filter(ScoutAssignment.user_id.in_(team_member_ids)).all() if team_member_ids else []
-    assignment_map = {f"{a.match_key}__{a.team_key}": a for a in assignments if a.match_key}
+    
+    # Group for Match Schedule
+    assignment_map = {}
+    # Group for Active Assignments Table
+    grouped_assignments = {}
+    
+    for a in assignments:
+        # For Match Schedule Grid
+        if a.match_key:
+            m_key = f"{a.match_key}__{a.team_key}"
+            if m_key not in assignment_map:
+                assignment_map[m_key] = []
+            assignment_map[m_key].append(a)
+            
+        # For Active Assignments Table (includes Pit)
+        g_key = f"{a.assignment_type}__{a.match_key}__{a.team_key}"
+        if g_key not in grouped_assignments:
+            grouped_assignments[g_key] = {
+                'match_key': a.match_key,
+                'team_key': a.team_key,
+                'alliance_color': a.alliance_color,
+                'assignment_type': a.assignment_type,
+                'scouts': [],
+                'ids': []
+            }
+        u = User.query.get(a.user_id)
+        if u:
+            grouped_assignments[g_key]['scouts'].append(u.name)
+            grouped_assignments[g_key]['ids'].append(a.id)
+    
     user_map = {m['id']: m for m in members_data}
     
     return render_template('admin.html', 
@@ -501,6 +530,7 @@ def admin_hub_view():
                          users_json=json.dumps(members_data),
                          assignments=assignments,
                          assignment_map=assignment_map,
+                         grouped_assignments=grouped_assignments.values(),
                          user_map=user_map,
                          event_matches=event_matches,
                          **get_common_data(user))

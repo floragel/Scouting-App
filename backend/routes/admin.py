@@ -105,3 +105,43 @@ def change_role(user_id):
     user.role = ", ".join(new_roles)
     db.session.commit()
     return jsonify({'message': 'Roles updated successfully'}), 200
+
+
+@admin_bp.route('/api/admin/users/<int:user_id>/partner', methods=['POST'])
+def update_user_partner(user_id):
+    admin, err_resp, err_code = check_admin()
+    if err_resp: return err_resp, err_code
+
+    user = User.query.get_or_404(user_id)
+    if user.team_id != admin.team_id:
+        return jsonify({'error': 'User not in your team'}), 403
+
+    data = request.json
+    partner_id = data.get('partner_id') # Can be None to clear
+
+    # Clear current partnership first (mutual)
+    if user.partner_id:
+        old_partner = User.query.get(user.partner_id)
+        if old_partner and old_partner.partner_id == user.id:
+            old_partner.partner_id = None
+        user.partner_id = None
+
+    if partner_id:
+        if partner_id == user.id:
+            return jsonify({'error': 'Cannot partner with yourself'}), 400
+            
+        new_partner = User.query.get(partner_id)
+        if not new_partner or new_partner.team_id != admin.team_id:
+            return jsonify({'error': 'Partner not found or not in your team'}), 404
+
+        # Clear new partner's current partnership if any
+        if new_partner.partner_id:
+            other_partner = User.query.get(new_partner.partner_id)
+            if other_partner and other_partner.partner_id == new_partner.id:
+                other_partner.partner_id = None
+        
+        user.partner_id = new_partner.id
+        new_partner.partner_id = user.id
+
+    db.session.commit()
+    return jsonify({'message': 'Partnership updated successfully'}), 200

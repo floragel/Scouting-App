@@ -27,6 +27,10 @@ class User(db.Model):
     join_date = db.Column(db.String(20), nullable=True)
     matches_scouted = db.Column(db.Integer, default=0)
     
+    # Partnership for Binômes
+    partner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    partner = db.relationship('User', remote_side=[id], uselist=False)
+    
     # Relationship to ScoutAssignment
     assignments = db.relationship('ScoutAssignment', backref='user', lazy=True)
 
@@ -65,7 +69,9 @@ class User(db.Model):
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'last_active': self.last_active.isoformat() if self.last_active else None,
             'join_date': self.join_date,
-            'matches_scouted': self.matches_scouted
+            'matches_scouted': self.matches_scouted,
+            'partner_id': self.partner_id,
+            'partner_name': self.partner.name if self.partner else None
         }
 
 class Event(db.Model):

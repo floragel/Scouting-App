@@ -502,88 +502,93 @@ def auto_assign_2026():
     if not user or not user.is_admin:
         return jsonify({'error': 'Unauthorized role'}), 403
 
-    # Define the 2026 Pairs
-    MATCH_PAIRS = {
-        'red1': ['Alexander', 'Raphaël A'],
-        'red2': ['Paul-Hugo', 'Clémence'],
-        'red3': ['Marcu', 'Julien'],
-        'blue1': ['Lojayen', 'Sofia'],
-        'blue2': ['El Ghali', 'Noé'],
-        'blue3': ['Saulius', 'James']
-    }
-    
-    PIT_PAIRS = [
-        ['Saulius', 'Lojayen'],
-        ['Anna', 'Pierre']
-    ]
-
-    # Map Names to User IDs (Case-insensitive matching)
-    active_users = User.query.filter_by(team_id=user.team_id, status='active').all()
-    name_to_id = {u.name.strip(): u.id for u in active_users}
-    
-    def get_user_id(name):
-        return name_to_id.get(name)
-
-    # 1. Clear existing assignments for the event
+    # Define the Event Key
     event_key = request.args.get('event_key', '2026tuis5')
+
+    # 1. Fetch Active Scouts and Form Pairs
+    # Including Stand Scout, Pit Scout, Strategy Lead for match assignment
+    scouts = User.query.filter(
+        User.team_id == user.team_id, 
+        User.status == 'active'
+    ).all()
     
-    # Remove existing match assignments for this event 
+    eligible_scouts = [s for s in scouts if any(r in s.roles_list for r in ['Stand Scout', 'Pit Scout', 'Strategy Lead'])]
+    
+    if not eligible_scouts:
+        return jsonify({'error': 'No active scouts found with Stand Scout or Pit Scout roles.'}), 400
+
+    # Group into pairs
+    pairs = []
+    processed_ids = set()
+    
+    # First, handle users with partners defined in DB
+    for s in eligible_scouts:
+        if s.id in processed_ids: continue
+        if s.partner_id:
+            partner = next((p for p in eligible_scouts if p.id == s.partner_id), None)
+            if partner:
+                pairs.append([s, partner])
+                processed_ids.add(s.id)
+                processed_ids.add(partner.id)
+            else:
+                pairs.append([s])
+                processed_ids.add(s.id)
+        else:
+            pairs.append([s])
+            processed_ids.add(s.id)
+
+    if not pairs:
+        return jsonify({'error': 'No pairs could be formed.'}), 400
+
+    # Sort pairs to have a stable order for rotation
+    pairs.sort(key=lambda p: p[0].id)
+
+    # 2. Clear existing assignments for the event
     ScoutAssignment.query.filter(
         ScoutAssignment.match_key.like(f"{event_key}%")
     ).delete(synchronize_session=False)
     
-    # 2. Fetch matches for the event
+    # 3. Fetch Matches
     em = frc_api.get_event_matches(event_key)
     if not em:
         return jsonify({'error': f'No matches found for event {event_key}'}), 400
     
-    assignments_created = 0
+    # Filter to valid matches and sort by time
+    valid_matches = sorted([m for m in em if m.get('time')], key=lambda x: x['time'])
     
-    # 3. Process Match Assignments
-    for match in em:
-        if not match.get('time'): continue
+    assignments_created = 0
+    positions = ['red1', 'red2', 'red3', 'blue1', 'blue2', 'blue3']
+    
+    # 4. Fill Match Assignments with Rotation
+    pair_count = len(pairs)
+    for m_idx, match in enumerate(valid_matches):
         match_key = match['key']
         alliances = match.get('alliances', {})
         
-        # Red Alliance (3 positions)
-        red_teams = alliances.get('red', {}).get('team_keys', [])
-        for i, team_key in enumerate(red_teams):
-            pos_key = f'red{i+1}'
-            scout_names = MATCH_PAIRS.get(pos_key, [])
-            for s_name in scout_names:
-                uid = get_user_id(s_name)
-                if uid:
+        for p_idx, pos in enumerate(positions):
+            # Select the pair for this position using Round Robin rotation
+            p_obj = pairs[(m_idx * 6 + p_idx) % pair_count]
+            
+            alliance_color = 'Red' if 'red' in pos else 'Blue'
+            alliance_teams = alliances.get('red' if 'red' in pos else 'blue', {}).get('team_keys', [])
+            
+            # Get the specific team key for this position (1, 2, or 3)
+            team_pos_idx = int(pos[-1]) - 1
+            if team_pos_idx < len(alliance_teams):
+                team_key = alliance_teams[team_pos_idx]
+                for scout in p_obj:
                     new_assign = ScoutAssignment(
-                        user_id=uid,
+                        user_id=scout.id,
                         match_key=match_key,
                         team_key=team_key,
-                        alliance_color='Red',
-                        assignment_type='Match',
-                        status='Pending'
-                    )
-                    db.session.add(new_assign)
-                    assignments_created += 1
-        
-        # Blue Alliance (3 positions)
-        blue_teams = alliances.get('blue', {}).get('team_keys', [])
-        for i, team_key in enumerate(blue_teams):
-            pos_key = f'blue{i+1}'
-            scout_names = MATCH_PAIRS.get(pos_key, [])
-            for s_name in scout_names:
-                uid = get_user_id(s_name)
-                if uid:
-                    new_assign = ScoutAssignment(
-                        user_id=uid,
-                        match_key=match_key,
-                        team_key=team_key,
-                        alliance_color='Blue',
+                        alliance_color=alliance_color,
                         assignment_type='Match',
                         status='Pending'
                     )
                     db.session.add(new_assign)
                     assignments_created += 1
 
-    # 4. Process Pit Assignments
+    # 5. Process Pit Assignments (Split teams among pairs)
     event_teams = frc_api.get_teams_for_event(event_key)
     if event_teams:
         # Clear existing pit assignments for this event's teams
@@ -593,41 +598,39 @@ def auto_assign_2026():
             ScoutAssignment.assignment_type == 'Pit'
         ).delete(synchronize_session=False)
         
-        # Split teams between the two pit pairs
-        mid = len(event_teams) // 2
-        groups = [event_teams[:mid], event_teams[mid:]]
+        # Split teams between all pairs
+        teams_per_pair = (len(event_teams) + pair_count - 1) // pair_count
         
-        for i, team_group in enumerate(groups):
-            if i >= len(PIT_PAIRS): break
-            scout_names = PIT_PAIRS[i]
+        for i, p_obj in enumerate(pairs):
+            start = i * teams_per_pair
+            end = min(start + teams_per_pair, len(event_teams))
+            team_group = event_teams[start:end]
+            
             for team in team_group:
                 # Check if pit data already exists
                 team_num = int(team['key'].replace('frc', ''))
                 team_obj = Team.query.filter_by(team_number=team_num).first()
                 if team_obj:
-                    # Resolve event_id
                     event_obj = Event.query.filter_by(tba_key=event_key).first()
                     if event_obj and PitScoutData.query.filter_by(team_id=team_obj.id, event_id=event_obj.id).first():
-                        continue # Already scouted at this event
+                        continue
                 
-                for s_name in scout_names:
-                    uid = get_user_id(s_name)
-                    if uid:
-                        new_assign = ScoutAssignment(
-                            user_id=uid,
-                            assignment_type='Pit',
-                            match_key='',
-                            team_key=team['key'],
-                            alliance_color='',
-                            status='Pending'
-                        )
-                        db.session.add(new_assign)
-                        assignments_created += 1
+                for scout in p_obj:
+                    new_assign = ScoutAssignment(
+                        user_id=scout.id,
+                        assignment_type='Pit',
+                        match_key='',
+                        team_key=team['key'],
+                        alliance_color='',
+                        status='Pending'
+                    )
+                    db.session.add(new_assign)
+                    assignments_created += 1
 
     db.session.commit()
     return jsonify({
         'success': True,
-        'message': f'Successfully auto-assigned {assignments_created} entries for the 2026 Season Pairs.'
+        'message': f'Successfully auto-assigned {assignments_created} entries with rotation for {len(pairs)} pairs/solo scouts.'
     })
 
 
