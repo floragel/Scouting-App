@@ -399,9 +399,81 @@ def analytics_view():
     user = get_current_user()
     if not user:
         return redirect(url_for('login_view'))
+    
+    from models import PitScoutData, MatchScoutData, Event, Team
     selected_year = request.args.get('year', 2026, type=int)
-    data = get_dashboard_data(user, year=selected_year)
-    return render_template('analytics.html', **data)
+    
+    # Fetch data
+    pit_entries = PitScoutData.query.all()
+    match_entries = MatchScoutData.query.all()
+    
+    # Group by team for detailed averages
+    team_averages = {}
+    for m in match_entries:
+        t_id = f"frc{m.team.team_number}" if m.team else f"team_{m.team_id}"
+        if t_id not in team_averages:
+            team_averages[t_id] = {
+                'team_number': m.team.team_number if m.team else 0,
+                'match_count': 0,
+                'auto_balls_avg': 0,
+                'teleop_balls_avg': 0,
+                'accuracy_avg': 0,
+                'climb_rate': 0,
+                'pit': None,
+                'matches': []
+            }
+        
+        s = team_averages[t_id]
+        s['match_count'] += 1
+        s['auto_balls_avg'] += (m.auto_balls_scored or 0)
+        s['teleop_balls_avg'] += (m.teleop_balls_shot or 0)
+        s['accuracy_avg'] += (m.teleop_shooter_accuracy or 0)
+        if m.endgame_climb and m.endgame_climb != 'None':
+            s['climb_rate'] += 1
+            
+        s['matches'].append({
+            'number': m.match_number,
+            'auto': m.auto_balls_scored or 0,
+            'tele': m.teleop_balls_shot or 0,
+            'climb': m.endgame_climb or 'None'
+        })
+
+    # Finalize averages
+    for t_id in team_averages:
+        s = team_averages[t_id]
+        if s['match_count'] > 0:
+            s['auto_balls_avg'] = round(s['auto_balls_avg'] / s['match_count'], 2)
+            s['teleop_balls_avg'] = round(s['teleop_balls_avg'] / s['match_count'], 2)
+            s['accuracy_avg'] = round(s['accuracy_avg'] / s['match_count'], 2)
+            s['climb_rate'] = round((s['climb_rate'] / s['match_count']) * 100, 1)
+
+    # Attach pit data to averages
+    for p in pit_entries:
+        t_id = f"frc{p.team.team_number}" if p.team else f"team_{p.team_id}"
+        if t_id in team_averages:
+            team_averages[t_id]['pit'] = {
+                'drivetrain': p.drivetrain_type,
+                'motors': p.motor_type,
+                'weight': p.weight,
+                'climb_level': p.climb_level
+            }
+
+    event_ids = set(p.event_id for p in pit_entries) | set(m.event_id for m in match_entries)
+    events = Event.query.filter(Event.id.in_(event_ids)).all() if event_ids else []
+    
+    dashboard_data = get_dashboard_data(user, year=selected_year)
+
+    analytics_data = {
+        **dashboard_data,
+        'pit_data_json': json.dumps([p.to_dict() for p in pit_entries]),
+        'match_data_json': json.dumps([m.to_dict() for m in match_entries]),
+        'team_averages_json': json.dumps(team_averages),
+        'events': events,
+        'seasons': [2026, 2025, 2024],
+        'selected_year': selected_year
+    }
+    
+    return render_template('analytics.html', **analytics_data)
 
 @app.route('/admin-hub')
 def admin_hub_view():
