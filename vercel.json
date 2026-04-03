@@ -24,6 +24,7 @@
     { "source": "/events", "destination": "/backend/app.py" },
     { "source": "/onboarding", "destination": "/backend/app.py" },
     { "source": "/profile", "destination": "/backend/app.py" },
+    { "source": "/profile/edit", "destination": "/backend/app.py" },
     { "source": "/profile-edit", "destination": "/backend/app.py" },
     { "source": "/members", "destination": "/backend/app.py" },
     { "source": "/head-scout-stats", "destination": "/backend/app.py" },
