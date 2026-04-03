@@ -326,9 +326,9 @@
                                 </select>
                                 <select id="scoring_pref"
                                     class="bg-slate-50 dark:bg-input-dark border-slate-200 dark:border-transparent text-xs text-slate-900 dark:text-white rounded-lg h-12 px-2 focus:ring-2 focus:ring-primary outline-none font-bold">
-                                    <option value="Both">High & Low HUB</option>
-                                    <option value="High Hub">High Hub Only</option>
-                                    <option value="Low Hub">Low Hub Only</option>
+                                    <option value="Both">Both (Close & Far)</option>
+                                    <option value="High Hub">Far Only</option>
+                                    <option value="Low Hub">Close Only</option>
                                 </select>
                             </div>
                         </div>
@@ -375,7 +375,7 @@
                             <input id="auto_score_fuel"
                                 class="form-checkbox size-5 rounded text-primary border-slate-300 dark:border-slate-600 bg-slate-100 dark:bg-slate-700 focus:ring-0"
                                 type="checkbox" />
-                            <span class="ml-3 text-slate-700 dark:text-slate-200 font-medium">Score FUEL in HUB</span>
+                            <span class="ml-3 text-slate-700 dark:text-slate-200 font-medium">Score in HUB (Close/Far)</span>
                         </label>
                         <label class="inline-flex items-center cursor-pointer group">
                             <input id="auto_collect_fuel"
@@ -552,7 +552,7 @@
                 // Autonomous Actions
                 'checkboxes': {
                     'auto_leave': ['leave', 'partir', 'lancer', 'quitter', 'ligne', 'starting line'],
-                    'auto_score_fuel': ['score', 'marquer', 'hub', 'fuel', 'tirer', 'panier', 'carburant'],
+                    'auto_score_fuel': ['score', 'marquer', 'hub', 'fuel', 'tirer', 'panier', 'carburant', 'close', 'far', 'près', 'loin'],
                     'auto_collect_fuel': ['collect', 'récupérer', 'extra', 'fuel', 'ramasser', 'collecte'],
                     'auto_climb_l1': ['climb', 'grimper', 'monter', 'attacher', 'pendre', 'tower', 'tour', 'hanging']
                 }
