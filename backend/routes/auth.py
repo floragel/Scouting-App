@@ -11,52 +11,6 @@ auth_bp = Blueprint('auth', __name__)
 
 basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
-# --- Whisper Voice Transcription ---
-whisper_model = None
-
-def get_whisper_model():
-    global whisper_model
-    if whisper_model is None:
-        try:
-            print("Loading Whisper model...")
-            import whisper
-            whisper_model = whisper.load_model("base")
-        except ImportError:
-            print("Whisper module not found. Voice transcription disabled.")
-            return None
-        except Exception as e:
-            print(f"Error loading Whisper: {e}")
-            return None
-    return whisper_model
-
-@auth_bp.route('/api/voice-transcribe', methods=['POST'])
-def voice_transcribe():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Unauthorized'}), 401
-
-    if 'audio' not in request.files:
-        return jsonify({'error': 'No audio file provided'}), 400
-
-    audio_file = request.files['audio']
-    if audio_file.filename == '':
-        return jsonify({'error': 'No audio file selected'}), 400
-
-    with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as temp_audio:
-        audio_file.save(temp_audio.name)
-        temp_path = temp_audio.name
-
-    try:
-        model = get_whisper_model()
-        result = model.transcribe(temp_path)
-        transcription = result.get('text', '').strip()
-        return jsonify({'transcription': transcription})
-    except Exception as e:
-        print(f"Transcription error: {e}")
-        return jsonify({'error': 'Failed to transcribe audio', 'details': str(e)}), 500
-    finally:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-
 
 # --- Auth Routes ---
 
