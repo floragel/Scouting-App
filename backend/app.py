@@ -190,7 +190,6 @@ def manual_init_db():
     if os.environ.get('FLASK_ENV') == 'production':
         # You could add a token check here if you want more security
         pass
-    
     try:
         with app.app_context():
             if request.args.get('drop') == 'true':
@@ -468,8 +467,28 @@ def admin_hub_view():
     selected_event = '2026qcmo'
     
     event_matches = []
-    import frc_api, requests
+    # --- Team Key and Binômes ---
     team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+    
+    def group_scouters(role_name):
+        options = []
+        processed = set()
+        active_scouts = [m for m in team_members if m.status == 'active' and m.has_role(role_name)]
+        for s in active_scouts:
+            if s.id in processed: continue
+            if s.partner_id:
+                partner = next((p for p in active_scouts if p.id == s.partner_id), None)
+                if partner:
+                    options.append({'ids': [s.id, partner.id], 'name': f"{s.name} & {partner.name} (Binôme)"})
+                    processed.add(s.id)
+                    processed.add(partner.id)
+                    continue
+            options.append({'ids': [s.id], 'name': s.name})
+            processed.add(s.id)
+        return options
+
+    stand_scouter_options = group_scouters('Stand Scout')
+    pit_scouter_options = group_scouters('Pit Scout')
     
     try:
         # Use forced key if provided, otherwise fetch from TBA for the selected year
@@ -533,6 +552,9 @@ def admin_hub_view():
                          grouped_assignments=grouped_assignments.values(),
                          user_map=user_map,
                          event_matches=event_matches,
+                         my_team_key=team_key,
+                         stand_scouter_options=stand_scouter_options,
+                         pit_scouter_options=pit_scouter_options,
                          **get_common_data(user))
 
 @app.route('/teams-dir')

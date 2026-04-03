@@ -259,24 +259,8 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
                         <select id="assign-scout" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="">Select Scouter(s)...</option>
-                            {% set processed_ids = [] %}
-                            {% for u in team_members %}
-                                {% if u.status == 'active' and 'Stand Scout' in u.roles and u.id not in processed_ids %}
-                                    {% if u.partner_id %}
-                                        {% set partner = team_members | selectattr('id', 'equalto', u.partner_id) | first %}
-                                        {% if partner and partner.status == 'active' and 'Stand Scout' in partner.roles %}
-                                            <option value="[{{ u.id }}, {{ partner.id }}]">{{ u.name }} & {{ partner.name }} (Binôme)</option>
-                                            {% do processed_ids.append(u.id) %}
-                                            {% do processed_ids.append(partner.id) %}
-                                        {% else %}
-                                            <option value="[{{ u.id }}]">{{ u.name }}</option>
-                                            {% do processed_ids.append(u.id) %}
-                                        {% endif %}
-                                    {% else %}
-                                        <option value="[{{ u.id }}]">{{ u.name }}</option>
-                                        {% do processed_ids.append(u.id) %}
-                                    {% endif %}
-                                {% endif %}
+                            {% for opt in stand_scouter_options %}
+                            <option value="{{ opt.ids }}">{{ opt.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -329,24 +313,8 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
                         <select id="assign-pit-scout" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="">Select Scouter(s)...</option>
-                            {% set pit_processed_ids = [] %}
-                            {% for u in team_members %}
-                                {% if u.status == 'active' and 'Pit Scout' in u.roles and u.id not in pit_processed_ids %}
-                                    {% if u.partner_id %}
-                                        {% set partner = team_members | selectattr('id', 'equalto', u.partner_id) | first %}
-                                        {% if partner and partner.status == 'active' and 'Pit Scout' in partner.roles %}
-                                            <option value="[{{ u.id }}, {{ partner.id }}]">{{ u.name }} & {{ partner.name }} (Binôme)</option>
-                                            {% do pit_processed_ids.append(u.id) %}
-                                            {% do pit_processed_ids.append(partner.id) %}
-                                        {% else %}
-                                            <option value="[{{ u.id }}]">{{ u.name }}</option>
-                                            {% do pit_processed_ids.append(u.id) %}
-                                        {% endif %}
-                                    {% else %}
-                                        <option value="[{{ u.id }}]">{{ u.name }}</option>
-                                        {% do pit_processed_ids.append(u.id) %}
-                                    {% endif %}
-                                {% endif %}
+                            {% for opt in pit_scouter_options %}
+                            <option value="{{ opt.ids }}">{{ opt.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -628,17 +596,16 @@
         window.matchSelected = (matchKey) => {
             const assignTeamSelect = document.getElementById('assign-team');
             assignTeamSelect.innerHTML = '<option value="">Select Team...</option>';
-            if (!matchKey) {
-                assignTeamSelect.disabled = true;
-                return;
-            }
+            if (!matchKey) { assignTeamSelect.disabled = true; return; }
+            
             const matchData = allMatches.find(m => m.key === matchKey);
+            const MY_TEAM_KEY = '{{ my_team_key }}';
             if (matchData && matchData.alliances) {
                 assignTeamSelect.disabled = false;
                 if (matchData.alliances.red?.team_keys) {
                     const group = document.createElement('optgroup'); group.label = "Red Alliance";
                     matchData.alliances.red.team_keys.forEach(tk => {
-                        if (tk === 'frc6622') return; // Hide own team
+                        if (tk === MY_TEAM_KEY) return; // Hide own team
                         const opt = document.createElement('option'); opt.value = tk; opt.textContent = tk; opt.dataset.alliance = 'Red'; group.appendChild(opt);
                     });
                     assignTeamSelect.appendChild(group);
@@ -646,7 +613,7 @@
                 if (matchData.alliances.blue?.team_keys) {
                     const group = document.createElement('optgroup'); group.label = "Blue Alliance";
                     matchData.alliances.blue.team_keys.forEach(tk => {
-                        if (tk === 'frc6622') return; // Hide own team
+                        if (tk === MY_TEAM_KEY) return; // Hide own team
                         const opt = document.createElement('option'); opt.value = tk; opt.textContent = tk; opt.dataset.alliance = 'Blue'; group.appendChild(opt);
                     });
                     assignTeamSelect.appendChild(group);

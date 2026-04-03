@@ -295,8 +295,9 @@ def auto_assign():
         
         assigned_to_this_match = set()
         
+        my_team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
         for team_key in teams:
-            if team_key == 'frc6622':
+            if team_key == my_team_key:
                 continue
             alliance_color = 'Red' if team_key in match['alliances']['red']['team_keys'] else 'Blue'
             if ScoutAssignment.query.filter_by(match_key=match['key'], team_key=team_key).first():
@@ -449,8 +450,9 @@ def auto_assign_pit():
         return jsonify({'error': 'No teams found for the current event.'}), 400
         
     unassigned_teams = []
+    my_team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
     for team in event_teams:
-        if team['key'] == 'frc6622':
+        if team['key'] == my_team_key:
             continue
             
         existing = ScoutAssignment.query.filter_by(team_key=team['key'], assignment_type='Pit').first()
@@ -590,8 +592,9 @@ def auto_assign_2026():
             if team_pos_idx < len(alliance_teams):
                 team_key = alliance_teams[team_pos_idx]
                 
-                # NEVER assign our own team (6622)
-                if team_key == 'frc6622':
+                # NEVER assign our own team
+                my_team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+                if team_key == my_team_key:
                     continue
                     
                 for scout in p_obj:
@@ -625,8 +628,9 @@ def auto_assign_2026():
             team_group = event_teams[start:end]
             
             for team in team_group:
-                # NEVER assign our own team (6622)
-                if team['key'] == 'frc6622':
+                # NEVER assign our own team
+                my_team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+                if team['key'] == my_team_key:
                     continue
                     
                 # Check if pit data already exists
