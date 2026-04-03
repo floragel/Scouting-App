@@ -214,15 +214,15 @@
                             <div class="flex items-center w-full bg-slate-900/40 rounded-2xl border border-slate-700/50 p-1 group transition-all hover:border-primary/20">
                                 <button
                                     class="stepper-btn h-11 px-3 text-red-500 font-bold hover:bg-red-500/10 rounded-xl transition-all"
-                                    type="button" data-field="auto_start_balls" data-action="minus20">
-                                    -20
+                                    type="button" data-field="auto_start_balls" data-action="minus8">
+                                    -8
                                 </button>
                                 <button
                                     class="stepper-btn h-11 w-10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all"
                                     type="button" data-field="auto_start_balls" data-action="minus">
                                     <span class="material-symbols-outlined text-lg">remove</span>
                                 </button>
-                                <input type="number" id="val-auto_start_balls" value="0" min="0"
+                                <input type="number" id="val-auto_start_balls" value="0" min="0" max="8"
                                     class="flex-1 min-w-0 bg-transparent h-11 border-none text-center text-2xl font-bold font-mono text-white focus:ring-0 outline-none" />
                                 <button
                                     class="stepper-btn h-11 w-10 flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-xl transition-all"
@@ -231,8 +231,8 @@
                                 </button>
                                 <button
                                     class="stepper-btn h-11 px-3 text-primary font-bold hover:bg-primary/10 rounded-xl transition-all"
-                                    type="button" data-field="auto_start_balls" data-action="plus20">
-                                    +20
+                                    type="button" data-field="auto_start_balls" data-action="plus8">
+                                    +8
                                 </button>
                             </div>
                         </div>
@@ -596,8 +596,12 @@
 
                     if (action === 'plus') state[field]++;
                     else if (action === 'plus20') state[field] += 20;
+                    else if (action === 'plus8') state[field] += 8;
                     else if (action === 'minus' && state[field] > 0) state[field]--;
                     else if (action === 'minus20' && state[field] > 0) state[field] = Math.max(0, state[field] - 20);
+                    else if (action === 'minus8' && state[field] > 0) state[field] = Math.max(0, state[field] - 8);
+
+                    if (field === 'auto_start_balls' && state[field] > 8) state[field] = 8;
 
                     input.value = state[field];
                     updateStepperStyle(field);
@@ -610,6 +614,7 @@
                 input.addEventListener('input', (e) => {
                     let val = parseInt(e.target.value) || 0;
                     if (val < 0) val = 0;
+                    if (field === 'auto_start_balls' && val > 8) val = 8;
                     state[field] = val;
                     input.value = val;
                     updateStepperStyle(field);
