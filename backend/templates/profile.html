@@ -209,7 +209,6 @@
                 if (user.profile_picture) {
                     const imgHtml = `<img src="${user.profile_picture}" class="w-full h-full object-cover">`;
                     document.getElementById('nav-initials').innerHTML = imgHtml;
-                    // For the header, we want to remove background/text colors if it's an image
                     const headerInitials = document.getElementById('header-initials');
                     headerInitials.innerHTML = imgHtml;
                     headerInitials.classList.remove('p-2', 'bg-primary');
@@ -238,6 +237,51 @@
                 await window.apiFetch('/api/auth/logout', { method: 'POST' });
                 window.location.href = '/login';
             });
+
+            // --- DARK MODE TROLL LOGIC ---
+            const themeToggle = document.querySelector('input[type="checkbox"]');
+            if (themeToggle) {
+                themeToggle.addEventListener('change', function() {
+                    if (!this.checked) {
+                        // User tried to go light mode
+                        document.documentElement.classList.remove('dark');
+                        
+                        // Create a scary troll overlay
+                        const trollOverlay = document.createElement('div');
+                        trollOverlay.style = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: white; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; transition: all 0.3s ease-in-out;";
+                        trollOverlay.innerHTML = `
+                            <div style="text-align: center; color: black; padding: 20px; max-width: 800px;">
+                                <h1 style="font-size: 4rem; font-weight: 900; line-height: 1; margin-bottom: 20px; animation: pulse 0.5s infinite alternate;">⚠️ LETHAL BRIGHTNESS</h1>
+                                <p style="font-size: 1.5rem; font-weight: 500; margin-bottom: 20px;">Your retinas are currently being vaporized. Light mode is a violation of the StanRobotix TOS.</p>
+                                <div style="font-family: monospace; color: red; background: black; padding: 10px; font-size: 1rem;">ERR_LIGHT_MODE_RESTRICTED: Retinal protection active.</div>
+                            </div>
+                            <style>
+                                @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+                            </style>
+                        `;
+                        document.body.appendChild(trollOverlay);
+
+                        setTimeout(() => {
+                            trollOverlay.style.background = "#0d6cf2";
+                            trollOverlay.innerHTML = `
+                                <div style="text-align: center; color: white; padding: 20px;">
+                                    <h1 style="font-size: 8rem; font-weight: 900; margin-bottom: 10px;">🤡</h1>
+                                    <h2 style="font-size: 3rem; font-weight: 900; margin-bottom: 20px;">IMAGINE USING<br>LIGHT MODE</h2>
+                                    <p style="font-size: 1.2rem; opacity: 0.8;">StanRobotix 2026 - Keeping your eyes safe by force.</p>
+                                </div>
+                            `;
+                            
+                            setTimeout(() => {
+                                document.documentElement.classList.add('dark');
+                                this.checked = true;
+                                trollOverlay.style.opacity = '0';
+                                trollOverlay.style.transform = 'scale(1.5)';
+                                setTimeout(() => trollOverlay.remove(), 500);
+                            }, 2000);
+                        }, 1000);
+                    }
+                });
+            }
         });
     </script>
 
