@@ -182,33 +182,43 @@ def submit_match_scout_web():
         except:
             auto_traj_str = "[]"
             
-        match_data = MatchScoutData(
+        # Check if match data already exists for this team at this event/match
+        match_data = MatchScoutData.query.filter_by(
             team_id=team.id,
             event_id=event.id,
-            match_number=match_number,
-            starting_position=starting_pos_str,
-            auto_trajectory=auto_traj_str,
-            auto_start_balls=int(data.get('auto_start_balls', 0)),
-            auto_balls_shot=int(data.get('auto_balls_shot', 0)),
-            auto_balls_scored=int(data.get('auto_balls_scored', 0)),
-            auto_climb=data.get('auto_climb', 'None'),
-            teleop_intake_speed=int(data.get('teleop_intake_speed', 3)),
-            teleop_shooter_accuracy=int(data.get('teleop_shooter_accuracy', 3)),
-            teleop_balls_shot=int(data.get('teleop_balls_shot', 0)),
-            passes_bump=data.get('passes_bump') == True or data.get('passes_bump') == 'true',
-            passes_trench=data.get('passes_trench') == True or data.get('passes_trench') == 'true',
-            endgame_climb=data.get('endgame_climb', 'None'),
-            notes=data.get('notes', '')
-        )
-        
-        # Set scouter_id safely (column may not exist in production DB)
+            match_number=match_number
+        ).first()
+
+        if not match_data:
+            match_data = MatchScoutData(
+                team_id=team.id,
+                event_id=event.id,
+                match_number=match_number
+            )
+            db.session.add(match_data)
+
+        # Update fields (Upsert logic)
+        match_data.starting_position = starting_pos_str
+        match_data.auto_trajectory = auto_traj_str
+        match_data.auto_start_balls = int(data.get('auto_start_balls', 0))
+        match_data.auto_balls_shot = int(data.get('auto_balls_shot', 0))
+        match_data.auto_balls_scored = int(data.get('auto_balls_scored', 0))
+        match_data.auto_climb = data.get('auto_climb', 'None')
+        match_data.teleop_intake_speed = int(data.get('teleop_intake_speed', 3))
+        match_data.teleop_shooter_accuracy = int(data.get('teleop_shooter_accuracy', 3))
+        match_data.teleop_balls_shot = int(data.get('teleop_balls_shot', 0))
+        match_data.passes_bump = data.get('passes_bump') == True or data.get('passes_bump') == 'true'
+        match_data.passes_trench = data.get('passes_trench') == True or data.get('passes_trench') == 'true'
+        match_data.endgame_climb = data.get('endgame_climb', 'None')
+        match_data.notes = data.get('notes', '')
+
+        # Set scouter_id safely
         try:
             match_data.scouter_id = session['user_id']
         except Exception:
             pass
-        
-        db.session.add(match_data)
-        # Clear all assignments for this match and team (for both members of a pair)
+
+        # Clear all assignments for this match and team
         ScoutAssignment.query.filter_by(
             match_key=assignment.match_key,
             team_key=assignment.team_key
