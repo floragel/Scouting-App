@@ -462,9 +462,8 @@ def admin_hub_view():
     assignments = ScoutAssignment.query.filter(ScoutAssignment.user_id.in_(team_member_ids)).all() if team_member_ids else []
     
     # --- Match Assignment Event Selection ---
-    # Pour changer d'événement, mettez la clé TBA ici (ex: '2026qcmo'). 
-    # Mettez à None pour utiliser l'événement le plus récent automatiquement.
-    selected_event = '2026qcmo'
+    # The event key is now dynamic based on the selected season year.
+    selected_ev_key = f"{selected_year}qcmo"
     
     event_matches = []
     # --- Team Key and Binômes ---
@@ -491,16 +490,7 @@ def admin_hub_view():
     pit_scouter_options = group_scouters('Pit Scout')
     
     try:
-        # Use forced key if provided, otherwise fetch from TBA for the selected year
-        selected_ev_key = forced_event_key
-        
-        if not selected_ev_key:
-            e_res = requests.get(f"https://www.thebluealliance.com/api/v3/team/{team_key}/events/{selected_year}/simple", headers={'X-TBA-Auth-Key': frc_api.TBA_API_KEY}, timeout=5)
-            if e_res.status_code == 200 and e_res.json():
-                tba_events = e_res.json()
-                sorted_evs = sorted(tba_events, key=lambda x: x.get('end_date', ''), reverse=True)
-                if sorted_evs: selected_ev_key = sorted_evs[0]['key']
-
+        # Fetch event matches from TBA for the dynamic event key
         if selected_ev_key:
             em = frc_api.get_event_matches(selected_ev_key)
             if em:

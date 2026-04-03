@@ -241,12 +241,16 @@ def auto_assign():
         return jsonify({'error': f'No active scouts found with Stand Scout, Pit Scout, or Strategy Lead roles. Found {len(eligible_scouts)} eligible scouts.'}), 400
         
     tba = TBAHandler()
-    team_key = user.team.tba_key if user.team else 'frc6622'
-    team_status = tba.get_team_status(team_key)
-    if not team_status or not team_status.get('event_key'):
-        return jsonify({'error': 'Team not registered for an active event.'}), 400
-        
-    em = frc_api.get_event_matches(team_status['event_key'])
+    # Define the Event Key (Dynamic based on selected season)
+    event_key = request.args.get('event_key')
+    if not event_key:
+        team_key = user.team.tba_key if user.team else 'frc6622'
+        team_status = tba.get_team_status(team_key)
+        if not team_status or not team_status.get('event_key'):
+            return jsonify({'error': 'Team not registered for an active event.'}), 400
+        event_key = team_status['event_key']
+    
+    em = frc_api.get_event_matches(event_key)
     
     # Fallback to 2025 if no matches found for current event
     if not em:
@@ -440,12 +444,16 @@ def auto_assign_pit():
         return jsonify({'error': 'No active Pit Scouts found.'}), 400
         
     tba = TBAHandler()
-    team_key = user.team.tba_key if user.team else 'frc6622'
-    team_status = tba.get_team_status(team_key)
-    if not team_status or not team_status.get('event_key'):
-        return jsonify({'error': 'Team not registered for an active event.'}), 400
+    # Define the Event Key (Dynamic based on selected season)
+    event_key = request.args.get('event_key')
+    if not event_key:
+        team_key = user.team.tba_key if (user.team and user.team.tba_key) else (f"frc{user.team.team_number}" if user.team else 'frc6622')
+        team_status = tba.get_team_status(team_key)
+        if not team_status or not team_status.get('event_key'):
+            return jsonify({'error': 'Team not registered for an active event.'}), 400
+        event_key = team_status['event_key']
         
-    event_teams = frc_api.get_teams_for_event(team_status['event_key'])
+    event_teams = frc_api.get_teams_for_event(event_key)
     if not event_teams:
         return jsonify({'error': 'No teams found for the current event.'}), 400
         

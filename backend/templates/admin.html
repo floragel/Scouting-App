@@ -244,8 +244,8 @@
                 <div class="flex gap-2">
                     <button id="auto-assign-btn-2026" onclick="autoAssign2026()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
                         <span class="material-symbols-outlined text-sm">group</span>
-                        <span class="hidden sm:inline">Auto-Assign 2026 Pairs</span>
-                        <span class="sm:hidden">2026 Pairs</span>
+                        <span class="hidden sm:inline">Auto-Assign {{ selected_year }} Pairs</span>
+                        <span class="sm:hidden">{{ selected_year }} Pairs</span>
                     </button>
                     <button id="auto-assign-btn" onclick="autoAssignAll()" class="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-emerald-500/20">
                         <span class="material-symbols-outlined text-sm">smart_toy</span>
@@ -705,29 +705,35 @@
         };
 
         window.autoAssignAll = async () => {
+            if(!confirm("Are you sure you want to auto-assign all match scouts? This will overwrite existing assignments for {{ selected_year }}qcmo.")) return;
             const btn = document.getElementById('auto-assign-btn');
+            const originalHTML = btn.innerHTML;
             btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">autorenew</span> Assigning...`;
-            const res = await fetch('/api/admin/auto-assign', { method: 'POST' });
-            if(res.ok) window.location.reload();
-            else { alert("Failed to auto-assign"); btn.innerHTML = `Auto-Assign All`; }
+            try {
+                const res = await fetch('/api/admin/auto-assign?event_key={{ selected_year }}qcmo', { method: 'POST' });
+                if(res.ok) window.location.reload();
+                else { alert("Failed to auto-assign"); btn.innerHTML = originalHTML; }
+            } catch(e) { console.error(e); btn.innerHTML = originalHTML; }
         };
         
         window.autoAssignPit = async () => {
-            if(!confirm("Auto-assign pit scouting for all valid teams?")) return;
-            const res = await fetch('/api/admin/auto-assign-pit', { method: 'POST' });
-            if(res.ok) window.location.reload();
-            else alert("Failed to auto assign pits");
+            if(!confirm("Auto-assign pit scouting for {{ selected_year }}qcmo?")) return;
+            try {
+                const res = await fetch('/api/admin/auto-assign-pit?event_key={{ selected_year }}qcmo', { method: 'POST' });
+                if(res.ok) window.location.reload();
+                else alert("Failed to auto assign pits");
+            } catch(e) { console.error(e); }
         };
 
         window.autoAssign2026 = async () => {
-            if(!confirm("Ceci va effacer les assignations actuelles de cet événement et créer les binômes 2026 pour TOUS les matchs. Continuer ?")) return;
+            if(!confirm("Ceci va effacer les assignations actuelles de {{ selected_year }}qcmo et créer les binômes pour TOUS les matchs. Continuer ?")) return;
             const btn = document.getElementById('auto-assign-btn-2026');
             const originalHTML = btn.innerHTML;
             btn.innerHTML = `<span class="material-symbols-outlined animate-spin text-sm">autorenew</span> ...`;
             btn.disabled = true;
             
             try {
-                const res = await fetch('/api/admin/auto-assign-2026', { method: 'POST' });
+                const res = await fetch('/api/admin/auto-assign-2026?event_key={{ selected_year }}qcmo', { method: 'POST' });
                 const data = await res.json();
                 if(res.ok) {
                     window.location.reload();
