@@ -594,6 +594,7 @@ def profile_view():
     if not user: return redirect(url_for('login_view'))
     return render_template('profile.html', **get_common_data(user))
 
+@app.route('/profile/edit')
 @app.route('/profile-edit')
 def profile_edit_view():
     user = get_current_user()
@@ -679,42 +680,8 @@ def members_view():
 
 # --- NEW API ROUTES FOR DATA PARITY ---
 
-@app.route('/api/user/me', methods=['GET', 'PUT'])
-def api_user_me():
-    user = get_current_user()
-    if not user: return jsonify({'error': 'Unauthorized'}), 401
-    
-    if request.method == 'GET':
-        data = user.to_dict()
-        data['team_number'] = user.team.team_number if user.team else None
-        return jsonify(data)
-    
-    if request.method == 'PUT':
-        data = request.json
-        if 'name' in data: user.name = data['name']
-        if 'email' in data: user.email = data['email']
-        if 'new_password' in data and data.get('current_password'):
-            # Basic validation: In production, use werkzeug.security
-            user.password = data['new_password'] 
-        db.session.commit()
-        return jsonify({'success': True})
-
-@app.route('/api/user/upload-profile-picture', methods=['POST'])
-def api_upload_profile_picture():
-    user = get_current_user()
-    if not user: return jsonify({'error': 'Unauthorized'}), 401
-    file = request.files.get('profile_picture')
-    if not file: return jsonify({'error': 'No file'}), 400
-    
-    # Save locally for now
-    filename = f"profile_{user.id}_{int(time.time())}.jpg"
-    os.makedirs('backend/static/uploads/profiles', exist_ok=True)
-    filepath = os.path.join('backend/static/uploads/profiles', filename)
-    file.save(filepath)
-    
-    user.profile_picture = f"/static/uploads/profiles/{filename}"
-    db.session.commit()
-    return jsonify({'url': user.profile_picture})
+# Redundant API endpoints (/api/user/me and /api/user/upload-profile-picture) 
+# have been removed to use the centralized routes in routes/auth.py instead.
 
 @app.route('/api/events/<int:event_id>/teams')
 def api_event_teams(event_id):

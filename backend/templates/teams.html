@@ -136,7 +136,7 @@
                 <p class="text-sm font-bold leading-tight">Hi, {{ user.name.split()[0] if user.name else 'Scout' }}</p>
                 <p class="text-[10px] text-slate-500 uppercase font-bold tracking-tighter">{{ user.role }}</p>
             </div>
-            <a href="/profile-edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
+            <a href="/profile/edit" class="relative block hover:scale-105 transition-transform cursor-pointer">
                 <img class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden object-cover"
                     alt="Profile picture of {{ user.name }}"
                     src="{{ user.profile_picture or '/static/images/default_avatar.svg' }}">
