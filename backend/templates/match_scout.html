@@ -837,8 +837,8 @@
 
                 const data = {
                     v: "2.5", // version
-                    m: '{{ assignment.match_key if assignment else "TEST" }}',
-                    t: '{{ assignment.team_key if assignment else "0000" }}',
+                    m: String('{{ assignment.match_key if assignment else "0000_qm0" }}'),
+                    t: String('{{ assignment.team_key if assignment else "frc0000" }}'),
                     s: parseInt("{{ session.user_id or 0 }}"),
                     a: [[sX, sY], state.auto_start_balls, state.auto_balls_shot, state.auto_balls_scored, document.querySelector('input[name="autoClimb"]:checked')?.value || 'N'],
                     tO: [

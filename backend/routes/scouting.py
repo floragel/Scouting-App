@@ -417,19 +417,18 @@ def import_scout_data():
                 
                 existing = PitScoutData.query.filter_by(team_id=team.id, event_id=event.id).first()
                 if not existing:
-                    pit = PitScoutData(
-                        team_id=team.id,
-                        event_id=event.id,
-                        drivetrain_type=tech.get('drivetrain', 'Swerve'),
-                        motor_type=tech.get('motor_type', 'Kraken X60'),
-                        motor_count=int(tech.get('motor_count', 4)),
-                        weight=float(tech.get('weight_lbs', 0)),
-                        max_fuel_capacity=int(game.get('max_fuel_capacity', 50)),
-                        climb_level=game.get('climb_level', 'None'),
-                        notes=data.get('analysis', {}).get('notes', '')
-                    )
-                    db.session.add(pit)
-                    success_count += 1
+                    existing = PitScoutData(team_id=team.id, event_id=event.id)
+                    db.session.add(existing)
+                
+                # Update Pit Data (UPSERT)
+                existing.drivetrain_type = tech.get('drivetrain', 'Swerve')
+                existing.motor_type = tech.get('motor_type', 'Kraken X60')
+                existing.motor_count = int(tech.get('motor_count', 4))
+                existing.weight = float(tech.get('weight_lbs', 0))
+                existing.max_fuel_capacity = int(game.get('max_fuel_capacity', 50))
+                existing.climb_level = game.get('climb_level', 'None')
+                existing.notes = data.get('analysis', {}).get('notes', '')
+                success_count += 1
             elif data.get('match_data') or (data.get('autonomous') and data.get('teleop')):
                 # Match Data Import
                 m = data.get('match_data') or data
@@ -437,26 +436,35 @@ def import_scout_data():
                 tele = m.get('teleop', {})
                 endgame = m.get('endgame', {})
                 match_num_raw = metadata.get('match_number') or metadata.get('match_key', '0').split('_')[-1]
-                match_num = int(''.join(filter(str.isdigit, str(match_num_raw) or '0')))
+                match_num_str = ''.join(filter(str.isdigit, str(match_num_raw) or '0'))
+                match_num = int(match_num_str) if match_num_str else 0 # Default to 0 instead of crashing
                 
                 existing = MatchScoutData.query.filter_by(team_id=team.id, event_id=event.id, match_number=match_num).first()
                 if not existing:
-                    match = MatchScoutData(
+                    existing = MatchScoutData(
                         team_id=team.id,
                         event_id=event.id,
-                        match_number=match_num,
-                        auto_start_balls=int(auto.get('start_balls', 0)),
-                        auto_balls_shot=int(auto.get('balls_shot', 0)),
-                        auto_balls_scored=int(auto.get('balls_scored', 0)),
-                        teleop_intake_speed=int(tele.get('intake_speed', 3)),
-                        teleop_shooter_accuracy=int(tele.get('shooter_accuracy', 3)),
-                        teleop_balls_shot=int(tele.get('balls_shot', 0)),
-                        endgame_climb=endgame.get('climb', 'None'),
-                        notes=m.get('notes', ''),
-                        scouter_id=metadata.get('scouter_id') or session['user_id']
+                        match_number=match_num
                     )
-                    db.session.add(match)
-                    success_count += 1
+                    db.session.add(existing)
+
+                # Update Match Data (UPSERT)
+                existing.auto_start_balls = int(auto.get('start_balls', 0))
+                existing.auto_balls_shot = int(auto.get('balls_shot', 0))
+                existing.auto_balls_scored = int(auto.get('balls_scored', 0))
+                existing.teleop_intake_speed = int(tele.get('intake_speed', 3))
+                existing.teleop_shooter_accuracy = int(tele.get('shooter_accuracy', 3))
+                existing.teleop_balls_shot = int(tele.get('balls_shot', 0))
+                existing.endgame_climb = endgame.get('climb', 'None')
+                existing.notes = m.get('notes', '')
+                
+                # Set scouter_id safely
+                try:
+                    existing.scouter_id = metadata.get('scouter_id') or session['user_id']
+                except Exception:
+                    pass
+                    
+                success_count += 1
                     
         except Exception as e:
             errors.append(str(e))
