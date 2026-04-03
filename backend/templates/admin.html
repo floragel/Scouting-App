@@ -193,6 +193,8 @@
                                     <span class="inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter border {% if r in ['Admin', 'Captain', 'Head Scout'] %}text-primary bg-primary/10 border-primary/20{% elif 'Lead' in r %}text-amber-400 bg-amber-400/10 border-amber-400/20{% elif r == 'Pit Scout' %}text-emerald-400 bg-emerald-400/10 border-emerald-400/20{% elif r == 'Stand Scout' %}text-violet-400 bg-violet-400/10 border-violet-400/20{% elif r == 'Media' %}text-pink-400 bg-pink-400/10 border-pink-400/20{% elif r == 'TBD' %}text-slate-400 bg-slate-400/10 border-slate-400/20{% else %}text-slate-400 bg-slate-800 border-slate-700{% endif %}">{{ r }}</span>
                                     {% endfor %}
                                 </div>
+                                <button onclick="openRoleEditor({{ teamUser.id }}, '{{ teamUser.role }}')" class="text-[10px] text-primary hover:underline font-black uppercase tracking-widest block mt-1">Edit Roles</button>
+                            </td>
                             <td class="px-6 py-4">
                                 <select onchange="setPartner({{ teamUser.id }}, this.value)" class="text-[10px] bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded px-2 py-1 font-bold text-slate-600 dark:text-slate-300 focus:ring-primary focus:border-primary">
                                     <option value="">No Partner</option>
@@ -256,11 +258,25 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
                         <select id="assign-scout" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
-                            <option value="">Select Stand Scout...</option>
-                            {% for teamUser in team_members %}
-                            {% if teamUser.status == 'active' and 'Stand Scout' in teamUser.roles %}
-                            <option value="{{ teamUser.id }}">{{ teamUser.name }}</option>
-                            {% endif %}
+                            <option value="">Select Scouter(s)...</option>
+                            {% set processed_ids = [] %}
+                            {% for u in team_members %}
+                                {% if u.status == 'active' and 'Stand Scout' in u.roles and u.id not in processed_ids %}
+                                    {% if u.partner_id %}
+                                        {% set partner = team_members | selectattr('id', 'equalto', u.partner_id) | first %}
+                                        {% if partner and partner.status == 'active' and 'Stand Scout' in partner.roles %}
+                                            <option value="[{{ u.id }}, {{ partner.id }}]">{{ u.name }} & {{ partner.name }} (Binôme)</option>
+                                            {% do processed_ids.append(u.id) %}
+                                            {% do processed_ids.append(partner.id) %}
+                                        {% else %}
+                                            <option value="[{{ u.id }}]">{{ u.name }}</option>
+                                            {% do processed_ids.append(u.id) %}
+                                        {% endif %}
+                                    {% else %}
+                                        <option value="[{{ u.id }}]">{{ u.name }}</option>
+                                        {% do processed_ids.append(u.id) %}
+                                    {% endif %}
+                                {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -312,11 +328,25 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
                         <select id="assign-pit-scout" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
-                            <option value="">Select Pit Scout...</option>
-                            {% for teamUser in team_members %}
-                            {% if teamUser.status == 'active' and 'Pit Scout' in teamUser.roles %}
-                            <option value="{{ teamUser.id }}">{{ teamUser.name }}</option>
-                            {% endif %}
+                            <option value="">Select Scouter(s)...</option>
+                            {% set pit_processed_ids = [] %}
+                            {% for u in team_members %}
+                                {% if u.status == 'active' and 'Pit Scout' in u.roles and u.id not in pit_processed_ids %}
+                                    {% if u.partner_id %}
+                                        {% set partner = team_members | selectattr('id', 'equalto', u.partner_id) | first %}
+                                        {% if partner and partner.status == 'active' and 'Pit Scout' in partner.roles %}
+                                            <option value="[{{ u.id }}, {{ partner.id }}]">{{ u.name }} & {{ partner.name }} (Binôme)</option>
+                                            {% do pit_processed_ids.append(u.id) %}
+                                            {% do pit_processed_ids.append(partner.id) %}
+                                        {% else %}
+                                            <option value="[{{ u.id }}]">{{ u.name }}</option>
+                                            {% do pit_processed_ids.append(u.id) %}
+                                        {% endif %}
+                                    {% else %}
+                                        <option value="[{{ u.id }}]">{{ u.name }}</option>
+                                        {% do pit_processed_ids.append(u.id) %}
+                                    {% endif %}
+                                {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -608,6 +638,7 @@
                 if (matchData.alliances.red?.team_keys) {
                     const group = document.createElement('optgroup'); group.label = "Red Alliance";
                     matchData.alliances.red.team_keys.forEach(tk => {
+                        if (tk === 'frc6622') return; // Hide own team
                         const opt = document.createElement('option'); opt.value = tk; opt.textContent = tk; opt.dataset.alliance = 'Red'; group.appendChild(opt);
                     });
                     assignTeamSelect.appendChild(group);
@@ -615,6 +646,7 @@
                 if (matchData.alliances.blue?.team_keys) {
                     const group = document.createElement('optgroup'); group.label = "Blue Alliance";
                     matchData.alliances.blue.team_keys.forEach(tk => {
+                        if (tk === 'frc6622') return; // Hide own team
                         const opt = document.createElement('option'); opt.value = tk; opt.textContent = tk; opt.dataset.alliance = 'Blue'; group.appendChild(opt);
                     });
                     assignTeamSelect.appendChild(group);
@@ -656,8 +688,9 @@
 
         window.submitAssignment = async (e) => {
             e.preventDefault();
+            const userIds = JSON.parse(document.getElementById('assign-scout').value);
             const payload = {
-                user_id: document.getElementById('assign-scout').value,
+                user_ids: userIds,
                 match_key: document.getElementById('assign-match').value,
                 team_key: document.getElementById('assign-team').value,
                 alliance_color: document.getElementById('assign-alliance').value
@@ -671,8 +704,9 @@
 
         window.submitPitAssignment = async (e) => {
             e.preventDefault();
+            const userIds = JSON.parse(document.getElementById('assign-pit-scout').value);
             const payload = {
-                user_id: document.getElementById('assign-pit-scout').value,
+                user_ids: userIds,
                 team_key: 'frc' + document.getElementById('assign-pit-team').value
             };
             try {

@@ -347,21 +347,29 @@ def create_assignment():
         return jsonify({'error': 'Forbidden'}), 403
         
     data = request.json
-    required_fields = ['user_id', 'match_key', 'team_key', 'alliance_color']
-    if not all(field in data for field in required_fields):
+    user_ids = data.get('user_ids', [])
+    if not user_ids and 'user_id' in data:
+        user_ids = [data['user_id']]
+        
+    required_fields = ['match_key', 'team_key', 'alliance_color']
+    if not all(field in data for field in required_fields) or not user_ids:
         return jsonify({'error': 'Missing required fields'}), 400
         
     try:
-        new_assignment = ScoutAssignment(
-            user_id=data['user_id'],
-            match_key=data['match_key'],
-            team_key=data['team_key'],
-            alliance_color=data['alliance_color'],
-            status='Pending'
-        )
-        db.session.add(new_assignment)
+        assignments = []
+        for uid in user_ids:
+            new_assignment = ScoutAssignment(
+                user_id=uid,
+                match_key=data['match_key'],
+                team_key=data['team_key'],
+                alliance_color=data['alliance_color'],
+                assignment_type='Match',
+                status='Pending'
+            )
+            db.session.add(new_assignment)
+            assignments.append(new_assignment)
         db.session.commit()
-        return jsonify({'message': 'Assignment created successfully', 'assignment': new_assignment.to_dict()}), 201
+        return jsonify({'message': f'{len(assignments)} assignments created successfully'}), 201
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -576,6 +584,11 @@ def auto_assign_2026():
             team_pos_idx = int(pos[-1]) - 1
             if team_pos_idx < len(alliance_teams):
                 team_key = alliance_teams[team_pos_idx]
+                
+                # NEVER assign our own team (6622)
+                if team_key == 'frc6622':
+                    continue
+                    
                 for scout in p_obj:
                     new_assign = ScoutAssignment(
                         user_id=scout.id,
