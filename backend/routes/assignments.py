@@ -296,6 +296,8 @@ def auto_assign():
         assigned_to_this_match = set()
         
         for team_key in teams:
+            if team_key == 'frc6622':
+                continue
             alliance_color = 'Red' if team_key in match['alliances']['red']['team_keys'] else 'Blue'
             if ScoutAssignment.query.filter_by(match_key=match['key'], team_key=team_key).first():
                 continue
