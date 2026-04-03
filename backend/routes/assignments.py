@@ -448,6 +448,9 @@ def auto_assign_pit():
         
     unassigned_teams = []
     for team in event_teams:
+        if team['key'] == 'frc6622':
+            continue
+            
         existing = ScoutAssignment.query.filter_by(team_key=team['key'], assignment_type='Pit').first()
         if not existing:
             team_number = int(team['key'].replace('frc', ''))
@@ -620,6 +623,10 @@ def auto_assign_2026():
             team_group = event_teams[start:end]
             
             for team in team_group:
+                # NEVER assign our own team (6622)
+                if team['key'] == 'frc6622':
+                    continue
+                    
                 # Check if pit data already exists
                 team_num = int(team['key'].replace('frc', ''))
                 team_obj = Team.query.filter_by(team_number=team_num).first()
