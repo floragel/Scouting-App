@@ -90,6 +90,7 @@ def admin_page():
     assignments_data = [a.to_dict() for a in assignments]
     
     event_matches = []
+    current_event_key = ""
     
     # Try to find matches for the selected year
     try:
@@ -100,16 +101,18 @@ def admin_page():
         if e_res.status_code == 200 and e_res.json():
             events = sorted(e_res.json(), key=lambda x: x['end_date'], reverse=True)
             if events:
-                # Find matches for the most recent event of that year
+                current_event_key = events[0]['key']
                 for e in events:
                     em = frc_api.get_event_matches(e['key'])
                     if em:
-                        valid_matches = [m for m in em if m.get('time')]
-                        valid_matches.sort(key=lambda x: x['time'])
+                        # Relax requirement for 'time' - use match_number as fallback sort
+                        valid_matches = [m for m in em if m.get('match_number')]
+                        valid_matches.sort(key=lambda x: (x.get('time') or 0, x.get('match_number') or 0))
                         event_matches = valid_matches
+                        current_event_key = e['key']
                         if event_matches: break
     except Exception as e:
-        print(f"Admin fallback error: {e}")
+        print(f"Admin match fetching error: {e}")
 
     # Final fallback: if no matches for selected year but it was 2026, try 2025 automatically?
     # No, let the user select it now that we have the selector.
@@ -124,6 +127,7 @@ def admin_page():
             assignments=assignments_data, 
             assignments_json=json.dumps(assignments_data),
             event_matches=event_matches,
+            current_event_key=current_event_key,
             seasons=seasons,
             selected_year=selected_year,
             version=APP_VERSION

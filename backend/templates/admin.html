@@ -254,6 +254,14 @@
                 </div>
             </div>
             <div class="p-6 bg-slate-50 dark:bg-slate-900/30 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Create Assignment</span>
+                    <button id="toggle-manual-mode" type="button" class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-all shadow-sm">
+                        <span class="material-symbols-outlined text-sm">edit_note</span>
+                        <span id="manual-toggle-text">Manual Entry</span>
+                    </button>
+                </div>
+                
                 <form id="assignment-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end" onsubmit="submitAssignment(event)">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
@@ -264,7 +272,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div>
+                    <div id="match-col">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Match</label>
                         <select id="assign-match" onchange="matchSelected(this.value)" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="">Select Match...</option>
@@ -272,12 +280,22 @@
                             <option value="{{ match.key }}">{{ match.comp_level | upper }} {{ match.match_number }}</option>
                             {% endfor %}
                         </select>
+                        <div id="manual-match-fields" class="hidden flex gap-2">
+                            <select id="manual-match-type" class="w-1/2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-sm focus:ring-primary focus:border-primary font-medium">
+                                <option value="qm">Quals</option>
+                                <option value="sf">Semis</option>
+                                <option value="f">Finals</option>
+                                <option value="pr">Practice</option>
+                            </select>
+                            <input id="manual-match-num" type="number" placeholder="#" class="w-1/2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-sm focus:ring-primary focus:border-primary font-medium">
+                        </div>
                     </div>
-                    <div>
+                    <div id="team-col">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team Key</label>
                         <select id="assign-team" onchange="teamSelected(this)" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required disabled>
                             <option value="">Select Team...</option>
                         </select>
+                        <input id="manual-team-num" type="number" placeholder="Team #" class="hidden w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Alliance</label>
@@ -518,7 +536,48 @@
     </script>
     
     <script>
+        let manualMode = false;
+        
         document.addEventListener('DOMContentLoaded', () => {
+            const toggleManualBtn = document.getElementById('toggle-manual-mode');
+            const manualToggleText = document.getElementById('manual-toggle-text');
+            const assignMatchSelect = document.getElementById('assign-match');
+            const manualMatchFields = document.getElementById('manual-match-fields');
+            const assignTeamSelect = document.getElementById('assign-team');
+            const manualTeamInput = document.getElementById('manual-team-num');
+            
+            if (toggleManualBtn) {
+                toggleManualBtn.addEventListener('click', () => {
+                    manualMode = !manualMode;
+                    
+                    if (manualMode) {
+                        assignMatchSelect.classList.add('hidden');
+                        assignMatchSelect.required = false;
+                        manualMatchFields.classList.remove('hidden');
+                        
+                        assignTeamSelect.classList.add('hidden');
+                        assignTeamSelect.required = false;
+                        manualTeamInput.classList.remove('hidden');
+                        manualTeamInput.required = true;
+                        
+                        manualToggleText.textContent = 'Auto Selection';
+                        toggleManualBtn.classList.add('bg-primary/10', 'border-primary', 'text-primary');
+                    } else {
+                        assignMatchSelect.classList.remove('hidden');
+                        assignMatchSelect.required = true;
+                        manualMatchFields.classList.add('hidden');
+                        
+                        assignTeamSelect.classList.remove('hidden');
+                        assignTeamSelect.required = true;
+                        manualTeamInput.classList.add('hidden');
+                        manualTeamInput.required = false;
+                        
+                        manualToggleText.textContent = 'Manual Entry';
+                        toggleManualBtn.classList.remove('bg-primary/10', 'border-primary', 'text-primary');
+                    }
+                });
+            }
+
             const memberSearchInput = document.getElementById('member-search-input');
             if (memberSearchInput) {
                 memberSearchInput.addEventListener('input', (e) => {
@@ -656,11 +715,39 @@
         window.submitAssignment = async (e) => {
             e.preventDefault();
             const userIds = JSON.parse(document.getElementById('assign-scout').value);
+            const allianceColor = document.getElementById('assign-alliance').value;
+            
+            let matchKey = '';
+            let teamKey = '';
+
+            if (manualMode) {
+                const type = document.getElementById('manual-match-type').value;
+                const num = document.getElementById('manual-match-num').value;
+                const teamNum = document.getElementById('manual-team-num').value;
+                const eventKey = '{{ selected_year }}qcmo';
+                
+                if (!num || !teamNum) {
+                    alert("Please enter match number and team number.");
+                    return;
+                }
+                
+                matchKey = `${eventKey}_${type}${num}`;
+                teamKey = `frc${teamNum}`;
+            } else {
+                matchKey = document.getElementById('assign-match').value;
+                teamKey = document.getElementById('assign-team').value;
+            }
+
+            if (!userIds || !matchKey || !teamKey || !allianceColor) {
+                alert("Please fill in all assignment fields.");
+                return;
+            }
+
             const payload = {
                 user_ids: userIds,
-                match_key: document.getElementById('assign-match').value,
-                team_key: document.getElementById('assign-team').value,
-                alliance_color: document.getElementById('assign-alliance').value
+                match_key: matchKey,
+                team_key: teamKey,
+                alliance_color: allianceColor
             };
             try {
                 const res = await fetch('/api/admin/assignments', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });

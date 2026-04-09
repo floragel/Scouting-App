@@ -178,28 +178,22 @@ def get_event_matches_api():
     event_matches = []
     fallback_year = None
     
-    # Try to find matches for the selected year, then fallback to previous year
-    years_to_try = [selected_year, selected_year - 1]
-    
-    for try_year in years_to_try:
-        try:
-            e_res = requests.get(f"{BASE_URL}/team/{team_key}/events/{try_year}/simple", headers=HEADERS, timeout=5)
-            if e_res.status_code == 200 and e_res.json():
-                events = sorted(e_res.json(), key=lambda x: x['end_date'], reverse=True)
-                for ev in events:
-                    em = frc_api.get_event_matches(ev['key'])
-                    if em:
-                        all_valid = [m for m in em if m.get('time')]
-                        all_valid.sort(key=lambda x: x['time'])
-                        if all_valid:
-                            event_matches = all_valid
-                            if try_year != selected_year:
-                                fallback_year = try_year
-                            break
-            if event_matches:
-                break
-        except Exception as e:
-            print(f"API Match error for year {try_year}: {e}")
+    # Try to find matches for the selected year
+    try:
+        e_res = requests.get(f"{BASE_URL}/team/{team_key}/events/{selected_year}/simple", headers=HEADERS, timeout=5)
+        if e_res.status_code == 200 and e_res.json():
+            events = sorted(e_res.json(), key=lambda x: x['end_date'], reverse=True)
+            for ev in events:
+                em = frc_api.get_event_matches(ev['key'])
+                if em:
+                    # Relax requirement for 'time' - ensure at least match_number exists
+                    all_valid = [m for m in em if m.get('match_number')]
+                    all_valid.sort(key=lambda x: (x.get('time') or 0, x.get('match_number') or 0))
+                    if all_valid:
+                        event_matches = all_valid
+                        break
+    except Exception as e:
+        print(f"API Match error for year {selected_year}: {e}")
     
     # Filter to upcoming only (unless show_all)
     total = len(event_matches)
@@ -215,8 +209,7 @@ def get_event_matches_api():
     return jsonify({
         'matches': event_matches,
         'total': total,
-        'filtered': filtered,
-        'fallback_year': fallback_year
+        'filtered': filtered
     })
 
 @assignments_bp.route('/api/admin/auto-assign', methods=['POST'])
@@ -252,20 +245,8 @@ def auto_assign():
     
     em = frc_api.get_event_matches(event_key)
     
-    # Fallback to 2025 if no matches found for current event
     if not em:
-        try:
-            prev_year = 2025
-            res = requests.get(f"{BASE_URL}/team/{team_key}/events/{prev_year}/simple", headers=HEADERS, timeout=5)
-            if res.status_code ==    200 and res.json():
-                events = sorted(res.json(), key=lambda x: x['end_date'], reverse=True)
-                if events:
-                    em = frc_api.get_event_matches(events[0]['key'])
-        except Exception as e:
-            print(f"Auto-assign fallback error: {e}")
-
-    if not em:
-        return jsonify({'error': 'No matches found/scheduled for this event or previous season (2025).'}), 400
+        return jsonify({'error': 'No matches found/scheduled for the current event. The schedule might not be published on TBA yet.'}), 400
         
     upcoming_matches = [m for m in em if m.get('time')]
     upcoming_matches.sort(key=lambda x: x['time'])

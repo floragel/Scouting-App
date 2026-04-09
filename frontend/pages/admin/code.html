@@ -276,14 +276,19 @@
 
             <!-- Assignment Form -->
             <div class="p-6 bg-slate-50 dark:bg-slate-900/30 border-b border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Create Assignment</span>
+                    <button id="toggle-manual-mode" class="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-all shadow-sm">
+                        <span class="material-symbols-outlined text-sm">edit_note</span>
+                        <span id="manual-toggle-text">Manual Entry</span>
+                    </button>
+                </div>
+                
                 <form id="assignment-form" class="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
                     <!-- Scout Selection -->
                     <div>
-                        <label
-                            class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
-                        <select id="assign-scout"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Scout</label>
+                        <select id="assign-scout" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="">Select Scout...</option>
                             {% for member in team_members %}
                             <option value="{{ member.id }}">{{ member.name }}</option>
@@ -291,39 +296,41 @@
                         </select>
                     </div>
 
-                    <!-- Match Selection -->
-                    <div>
-                        <label
-                            class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Match</label>
-                        <select id="assign-match"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required>
+                    <!-- Match Selection / Manual Match Type -->
+                    <div id="match-col">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Match</label>
+                        <select id="assign-match" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="">Select Match...</option>
                             {% for match in event_matches %}
-                            <option value="{{ match.key }}">{{ match.comp_level | upper }} {{ match.match_number }}
-                            </option>
+                            <option value="{{ match.key }}">{{ match.comp_level | upper }} {{ match.match_number }} ({% if match.time %}Scheduled{% else %}TBD{% endif %})</option>
                             {% endfor %}
                         </select>
+                        
+                        <div id="manual-match-fields" class="hidden flex gap-2">
+                            <select id="manual-match-type" class="w-1/2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-sm focus:ring-primary focus:border-primary font-medium">
+                                <option value="qm">Quals</option>
+                                <option value="sf">Semis</option>
+                                <option value="f">Finals</option>
+                                <option value="pr">Practice</option>
+                            </select>
+                            <input id="manual-match-num" type="number" placeholder="#" class="w-1/2 bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-2 py-2 text-sm focus:ring-primary focus:border-primary font-medium">
+                        </div>
                     </div>
 
-                    <!-- Team Input -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team
-                            Key</label>
-                        <select id="assign-team"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required disabled>
+                    <!-- Team Input / Manual Team -->
+                    <div id="team-col">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Team</label>
+                        <select id="assign-team" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required disabled>
                             <option value="">Select Team...</option>
                         </select>
+                        
+                        <input id="manual-team-num" type="number" placeholder="Team #" class="hidden w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium">
                     </div>
 
                     <!-- Alliance Color -->
                     <div>
-                        <label
-                            class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Alliance</label>
-                        <select id="assign-alliance"
-                            class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium"
-                            required>
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Alliance</label>
+                        <select id="assign-alliance" class="w-full bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm focus:ring-primary focus:border-primary font-medium" required>
                             <option value="Red">Red</option>
                             <option value="Blue">Blue</option>
                         </select>
@@ -331,14 +338,15 @@
 
                     <!-- Submit Button -->
                     <div>
-                        <button type="submit"
-                            class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
+                        <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
                             <span class="material-symbols-outlined text-sm">add</span>
                             Assign
                         </button>
                     </div>
                 </form>
             </div>
+            <!-- Hidden context for JS -->
+            <input type="hidden" id="current-event-key" value="{{ current_event_key }}">
             <!-- Pit Assignments Section -->
             <section
                 class="bg-white dark:bg-[#161e2b] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex flex-col mt-8">
@@ -857,25 +865,26 @@
                     allMatches.forEach(m => {
                         const opt = document.createElement('option');
                         opt.value = m.key;
-                        opt.textContent = `${m.comp_level.toUpperCase()} ${m.match_number}`;
+                        const timeStr = m.time ? new Date(m.time * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'TBD';
+                        opt.textContent = `${m.comp_level.toUpperCase()} ${m.match_number} (${timeStr})`;
                         assignMatchSelect.appendChild(opt);
                     });
 
-                    // Fallback year notice
-                    let fallbackNotice = '';
-                    if (fallbackYear) {
-                        fallbackNotice = ` <span class="text-amber-400 font-bold">(Fallback: showing ${fallbackYear} data)</span>`;
-                    }
-
                     // Show/hide toggle button
-                    if (data.filtered && allMatches.length === 0 && total > 0) {
+                    if (allMatches.length === 0) {
+                        toggleAllBtn.classList.add('hidden');
+                        gridSubtitle.innerHTML = '<span class="text-amber-500 font-bold flex items-center justify-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span> Schedule not yet published on TBA</span>';
+                        gridContainer.innerHTML = `
+                            <div class="flex flex-col items-center justify-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-900/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                                <span class="material-symbols-outlined text-4xl mb-2 text-slate-400">calendar_today</span>
+                                <p class="text-sm font-medium">The match schedule for ${selectedYear} events hasn't been released yet.</p>
+                                <p class="text-xs text-slate-400 mt-1">Assignments will be available as soon as TBA updates.</p>
+                            </div>`;
+                    } else if (data.filtered && allMatches.length < total) {
                         toggleAllBtn.classList.remove('hidden');
                         toggleAllText.textContent = `Show All ${total} Matches`;
-                        gridSubtitle.innerHTML = 'No upcoming matches found.' + fallbackNotice;
-                    } else if (data.filtered && allMatches.length > 0 && allMatches.length < total) {
-                        toggleAllBtn.classList.remove('hidden');
-                        toggleAllText.textContent = `Show All ${total} Matches`;
-                        gridSubtitle.innerHTML = `Showing ${allMatches.length} upcoming matches.` + fallbackNotice;
+                        gridSubtitle.innerHTML = `Showing ${allMatches.length} upcoming matches.`;
+                        renderMatchGrid(allMatches);
                     } else {
                         if (showAll) {
                             toggleAllBtn.classList.remove('hidden');
@@ -883,10 +892,9 @@
                         } else {
                             toggleAllBtn.classList.add('hidden');
                         }
-                        gridSubtitle.innerHTML = `Showing all ${allMatches.length} matches.` + fallbackNotice;
+                        gridSubtitle.innerHTML = `Showing all ${allMatches.length} matches.`;
+                        renderMatchGrid(allMatches);
                     }
-
-                    renderMatchGrid(allMatches);
                 } catch (e) {
                     console.error("Error fetching matches:", e);
                     gridContainer.innerHTML = '<p class="text-center py-8 text-red-400">Failed to load matches.</p>';
@@ -1041,6 +1049,49 @@
                 }, 100);
             };
 
+            // ---- Manual Mode Toggle Logic ----
+            let manualMode = false;
+            const toggleManualBtn = document.getElementById('toggle-manual-mode');
+            const manualToggleText = document.getElementById('manual-toggle-text');
+            const assignMatchSelect = document.getElementById('assign-match');
+            const manualMatchFields = document.getElementById('manual-match-fields');
+            const assignTeamSelect = document.getElementById('assign-team');
+            const manualTeamInput = document.getElementById('manual-team-num');
+
+            if (toggleManualBtn) {
+                toggleManualBtn.addEventListener('click', () => {
+                    manualMode = !manualMode;
+                    
+                    if (manualMode) {
+                        // Switch to Manual
+                        assignMatchSelect.classList.add('hidden');
+                        assignMatchSelect.required = false;
+                        manualMatchFields.classList.remove('hidden');
+                        
+                        assignTeamSelect.classList.add('hidden');
+                        assignTeamSelect.required = false;
+                        manualTeamInput.classList.remove('hidden');
+                        manualTeamInput.required = true;
+                        
+                        manualToggleText.textContent = 'Auto Selection';
+                        toggleManualBtn.classList.add('bg-primary/10', 'border-primary', 'text-primary');
+                    } else {
+                        // Switch back to Auto
+                        assignMatchSelect.classList.remove('hidden');
+                        assignMatchSelect.required = true;
+                        manualMatchFields.classList.add('hidden');
+                        
+                        assignTeamSelect.classList.remove('hidden');
+                        assignTeamSelect.required = true;
+                        manualTeamInput.classList.add('hidden');
+                        manualTeamInput.required = false;
+                        
+                        manualToggleText.textContent = 'Manual Entry';
+                        toggleManualBtn.classList.remove('bg-primary/10', 'border-primary', 'text-primary');
+                    }
+                });
+            }
+
             // ---- Match Selection -> Populate Teams ----
             if (assignMatchSelect) {
                 assignMatchSelect.addEventListener('change', (e) => {
@@ -1103,9 +1154,28 @@
                     e.preventDefault();
 
                     const userId = document.getElementById('assign-scout').value;
-                    const matchKey = document.getElementById('assign-match').value;
-                    const teamKey = document.getElementById('assign-team').value;
                     const allianceColor = document.getElementById('assign-alliance').value;
+                    
+                    let matchKey = '';
+                    let teamKey = '';
+
+                    if (manualMode) {
+                        const type = document.getElementById('manual-match-type').value;
+                        const num = document.getElementById('manual-match-num').value;
+                        const teamNum = document.getElementById('manual-team-num').value;
+                        const eventKey = document.getElementById('current-event-key').value || '2026manual';
+                        
+                        if (!num || !teamNum) {
+                            alert("Please enter match number and team number.");
+                            return;
+                        }
+                        
+                        matchKey = `${eventKey}_${type}${num}`;
+                        teamKey = `frc${teamNum}`;
+                    } else {
+                        matchKey = assignMatchSelect.value;
+                        teamKey = assignTeamSelect.value;
+                    }
 
                     if (!userId || !matchKey || !teamKey || !allianceColor) {
                         alert("Please fill in all assignment fields.");
