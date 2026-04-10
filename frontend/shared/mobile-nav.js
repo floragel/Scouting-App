@@ -55,7 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const navItems = [
         { name: 'Home', icon: 'home', path: '/', regex: /^\/(dashboard|scout-dashboard|$)/ },
         { name: 'Teams', icon: 'groups', path: '/teams', regex: /^\/teams/ },
-        { name: 'Schedule', icon: 'calendar_month', path: '/events', regex: /^\/events/ }
+        { name: 'Schedule', icon: 'calendar_month', path: '/events', regex: /^\/events/ },
+        { name: 'Rankings', icon: 'leaderboard', path: '/rankings', regex: /^\/rankings/ }
     ];
 
     // Add role-specific items

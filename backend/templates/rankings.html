@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+    <script src="/shared_assets/translator.js"></script>
+    <script src="/shared_assets/api_config.js"></script>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport" />
+    <title>Team Rankings - FRC Scouting App</title>
+    <meta name="description" content="View team rankings and statistics leaderboards from scouted FRC data." />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0d6cf2",
+                        "primary-hover": "#0b5ac7",
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#0f172a",
+                        "card-dark": "#1e293b",
+                        "card-hover": "#334155",
+                        "input-dark": "#223249",
+                        "text-main": "#f8fafc",
+                        "text-muted": "#94a3b8"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .stat-tab { transition: all 0.2s ease; }
+        .stat-tab.active {
+            background: linear-gradient(135deg, rgba(13,108,242,0.15), rgba(13,108,242,0.05));
+            border-color: rgba(13,108,242,0.5);
+            color: #60a5fa;
+        }
+        .stat-tab:hover:not(.active) {
+            background: rgba(51,65,85,0.5);
+            border-color: rgba(71,85,105,0.5);
+        }
+
+        .rank-row { transition: all 0.15s ease; }
+        .rank-row:hover { background: rgba(30,41,59,0.8) !important; }
+
+        .medal-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+        .medal-2 { background: linear-gradient(135deg, #94a3b8, #64748b); }
+        .medal-3 { background: linear-gradient(135deg, #d97706, #92400e); }
+
+        .sort-header { cursor: pointer; user-select: none; }
+        .sort-header:hover { color: #60a5fa; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-row { animation: fadeInUp 0.25s ease forwards; }
+
+        .search-glow:focus-within {
+            box-shadow: 0 0 0 3px rgba(13,108,242,0.15);
+            border-color: rgba(13,108,242,0.5);
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col antialiased">
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b border-slate-200 dark:border-slate-800 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+            <!-- Left: Logo -->
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="size-8 text-primary">
+                    <svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z" fill="currentColor"></path>
+                    </svg>
+                </div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white hidden sm:block">FRC Scouting
+                    App <span class="text-[10px] font-normal opacity-50 ml-1">v{{ version }}</span>
+                </h1>
+            </div>
+            <!-- Middle: Nav -->
+            <nav class="hidden md:flex items-center gap-1">
+                <a class="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors" href="/events">Dashboard</a>
+                <a class="px-3 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg transition-colors" href="/rankings">Rankings</a>
+                <a class="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors" href="{{ scout_management_url }}">Scout Management</a>
+            </nav>
+            <!-- Right: Profile -->
+            <div class="flex items-center gap-4 flex-1 justify-end">
+                <a href="/members" class="hidden sm:flex items-center justify-center size-10 rounded-lg bg-slate-100 dark:bg-card-dark text-slate-600 dark:text-slate-400 hover:text-primary transition-colors" title="Member Directory">
+                    <span class="material-symbols-outlined text-[24px]">group</span>
+                </a>
+                <a href="/profile" class="relative block hover:scale-105 transition-transform cursor-pointer">
+                    <img class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/50 overflow-hidden object-cover"
+                        alt="Profile picture of {{ user.name }}"
+                        src="{{ user.profile_picture or '/static/images/default_avatar.svg' }}">
+                    <div class="absolute bottom-0 right-0 size-3 bg-green-500 border-2 border-background-dark rounded-full"></div>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Page Title & Filters -->
+        <div class="flex flex-col gap-6 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary text-3xl">leaderboard</span>
+                        Team Rankings
+                    </h2>
+                    <p class="text-slate-500 dark:text-slate-400 mt-1">Classement par statistique — données issues du scouting de l'équipe.</p>
+                </div>
+                <div class="flex flex-wrap gap-3 items-center">
+                    <!-- Season Selector -->
+                    <div class="relative group">
+                        <select id="season-select" onchange="window.location.href='/rankings?year='+this.value + (eventFilter !== 'all' ? '&event='+eventFilter : '')"
+                            class="appearance-none px-4 py-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-card-hover transition-colors pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
+                            {% for year in seasons %}
+                            <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>Saison {{ year }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700 dark:text-slate-200">
+                            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                        </div>
+                    </div>
+                    <!-- Event Filter -->
+                    <div class="relative group">
+                        <select id="event-filter" onchange="applyEventFilter(this.value)"
+                            class="appearance-none px-4 py-2 bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-card-hover transition-colors pr-8 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="all">Tous les événements</option>
+                            {% for event in events_list %}
+                            <option value="{{ event.id }}" {% if event.id|string == selected_event %}selected{% endif %}>{{ event.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700 dark:text-slate-200">
+                            <span class="material-symbols-outlined text-[18px]">expand_more</span>
+                        </div>
+                    </div>
+                    <!-- Search -->
+                    <div class="relative search-glow rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-card-dark transition-all">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                        <input type="text" id="team-search" placeholder="Rechercher une équipe..."
+                            class="w-full sm:w-56 pl-10 pr-4 py-2 bg-transparent border-none focus:ring-0 text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400"
+                            oninput="filterBySearch(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Équipes scoutées</p>
+                    <p id="stat-teams" class="text-2xl font-black text-primary mt-1">0</p>
+                </div>
+                <div class="bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Matchs enregistrés</p>
+                    <p id="stat-matches" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+                </div>
+                <div class="bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pit Scouts</p>
+                    <p id="stat-pits" class="text-2xl font-black text-amber-400 mt-1">0</p>
+                </div>
+                <div class="bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-xl p-4">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Événements</p>
+                    <p id="stat-events" class="text-2xl font-black text-violet-400 mt-1">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stat Category Tabs -->
+        <div class="flex flex-wrap gap-2 mb-6" id="stat-tabs">
+            <button onclick="switchStat('overall')" data-stat="overall" class="stat-tab active flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">emoji_events</span>
+                Global
+            </button>
+            <button onclick="switchStat('auto_balls')" data-stat="auto_balls" class="stat-tab flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">precision_manufacturing</span>
+                Auto Balls
+            </button>
+            <button onclick="switchStat('teleop_balls')" data-stat="teleop_balls" class="stat-tab flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">sports_basketball</span>
+                Teleop Balls
+            </button>
+            <button onclick="switchStat('accuracy')" data-stat="accuracy" class="stat-tab flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">gps_fixed</span>
+                Précision
+            </button>
+            <button onclick="switchStat('intake')" data-stat="intake" class="stat-tab flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">speed</span>
+                Intake Speed
+            </button>
+            <button onclick="switchStat('climb')" data-stat="climb" class="stat-tab flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">hiking</span>
+                Climb Rate
+            </button>
+            <button onclick="switchStat('consistency')" data-stat="consistency" class="stat-tab flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">equalizer</span>
+                Constance
+            </button>
+            <button onclick="switchStat('pit')" data-stat="pit" class="stat-tab flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold transition-all">
+                <span class="material-symbols-outlined text-[18px]">build</span>
+                Pit Data
+            </button>
+        </div>
+
+        <!-- Ranking Table Container -->
+        <div class="bg-white dark:bg-card-dark border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
+            <!-- Table Header Info -->
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/30">
+                <div class="flex items-center gap-3">
+                    <span id="ranking-icon" class="material-symbols-outlined text-primary text-2xl">emoji_events</span>
+                    <div>
+                        <h3 id="ranking-title" class="font-bold text-lg">Classement Global</h3>
+                        <p id="ranking-subtitle" class="text-xs text-slate-500">Trié par Power Score (auto × 2.5 + teleop × 1.5 + accuracy × 2 + climb × 0.05)</p>
+                    </div>
+                </div>
+                <span id="ranking-count" class="text-xs font-bold text-slate-400 bg-slate-200 dark:bg-slate-800 px-3 py-1 rounded-full">0 équipes</span>
+            </div>
+
+            <!-- Dynamic Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm" id="ranking-table">
+                    <thead id="ranking-thead" class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 text-slate-500">
+                        <!-- Populated by JS -->
+                    </thead>
+                    <tbody id="ranking-tbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden py-16 text-center">
+                <span class="material-symbols-outlined text-5xl text-slate-600 mb-4">search_off</span>
+                <p class="text-slate-400 text-lg font-bold">Aucune donnée trouvée</p>
+                <p class="text-slate-500 text-sm mt-1">Essayez de changer les filtres ou la saison.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="h-10 border-t border-slate-200 dark:border-slate-800 bg-background-light dark:bg-slate-950 flex items-center px-6 justify-center shrink-0 mt-auto">
+        <p class="text-xs text-slate-500 font-medium whitespace-nowrap">© Nayl Lahlou, Team 6622 FRC-Scouting-App • v{{ version }}</p>
+    </footer>
+
+    <!-- Data injection -->
+    <script id="match-data-json" type="application/json">{{ match_data_json | safe if match_data_json else '[]' }}</script>
+    <script id="pit-data-json" type="application/json">{{ pit_data_json | safe if pit_data_json else '[]' }}</script>
+    <script id="events-count" type="application/json">{{ events_count }}</script>
+
+    <script>
+        // ─── Data Loading ───
+        const matchDataAll = JSON.parse(document.getElementById('match-data-json').textContent);
+        const pitDataAll = JSON.parse(document.getElementById('pit-data-json').textContent);
+        const eventsCount = JSON.parse(document.getElementById('events-count').textContent);
+
+        let currentStat = 'overall';
+        let currentSort = { key: 'power_score', asc: false };
+        let searchQuery = '';
+        let eventFilter = document.getElementById('event-filter').value;
+
+        // ─── Build Team Stats ───
+        function buildTeamStats(matchData, pitData) {
+            const teams = {};
+
+            matchData.forEach(m => {
+                const tNum = m.team_number;
+                if (!teams[tNum]) {
+                    teams[tNum] = {
+                        team_number: tNum,
+                        match_count: 0,
+                        auto_balls_total: 0,
+                        auto_balls_shot_total: 0,
+                        teleop_balls_total: 0,
+                        intake_speed_total: 0,
+                        accuracy_total: 0,
+                        climb_count: 0,
+                        l3_count: 0,
+                        accuracy_values: [],
+                        passes_bump_count: 0,
+                        passes_trench_count: 0,
+                        pit: null
+                    };
+                }
+                const t = teams[tNum];
+                t.match_count++;
+                t.auto_balls_total += (m.auto_balls_scored || 0);
+                t.auto_balls_shot_total += (m.auto_balls_shot || 0);
+                t.teleop_balls_total += (m.teleop_balls_shot || 0);
+                t.intake_speed_total += (m.teleop_intake_speed || 0);
+                const acc = m.teleop_shooter_accuracy || 0;
+                t.accuracy_total += acc;
+                t.accuracy_values.push(acc);
+                if (m.passes_bump) t.passes_bump_count++;
+                if (m.passes_trench) t.passes_trench_count++;
+                const climb = String(m.endgame_climb || '').trim();
+                if (climb && climb !== 'None') {
+                    t.climb_count++;
+                    if (climb === 'L3') t.l3_count++;
+                }
+            });
+
+            // Compute averages
+            for (const [num, t] of Object.entries(teams)) {
+                const mc = t.match_count || 1;
+                t.auto_balls_avg = Math.round((t.auto_balls_total / mc) * 100) / 100;
+                t.auto_balls_shot_avg = Math.round((t.auto_balls_shot_total / mc) * 100) / 100;
+                t.teleop_balls_avg = Math.round((t.teleop_balls_total / mc) * 100) / 100;
+                t.intake_speed_avg = Math.round((t.intake_speed_total / mc) * 100) / 100;
+                t.accuracy_avg = Math.round((t.accuracy_total / mc) * 100) / 100;
+                t.climb_rate = Math.round((t.climb_count / mc) * 1000) / 10;
+                t.l3_rate = Math.round((t.l3_count / mc) * 1000) / 10;
+                t.bump_rate = Math.round((t.passes_bump_count / mc) * 1000) / 10;
+                t.trench_rate = Math.round((t.passes_trench_count / mc) * 1000) / 10;
+
+                // Standard deviation for consistency
+                if (t.accuracy_values.length >= 2) {
+                    const mean = t.accuracy_values.reduce((a, b) => a + b, 0) / t.accuracy_values.length;
+                    const variance = t.accuracy_values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (t.accuracy_values.length - 1);
+                    t.accuracy_sd = Math.round(Math.sqrt(variance) * 100) / 100;
+                } else {
+                    t.accuracy_sd = 0;
+                }
+
+                // Power Score
+                t.power_score = Math.round(
+                    (t.auto_balls_avg * 2.5) +
+                    (t.teleop_balls_avg * 1.5) +
+                    (t.accuracy_avg * 2) +
+                    (t.climb_rate * 0.05)
+                * 100) / 100;
+            }
+
+            // Attach pit data
+            pitData.forEach(p => {
+                const tNum = p.team_number;
+                if (teams[tNum]) {
+                    teams[tNum].pit = {
+                        drivetrain: p.drivetrain_type || 'N/A',
+                        motor_type: p.motor_type || 'N/A',
+                        motor_count: p.motor_count || 0,
+                        weight: p.weight || 0,
+                        climb_level: p.climb_level || 'None',
+                        max_fuel: p.max_fuel_capacity || 0,
+                        intake_type: p.intake_type || 'N/A',
+                        scoring_pref: p.scoring_preference || 'N/A',
+                        photo_path: p.photo_path || ''
+                    };
+                } else {
+                    // Team only has pit data, no match data
+                    teams[tNum] = {
+                        team_number: tNum,
+                        match_count: 0,
+                        auto_balls_avg: 0, auto_balls_shot_avg: 0,
+                        teleop_balls_avg: 0, intake_speed_avg: 0,
+                        accuracy_avg: 0, accuracy_sd: 0,
+                        climb_rate: 0, l3_rate: 0,
+                        bump_rate: 0, trench_rate: 0,
+                        power_score: 0,
+                        pit: {
+                            drivetrain: p.drivetrain_type || 'N/A',
+                            motor_type: p.motor_type || 'N/A',
+                            motor_count: p.motor_count || 0,
+                            weight: p.weight || 0,
+                            climb_level: p.climb_level || 'None',
+                            max_fuel: p.max_fuel_capacity || 0,
+                            intake_type: p.intake_type || 'N/A',
+                            scoring_pref: p.scoring_preference || 'N/A',
+                            photo_path: p.photo_path || ''
+                        }
+                    };
+                }
+            });
+
+            return Object.values(teams);
+        }
+
+        // ─── Filter data by event ───
+        function getFilteredData() {
+            let mData = [...matchDataAll];
+            let pData = [...pitDataAll];
+
+            if (eventFilter !== 'all') {
+                const eid = parseInt(eventFilter);
+                mData = mData.filter(m => m.event_id === eid);
+                pData = pData.filter(p => p.event_id === eid);
+            }
+
+            return buildTeamStats(mData, pData);
+        }
+
+        // ─── Stat Configurations ───
+        const STAT_CONFIGS = {
+            overall: {
+                title: 'Classement Global',
+                subtitle: 'Power Score = (auto × 2.5) + (teleop × 1.5) + (accuracy × 2) + (climb% × 0.05)',
+                icon: 'emoji_events',
+                defaultSort: { key: 'power_score', asc: false },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'match_count', label: 'Matchs', align: 'center' },
+                    { key: 'power_score', label: 'Power Score', align: 'center', primary: true },
+                    { key: 'auto_balls_avg', label: 'Avg Auto', align: 'center' },
+                    { key: 'teleop_balls_avg', label: 'Avg Teleop', align: 'center' },
+                    { key: 'accuracy_avg', label: 'Précision', align: 'center' },
+                    { key: 'climb_rate', label: 'Climb %', align: 'center' }
+                ]
+            },
+            auto_balls: {
+                title: 'Classement Auto Balls Scored',
+                subtitle: 'Moyenne de balles marquées en période autonome',
+                icon: 'precision_manufacturing',
+                defaultSort: { key: 'auto_balls_avg', asc: false },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'match_count', label: 'Matchs', align: 'center' },
+                    { key: 'auto_balls_avg', label: 'Avg Auto Scored', align: 'center', primary: true },
+                    { key: 'auto_balls_shot_avg', label: 'Avg Auto Shot', align: 'center' },
+                    { key: 'power_score', label: 'Power Score', align: 'center' }
+                ]
+            },
+            teleop_balls: {
+                title: 'Classement Teleop Balls',
+                subtitle: 'Moyenne de balles tirées en téléopération',
+                icon: 'sports_basketball',
+                defaultSort: { key: 'teleop_balls_avg', asc: false },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'match_count', label: 'Matchs', align: 'center' },
+                    { key: 'teleop_balls_avg', label: 'Avg Teleop Balls', align: 'center', primary: true },
+                    { key: 'accuracy_avg', label: 'Précision', align: 'center' },
+                    { key: 'bump_rate', label: 'Bump %', align: 'center' },
+                    { key: 'trench_rate', label: 'Trench %', align: 'center' }
+                ]
+            },
+            accuracy: {
+                title: 'Classement Précision (Shooter Accuracy)',
+                subtitle: 'Moyenne de précision du tireur (0-5)',
+                icon: 'gps_fixed',
+                defaultSort: { key: 'accuracy_avg', asc: false },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'match_count', label: 'Matchs', align: 'center' },
+                    { key: 'accuracy_avg', label: 'Avg Accuracy', align: 'center', primary: true },
+                    { key: 'accuracy_sd', label: 'Écart Type', align: 'center' },
+                    { key: 'teleop_balls_avg', label: 'Avg Teleop', align: 'center' }
+                ]
+            },
+            intake: {
+                title: 'Classement Intake Speed',
+                subtitle: 'Moyenne de la vitesse d\'intake (0-5)',
+                icon: 'speed',
+                defaultSort: { key: 'intake_speed_avg', asc: false },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'match_count', label: 'Matchs', align: 'center' },
+                    { key: 'intake_speed_avg', label: 'Avg Intake Spd', align: 'center', primary: true },
+                    { key: 'teleop_balls_avg', label: 'Avg Teleop', align: 'center' },
+                    { key: 'accuracy_avg', label: 'Précision', align: 'center' }
+                ]
+            },
+            climb: {
+                title: 'Classement Climb',
+                subtitle: 'Pourcentage de matchs avec un climb réussi',
+                icon: 'hiking',
+                defaultSort: { key: 'climb_rate', asc: false },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'match_count', label: 'Matchs', align: 'center' },
+                    { key: 'climb_rate', label: 'Climb %', align: 'center', primary: true },
+                    { key: 'l3_rate', label: 'L3 %', align: 'center' },
+                    { key: 'power_score', label: 'Power Score', align: 'center' }
+                ]
+            },
+            consistency: {
+                title: 'Classement Constance',
+                subtitle: 'Écart type de la précision (plus bas = plus constant)',
+                icon: 'equalizer',
+                defaultSort: { key: 'accuracy_sd', asc: true },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'match_count', label: 'Matchs', align: 'center' },
+                    { key: 'accuracy_sd', label: 'Écart Type (σ)', align: 'center', primary: true },
+                    { key: 'accuracy_avg', label: 'Avg Accuracy', align: 'center' },
+                    { key: 'power_score', label: 'Power Score', align: 'center' }
+                ]
+            },
+            pit: {
+                title: 'Données Pit Scouting',
+                subtitle: 'Informations physiques et mécaniques des robots',
+                icon: 'build',
+                defaultSort: { key: 'team_number', asc: true },
+                columns: [
+                    { key: 'rank', label: '#', align: 'center', width: 'w-12' },
+                    { key: 'team_number', label: 'Équipe', align: 'left' },
+                    { key: 'pit_drivetrain', label: 'Drivetrain', align: 'center' },
+                    { key: 'pit_motor', label: 'Moteurs', align: 'center' },
+                    { key: 'pit_weight', label: 'Poids (lbs)', align: 'center', primary: true },
+                    { key: 'pit_climb', label: 'Climb Level', align: 'center' },
+                    { key: 'pit_fuel', label: 'Fuel Cap', align: 'center' }
+                ]
+            }
+        };
+
+        // ─── Stat Switching ───
+        function switchStat(statId) {
+            currentStat = statId;
+            const config = STAT_CONFIGS[statId];
+            currentSort = { ...config.defaultSort };
+
+            // Update tab styles
+            document.querySelectorAll('.stat-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.stat === statId);
+            });
+
+            // Update header
+            document.getElementById('ranking-icon').textContent = config.icon;
+            document.getElementById('ranking-title').textContent = config.title;
+            document.getElementById('ranking-subtitle').textContent = config.subtitle;
+
+            renderTable();
+        }
+
+        // ─── Column Sort ───
+        function sortBy(key) {
+            if (currentSort.key === key) {
+                currentSort.asc = !currentSort.asc;
+            } else {
+                currentSort.key = key;
+                // For consistency (SD), default ascending
+                currentSort.asc = (key === 'accuracy_sd' || key === 'team_number');
+            }
+            renderTable();
+        }
+
+        // ─── Filters ───
+        function filterBySearch(query) {
+            searchQuery = query.trim().toLowerCase();
+            renderTable();
+        }
+
+        function applyEventFilter(value) {
+            eventFilter = value;
+            renderTable();
+        }
+
+        // ─── Get Cell Value (handles pit sub-properties) ───
+        function getCellValue(team, key) {
+            if (key === 'rank') return '';
+            if (key === 'pit_drivetrain') return team.pit ? team.pit.drivetrain : '—';
+            if (key === 'pit_motor') return team.pit ? `${team.pit.motor_type} (${team.pit.motor_count})` : '—';
+            if (key === 'pit_weight') return team.pit ? team.pit.weight : 0;
+            if (key === 'pit_climb') return team.pit ? team.pit.climb_level : '—';
+            if (key === 'pit_fuel') return team.pit ? team.pit.max_fuel : 0;
+            return team[key] ?? 0;
+        }
+
+        // ─── Sort Value (for numeric comparison) ───
+        function getSortValue(team, key) {
+            const val = getCellValue(team, key);
+            if (typeof val === 'number') return val;
+            const num = parseFloat(val);
+            return isNaN(num) ? val : num;
+        }
+
+        // ─── Render Table ───
+        function renderTable() {
+            const config = STAT_CONFIGS[currentStat];
+            let teams = getFilteredData();
+
+            // For pit tab, only show teams with pit data
+            if (currentStat === 'pit') {
+                teams = teams.filter(t => t.pit !== null);
+            }
+
+            // Search filter
+            if (searchQuery) {
+                teams = teams.filter(t => String(t.team_number).includes(searchQuery));
+            }
+
+            // Sort
+            const sortKey = currentSort.key;
+            teams.sort((a, b) => {
+                let vA = getSortValue(a, sortKey);
+                let vB = getSortValue(b, sortKey);
+
+                if (typeof vA === 'string' && typeof vB === 'string') {
+                    const cmp = vA.localeCompare(vB);
+                    return currentSort.asc ? cmp : -cmp;
+                }
+
+                const cmp = (vA || 0) - (vB || 0);
+                return currentSort.asc ? cmp : -cmp;
+            });
+
+            // Update summary stats
+            document.getElementById('stat-teams').textContent = teams.length;
+            document.getElementById('stat-matches').textContent = teams.reduce((s, t) => s + t.match_count, 0);
+            document.getElementById('stat-pits').textContent = teams.filter(t => t.pit !== null).length;
+            document.getElementById('stat-events').textContent = eventsCount;
+            document.getElementById('ranking-count').textContent = `${teams.length} équipe${teams.length !== 1 ? 's' : ''}`;
+
+            // Build thead
+            const thead = document.getElementById('ranking-thead');
+            let headHtml = '<tr>';
+            config.columns.forEach(col => {
+                const isSorted = currentSort.key === col.key;
+                const arrow = isSorted ? (currentSort.asc ? ' ▲' : ' ▼') : '';
+                const sortable = col.key !== 'rank';
+                headHtml += `<th class="px-4 py-3 text-xs font-bold uppercase tracking-wide ${col.align === 'center' ? 'text-center' : 'text-left'} ${col.width || ''} ${sortable ? 'sort-header' : ''}" ${sortable ? `onclick="sortBy('${col.key}')"` : ''}>
+                    ${col.label}<span class="text-primary ml-1 text-[10px]">${arrow}</span>
+                </th>`;
+            });
+            headHtml += '</tr>';
+            thead.innerHTML = headHtml;
+
+            // Build tbody
+            const tbody = document.getElementById('ranking-tbody');
+            const emptyState = document.getElementById('empty-state');
+
+            if (teams.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            let bodyHtml = '';
+            teams.forEach((team, idx) => {
+                const rank = idx + 1;
+                const delay = Math.min(idx * 20, 400);
+
+                bodyHtml += `<tr class="rank-row border-b border-slate-100 dark:border-slate-800/40 transition-colors" style="animation-delay: ${delay}ms">`;
+
+                config.columns.forEach(col => {
+                    const val = col.key === 'rank' ? rank : getCellValue(team, col.key);
+                    const alignClass = col.align === 'center' ? 'text-center' : 'text-left';
+                    let cellContent = '';
+
+                    if (col.key === 'rank') {
+                        if (rank <= 3) {
+                            const medalClass = `medal-${rank}`;
+                            cellContent = `<span class="inline-flex items-center justify-center size-7 rounded-full ${medalClass} text-white text-xs font-black shadow-sm">${rank}</span>`;
+                        } else {
+                            cellContent = `<span class="text-slate-500 font-bold">${rank}</span>`;
+                        }
+                    } else if (col.key === 'team_number') {
+                        cellContent = `
+                            <a href="/teams-dir?team=${val}" class="flex items-center gap-2 group/team hover:text-primary transition-colors">
+                                <span class="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-bold group-hover/team:bg-primary group-hover/team:text-white transition-all">#</span>
+                                <span class="font-bold">${val}</span>
+                            </a>`;
+                    } else if (col.primary) {
+                        const displayVal = typeof val === 'number' ? val : val;
+                        let badgeColor = 'bg-primary/10 text-primary border-primary/20';
+
+                        if (col.key === 'accuracy_sd') {
+                            if (val < 0.5) badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                            else if (val < 1.0) badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                            else badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+                        } else if (col.key === 'climb_rate') {
+                            if (val >= 80) badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                            else if (val >= 40) badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                            else badgeColor = 'bg-rose-500/10 text-rose-400 border-rose-500/20';
+                        }
+
+                        cellContent = `<span class="px-3 py-1 rounded-full ${badgeColor} border font-bold text-sm">${typeof displayVal === 'number' ? displayVal : displayVal}${col.key.includes('rate') ? '%' : ''}</span>`;
+                    } else if (col.key === 'climb_rate' || col.key === 'l3_rate' || col.key === 'bump_rate' || col.key === 'trench_rate') {
+                        cellContent = `<span class="font-medium ${val >= 50 ? 'text-emerald-400' : 'text-slate-400'}">${val}%</span>`;
+                    } else if (col.key === 'pit_climb') {
+                        const climbColors = { 'L3': 'bg-emerald-500/10 text-emerald-400', 'L2': 'bg-amber-500/10 text-amber-400', 'L1': 'bg-sky-500/10 text-sky-400', 'None': 'bg-slate-500/10 text-slate-400' };
+                        const cls = climbColors[val] || climbColors['None'];
+                        cellContent = `<span class="px-2 py-1 rounded-md text-[11px] ${cls} font-bold uppercase">${val}</span>`;
+                    } else if (col.key === 'accuracy_sd') {
+                        const sdColor = val < 0.5 ? 'text-emerald-400' : (val < 1.0 ? 'text-amber-400' : 'text-rose-400');
+                        cellContent = `<span class="font-mono font-bold ${sdColor}">±${val}</span>`;
+                    } else if (col.key === 'match_count') {
+                        cellContent = `<span class="font-medium text-slate-400">${val}</span>`;
+                    } else {
+                        cellContent = `<span class="font-medium">${val}</span>`;
+                    }
+
+                    bodyHtml += `<td class="px-4 py-3 ${alignClass} ${col.width || ''}">${cellContent}</td>`;
+                });
+
+                bodyHtml += '</tr>';
+            });
+
+            tbody.innerHTML = bodyHtml;
+        }
+
+        // ─── Init ───
+        document.addEventListener('DOMContentLoaded', () => {
+            switchStat('overall');
+        });
+    </script>
+</body>
+
+</html>

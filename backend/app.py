@@ -850,6 +850,46 @@ def api_admin_role(user_id):
     db.session.commit()
     return jsonify({'success': True})
 
+@app.route('/rankings')
+def rankings_view():
+    """Rankings page accessible to ALL logged-in users (no admin required)."""
+    user = get_current_user()
+    if not user:
+        return redirect(url_for('login_view'))
+    
+    from models import Event, PitScoutData, MatchScoutData
+    
+    selected_year = request.args.get('year', 2026, type=int)
+    selected_event = request.args.get('event', 'all')
+    seasons = [2026, 2025, 2024]
+    
+    # Filter events by season
+    events = Event.query.filter(Event.date.like(f"%{selected_year}%")).order_by(Event.date.desc()).all()
+    event_ids = [e.id for e in events]
+    
+    # Optionally filter by specific event
+    if selected_event != 'all':
+        try:
+            specific_event_id = int(selected_event)
+            if specific_event_id in event_ids:
+                event_ids = [specific_event_id]
+        except (ValueError, TypeError):
+            pass
+    
+    # Fetch data
+    pit_data = PitScoutData.query.filter(PitScoutData.event_id.in_(event_ids)).all() if event_ids else []
+    match_data = MatchScoutData.query.filter(MatchScoutData.event_id.in_(event_ids)).all() if event_ids else []
+    
+    return render_template('rankings.html',
+                         match_data_json=json.dumps([m.to_dict() for m in match_data]),
+                         pit_data_json=json.dumps([p.to_dict() for p in pit_data]),
+                         events_list=[e.to_dict() for e in events],
+                         events_count=len(events),
+                         seasons=seasons,
+                         selected_year=selected_year,
+                         selected_event=selected_event,
+                         **get_common_data(user))
+
 @app.route('/head-scout-stats')
 @app.route('/head-scout-analytics')
 def analytics_hub_view():
