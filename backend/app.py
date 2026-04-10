@@ -901,7 +901,6 @@ def analytics_hub_view():
     seasons = [2026, 2025, 2024]
     
     from models import Event, PitScoutData, MatchScoutData, Team
-    from sqlalchemy import func
     
     # Filter everything by season
     events = Event.query.filter(Event.date.like(f"%{selected_year}%")).order_by(Event.date.desc()).all()
@@ -910,31 +909,66 @@ def analytics_hub_view():
     pit_data = PitScoutData.query.filter(PitScoutData.event_id.in_(event_ids)).all() if event_ids else []
     match_data = MatchScoutData.query.filter(MatchScoutData.event_id.in_(event_ids)).all() if event_ids else []
     
-    # Calculate Team Averages (Filtered by Season)
-    team_stats = db.session.query(
-        MatchScoutData.team_id,
-        func.avg(MatchScoutData.auto_balls_scored).label('avg_auto'),
-        func.avg(MatchScoutData.teleop_balls_shot).label('avg_teleop'),
-        func.avg(MatchScoutData.teleop_shooter_accuracy).label('avg_accuracy'),
-        func.count(MatchScoutData.id).label('match_count')
-    ).filter(MatchScoutData.event_id.in_(event_ids) if event_ids else MatchScoutData.id < 0).group_by(MatchScoutData.team_id).all()
-    
-    averages = {}
-    for s in team_stats:
-        team = Team.query.get(s.team_id)
-        if team:
-            averages[team.team_number] = {
-                'avg_auto': round(float(s.avg_auto or 0), 2),
-                'avg_teleop': round(float(s.avg_teleop or 0), 2),
-                'avg_accuracy': round(float(s.avg_accuracy or 0), 2),
-                'match_count': s.match_count
+    # Build team averages with the SAME structure the frontend JS expects
+    team_averages = {}
+    for m in match_data:
+        t_id = f"frc{m.team.team_number}" if m.team else f"team_{m.team_id}"
+        if t_id not in team_averages:
+            team_averages[t_id] = {
+                'team_number': m.team.team_number if m.team else 0,
+                'match_count': 0,
+                'auto_balls_avg': 0,
+                'teleop_balls_avg': 0,
+                'accuracy_avg': 0,
+                'climb_rate': 0,
+                'pit': None,
+                'matches': []
+            }
+        
+        s = team_averages[t_id]
+        s['match_count'] += 1
+        s['auto_balls_avg'] += (m.auto_balls_scored or 0)
+        s['teleop_balls_avg'] += (m.teleop_balls_shot or 0)
+        s['accuracy_avg'] += (m.teleop_shooter_accuracy or 0)
+        if m.endgame_climb and m.endgame_climb != 'None':
+            s['climb_rate'] += 1
+            
+        s['matches'].append({
+            'number': m.match_number,
+            'auto': m.auto_balls_scored or 0,
+            'tele': m.teleop_balls_shot or 0,
+            'climb': m.endgame_climb or 'None',
+            'starting_position': m.starting_position or 'None',
+            'auto_trajectory': m.auto_trajectory,
+            'strategy_url': m.strategy_image_url or ''
+        })
+
+    # Finalize averages
+    for t_id in team_averages:
+        s = team_averages[t_id]
+        if s['match_count'] > 0:
+            s['auto_balls_avg'] = round(s['auto_balls_avg'] / s['match_count'], 2)
+            s['teleop_balls_avg'] = round(s['teleop_balls_avg'] / s['match_count'], 2)
+            s['accuracy_avg'] = round(s['accuracy_avg'] / s['match_count'], 2)
+            s['climb_rate'] = round((s['climb_rate'] / s['match_count']) * 100, 1)
+
+    # Attach pit data
+    for p in pit_data:
+        t_id = f"frc{p.team.team_number}" if p.team else f"team_{p.team_id}"
+        if t_id in team_averages:
+            team_averages[t_id]['pit'] = {
+                'drivetrain': p.drivetrain_type,
+                'motors': p.motor_type,
+                'weight': p.weight,
+                'climb_level': p.climb_level,
+                'photo_path': p.photo_path or ''
             }
     
     return render_template('analytics.html', 
                          events_list=[e.to_dict() for e in events],
                          pit_data_json=json.dumps([p.to_dict() for p in pit_data]),
                          match_data_json=json.dumps([m.to_dict() for m in match_data]),
-                         team_averages_json=json.dumps(averages),
+                         team_averages_json=json.dumps(team_averages),
                          seasons=seasons,
                          selected_year=selected_year,
                          **get_common_data(user))
