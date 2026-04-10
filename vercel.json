@@ -31,6 +31,7 @@
     { "source": "/head-scout-analytics", "destination": "/backend/app.py" },
     { "source": "/picklist", "destination": "/backend/app.py" },
     { "source": "/drive-team-briefing", "destination": "/backend/app.py" },
+    { "source": "/rankings", "destination": "/backend/app.py" },
     { "source": "/match-scout/(.*)", "destination": "/backend/app.py" },
     { "source": "/pit-scout/(.*)", "destination": "/backend/app.py" },
     {
